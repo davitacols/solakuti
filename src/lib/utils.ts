@@ -25,7 +25,7 @@ export function formatDate(date: string) {
   }).format(new Date(date));
 }
 
-export function categoryToSlug(category: ArticleCategory) {
+export function categoryToSlug(category: string) {
   return category.toLowerCase().replace(/\s+/g, "-");
 }
 

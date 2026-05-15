@@ -163,7 +163,9 @@ function htmlToPlainParagraphs(value: string) {
     .filter(Boolean);
 }
 
-const categoryImageFallback: Record<ArticleCategory, string> = {
+const defaultCategoryImage = "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80";
+
+const categoryImageFallback: Record<string, string> = {
   Politics: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1200&q=80",
   "Breaking News": "https://images.unsplash.com/photo-1501691223387-dd0500403074?auto=format&fit=crop&w=1200&q=80",
   Economy: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
@@ -317,7 +319,7 @@ function mapArticle(article: BackendArticle): Article {
     author: article.author.full_name,
     publishedAt: article.published_at,
     readTime: `${article.reading_time} min read`,
-    image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name],
+    image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name] ?? defaultCategoryImage,
     viewsCount: article.views_count,
     tags: article.tags?.map((tag) => tag.name) ?? [],
     editorialStatus: article.editorial_status ?? (article.is_published ? "published" : "draft"),

@@ -9,7 +9,7 @@ type BreakingNewsBarProps = {
 };
 
 export default function BreakingNewsBar({ articles }: BreakingNewsBarProps) {
-  const headlines = articles.filter((article) => article.category === "Breaking News").concat(articles);
+  const headlines = articles.filter((article) => article.breaking || article.category === "Breaking News").concat(articles);
   const tickerItems = [...headlines.slice(0, 6), ...headlines.slice(0, 6)];
 
   return (

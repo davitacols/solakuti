@@ -1,11 +1,10 @@
 import type { MetadataRoute } from "next";
-import { getArticles } from "@/lib/api";
-import { categories, categoryToSlug } from "@/lib/utils";
+import { getArticles, getCategories } from "@/lib/api";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const articles = await getArticles();
+  const [articles, categories] = await Promise.all([getArticles(), getCategories()]);
   const now = new Date();
 
   return [
@@ -22,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5
     },
     ...categories.map((category) => ({
-      url: `${SITE_URL}/category/${categoryToSlug(category)}`,
+      url: `${SITE_URL}/category/${category.slug}`,
       lastModified: now,
       changeFrequency: "hourly" as const,
       priority: 0.8

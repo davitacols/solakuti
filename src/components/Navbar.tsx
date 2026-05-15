@@ -7,13 +7,19 @@ import { ChevronDown, Menu, Radio, Search } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
 import MobileMenu from "@/components/MobileMenu";
 import { categories, categoryToSlug } from "@/lib/utils";
-import { ArticleCategory } from "@/types/article";
+import { Category } from "@/types/article";
 
-const primaryCategories: ArticleCategory[] = ["Politics", "Crime", "General News", "World News", "Entertainment"];
-const overflowCategories = categories.filter((category) => !primaryCategories.includes(category));
+type NavbarProps = {
+  navCategories?: Category[];
+};
 
-export default function Navbar() {
+export default function Navbar({ navCategories }: NavbarProps) {
   const [open, setOpen] = useState(false);
+  const categoryItems = navCategories?.length
+    ? navCategories.map((category) => ({ name: category.name, slug: category.slug }))
+    : categories.map((category) => ({ name: category, slug: categoryToSlug(category) }));
+  const primaryCategories = categoryItems.slice(0, 5);
+  const overflowCategories = categoryItems.slice(5);
 
   return (
     <>
@@ -53,33 +59,35 @@ export default function Navbar() {
             <nav className="hidden items-center gap-1 xl:flex" aria-label="Main navigation">
               {primaryCategories.map((category) => (
                 <Link
-                  key={category}
-                  href={`/category/${categoryToSlug(category)}`}
+                  key={category.slug}
+                  href={`/category/${category.slug}`}
                   className="rounded-full px-3.5 py-2 text-sm font-black text-black/68 transition hover:bg-black hover:text-white"
                 >
-                  {category}
+                  {category.name}
                 </Link>
               ))}
-              <div className="group relative">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 rounded-full px-3.5 py-2 text-sm font-black text-black/68 transition hover:bg-black hover:text-white"
-                >
-                  More
-                  <ChevronDown className="size-4 transition group-hover:rotate-180" />
-                </button>
-                <div className="invisible absolute right-0 top-full w-56 translate-y-3 rounded-lg border border-black/10 bg-white p-2 opacity-0 shadow-2xl transition group-hover:visible group-hover:translate-y-2 group-hover:opacity-100">
-                  {overflowCategories.map((category) => (
-                    <Link
-                      key={category}
-                      href={`/category/${categoryToSlug(category)}`}
-                      className="block rounded-md px-3 py-2 text-sm font-black text-black/62 transition hover:bg-black hover:text-white"
-                    >
-                      {category}
-                    </Link>
-                  ))}
+              {overflowCategories.length > 0 && (
+                <div className="group relative">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full px-3.5 py-2 text-sm font-black text-black/68 transition hover:bg-black hover:text-white"
+                  >
+                    More
+                    <ChevronDown className="size-4 transition group-hover:rotate-180" />
+                  </button>
+                  <div className="invisible absolute right-0 top-full w-56 translate-y-3 rounded-lg border border-black/10 bg-white p-2 opacity-0 shadow-2xl transition group-hover:visible group-hover:translate-y-2 group-hover:opacity-100">
+                    {overflowCategories.map((category) => (
+                      <Link
+                        key={category.slug}
+                        href={`/category/${category.slug}`}
+                        className="block rounded-md px-3 py-2 text-sm font-black text-black/62 transition hover:bg-black hover:text-white"
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </nav>
 
             <div className="flex items-center gap-2">
@@ -102,7 +110,7 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-      <MobileMenu open={open} onClose={() => setOpen(false)} />
+      <MobileMenu open={open} onClose={() => setOpen(false)} navCategories={categoryItems} />
     </>
   );
 }

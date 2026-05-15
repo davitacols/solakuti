@@ -9,11 +9,16 @@ import { categoryToSlug } from "@/lib/utils";
 
 type CategorySectionProps = {
   title: ArticleCategory;
+  slug?: string;
   kicker: string;
   articles: Article[];
 };
 
-export default function CategorySection({ title, kicker, articles }: CategorySectionProps) {
+export default function CategorySection({ title, slug, kicker, articles }: CategorySectionProps) {
+  if (!articles.length) {
+    return null;
+  }
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 22 }}
@@ -30,7 +35,7 @@ export default function CategorySection({ title, kicker, articles }: CategorySec
           </h2>
         </div>
         <Link
-          href={`/category/${categoryToSlug(title)}`}
+          href={`/category/${slug ?? categoryToSlug(title)}`}
           className="hidden items-center gap-2 rounded-full border border-black/10 px-4 py-2 text-sm font-black transition hover:border-black hover:bg-black hover:text-white sm:inline-flex"
         >
           View all

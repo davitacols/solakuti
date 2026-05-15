@@ -10,9 +10,14 @@ import { categories, categoryToSlug } from "@/lib/utils";
 type MobileMenuProps = {
   open: boolean;
   onClose: () => void;
+  navCategories?: Array<{ name: string; slug: string }>;
 };
 
-export default function MobileMenu({ open, onClose }: MobileMenuProps) {
+export default function MobileMenu({ open, onClose, navCategories }: MobileMenuProps) {
+  const categoryItems = navCategories?.length
+    ? navCategories
+    : categories.map((category) => ({ name: category, slug: categoryToSlug(category) }));
+
   return (
     <AnimatePresence>
       {open && (
@@ -71,14 +76,14 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
                 Sections
               </div>
               <div className="grid gap-2">
-                {categories.map((category) => (
+                {categoryItems.map((category) => (
                   <Link
-                    key={category}
-                    href={`/category/${categoryToSlug(category)}`}
+                    key={category.slug}
+                    href={`/category/${category.slug}`}
                     onClick={onClose}
                     className="group flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.035] px-4 py-4 text-lg font-black text-white/88 transition hover:border-red-400/50 hover:bg-red-600 hover:text-white"
                   >
-                    {category}
+                    {category.name}
                     <ArrowUpRight className="size-4 text-white/35 transition group-hover:text-white" />
                   </Link>
                 ))}

@@ -4,33 +4,46 @@ import CategorySection from "@/components/CategorySection";
 import HeroSection from "@/components/HeroSection";
 import NewsletterSection from "@/components/NewsletterSection";
 import TrendingSidebar from "@/components/TrendingSidebar";
-import { getArticles, getFeaturedArticle, getLatestArticles, getTrendingArticles } from "@/lib/api";
-import { ArticleCategory } from "@/types/article";
+import { getArticles, getCategories, getFeaturedArticle, getLatestArticles, getTrendingArticles } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-const sectionMeta: Array<{ title: ArticleCategory; kicker: string }> = [
-  { title: "Politics", kicker: "Power watch" },
-  { title: "Entertainment", kicker: "Culture desk" },
-  { title: "Economy", kicker: "Markets and money" },
-  { title: "Security News", kicker: "Safety brief" },
-  { title: "Crime", kicker: "Crime watch" },
-  { title: "World News", kicker: "Global brief" },
-  { title: "General News", kicker: "Public square" },
-  { title: "Opinions", kicker: "Argument" }
-];
+const categoryKickers: Record<string, string> = {
+  Politics: "Power watch",
+  Entertainment: "Culture desk",
+  Economy: "Markets and money",
+  "Security News": "Safety brief",
+  Crime: "Crime watch",
+  "World News": "Global brief",
+  "General News": "Public square",
+  Opinions: "Argument",
+  Nigeria: "Nation brief",
+  "Breaking News": "Developing now"
+};
+
+function getKicker(category: string) {
+  return categoryKickers[category] ?? "Solakuti desk";
+}
 
 export default async function Home() {
-  const [articles, featuredArticle, latestArticles, trendingArticles] = await Promise.all([
+  const [articles, featuredArticle, latestArticles, trendingArticles, categories] = await Promise.all([
     getArticles(),
     getFeaturedArticle(),
     getLatestArticles(),
-    getTrendingArticles()
+    getTrendingArticles(),
+    getCategories()
   ]);
   const liveArticles = latestArticles.length ? latestArticles : articles;
   const liveFeatured = liveArticles.find((article) => article.featured) ?? featuredArticle ?? liveArticles[0];
   const latest = liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 6);
   const feed = liveArticles.filter((article) => article.id !== liveFeatured.id);
+  const activeCategories = categories
+    .map((category) => ({
+      ...category,
+      articles: liveArticles.filter((article) => article.category === category.name)
+    }))
+    .filter((category) => category.articles.length > 0)
+    .sort((a, b) => b.articles.length - a.articles.length);
 
   return (
     <main>
@@ -59,12 +72,13 @@ export default async function Home() {
       </section>
 
       <section className="container-page">
-        {sectionMeta.map(({ title, kicker }) => (
+        {activeCategories.map((category) => (
           <CategorySection
-            key={title}
-            title={title}
-            kicker={kicker}
-            articles={liveArticles.filter((article) => article.category === title)}
+            key={category.slug}
+            title={category.name}
+            slug={category.slug}
+            kicker={getKicker(category.name)}
+            articles={category.articles}
           />
         ))}
       </section>
