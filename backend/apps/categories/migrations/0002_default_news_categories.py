@@ -1,4 +1,5 @@
 from django.db import migrations
+from django.utils.text import slugify
 
 
 DEFAULT_CATEGORIES = [
@@ -19,7 +20,7 @@ def seed_default_categories(apps, schema_editor):
     for name, description in DEFAULT_CATEGORIES:
         Category.objects.update_or_create(
             name=name,
-            defaults={"description": description},
+            defaults={"slug": slugify(name), "description": description},
         )
 
 
