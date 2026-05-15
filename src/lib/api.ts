@@ -174,7 +174,7 @@ async function fetchApi<T>(path: string): Promise<T | null> {
 
   try {
     const response = await fetch(`${API_URL}${path}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
       signal: controller.signal
     });
 

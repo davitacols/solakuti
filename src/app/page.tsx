@@ -27,13 +27,15 @@ export default async function Home() {
     getLatestArticles(),
     getTrendingArticles()
   ]);
-  const latest = articles.filter((article) => article.id !== featuredArticle.id).slice(0, 6);
-  const feed = latestArticles.filter((article) => article.id !== featuredArticle.id);
+  const liveArticles = latestArticles.length ? latestArticles : articles;
+  const liveFeatured = liveArticles.find((article) => article.featured) ?? featuredArticle ?? liveArticles[0];
+  const latest = liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 6);
+  const feed = liveArticles.filter((article) => article.id !== liveFeatured.id);
 
   return (
     <main>
-      <BreakingNewsBar articles={latestArticles.length ? latestArticles : articles} />
-      <HeroSection featured={featuredArticle} secondary={latest} />
+      <BreakingNewsBar articles={liveArticles} />
+      <HeroSection featured={liveFeatured} secondary={latest} />
 
       <section className="container-page grid gap-8 py-8 lg:grid-cols-[1fr_340px]">
         <div>
@@ -48,12 +50,12 @@ export default async function Home() {
             </div>
           </div>
           <div className="grid gap-5 md:grid-cols-2">
-            {feed.slice(2, 6).map((article) => (
+            {feed.slice(0, 6).map((article) => (
               <ArticleCard key={article.id} article={article} />
             ))}
           </div>
         </div>
-        <TrendingSidebar articles={trendingArticles.concat(articles)} />
+        <TrendingSidebar articles={trendingArticles.concat(liveArticles)} />
       </section>
 
       <section className="container-page">
@@ -62,7 +64,7 @@ export default async function Home() {
             key={title}
             title={title}
             kicker={kicker}
-            articles={articles.filter((article) => article.category === title)}
+            articles={liveArticles.filter((article) => article.category === title)}
           />
         ))}
       </section>
