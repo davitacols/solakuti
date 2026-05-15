@@ -108,6 +108,42 @@ class CommentViewSet(ApiResponseMixin, viewsets.ModelViewSet):
             status_code=status.HTTP_201_CREATED,
         )
 
+    def update(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if not self._can_manage_comment(request, comment):
+            return api_response(None, message="You do not have permission to update this comment.", success=False, status_code=403)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if not self._can_manage_comment(request, comment):
+            return api_response(None, message="You do not have permission to update this comment.", success=False, status_code=403)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if not self._can_manage_comment(request, comment):
+            return api_response(None, message="You do not have permission to delete this comment.", success=False, status_code=403)
+        return super().destroy(request, *args, **kwargs)
+
+    @decorators.action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def approve(self, request, pk=None):
+        if request.user.role not in {"admin", "editor"}:
+            return api_response(None, message="You do not have permission to moderate comments.", success=False, status_code=403)
+        comment = self.get_object()
+        comment.is_approved = True
+        comment.save(update_fields=["is_approved"])
+        serializer = self.get_serializer(comment)
+        return api_response(serializer.data, message="Comment approved successfully.")
+
+    @staticmethod
+    def _can_manage_comment(request, comment):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (request.user.role in {"admin", "editor"} or comment.user_id == request.user.id)
+        )
+
 
 class SearchView(ApiResponseMixin, generics.ListAPIView):
     serializer_class = ArticleListSerializer

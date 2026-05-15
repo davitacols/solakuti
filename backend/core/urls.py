@@ -3,6 +3,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
+from apps.accounts.views import UserAdminViewSet
 from apps.analytics.views import AnalyticsOverviewView
 from apps.categories.views import CategoryViewSet
 from apps.media.views import MediaAssetViewSet
@@ -17,6 +18,7 @@ router.register("articles", ArticleViewSet, basename="article")
 router.register("categories", CategoryViewSet, basename="category")
 router.register("comments", CommentViewSet, basename="comment")
 router.register("media", MediaAssetViewSet, basename="media")
+router.register("users", UserAdminViewSet, basename="user")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

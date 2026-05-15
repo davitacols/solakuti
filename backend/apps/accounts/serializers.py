@@ -30,6 +30,33 @@ class UserSerializer(serializers.ModelSerializer):
         return None
 
 
+class AdminUserSerializer(UserSerializer):
+    password = serializers.CharField(write_only=True, required=False, min_length=8)
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ["is_active", "is_staff", "password"]
+        read_only_fields = ["id", "date_joined", "profile_image_url"]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password", None)
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
 

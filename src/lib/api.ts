@@ -30,6 +30,11 @@ type BackendUser = {
   full_name: string;
   email?: string;
   role?: "admin" | "editor" | "journalist" | "contributor";
+  bio?: string;
+  is_verified?: boolean;
+  is_active?: boolean;
+  is_staff?: boolean;
+  date_joined?: string;
 };
 
 type BackendArticle = {
@@ -67,6 +72,41 @@ type LoginResponse = {
 type RegisterResponse = BackendUser & {
   id: number;
   email: string;
+};
+
+export type AdminCategory = BackendCategory & {
+  created_at?: string;
+};
+
+export type AdminComment = {
+  id: number;
+  article: number;
+  article_slug: string;
+  user: BackendUser;
+  parent: number | null;
+  content: string;
+  created_at: string;
+  is_approved: boolean;
+  replies: AdminComment[];
+};
+
+export type AdminUser = Required<Pick<BackendUser, "id" | "full_name" | "email" | "role">> & {
+  bio?: string;
+  is_verified: boolean;
+  is_active: boolean;
+  is_staff: boolean;
+  date_joined: string;
+};
+
+export type AdminMediaAsset = {
+  id: number;
+  title: string;
+  file?: string;
+  asset_type: "image" | "video";
+  alt_text: string;
+  optimized_url?: string;
+  thumbnail_url?: string;
+  created_at: string;
 };
 
 export type AdminOverview = {
@@ -161,6 +201,46 @@ async function authApi<T>(path: string, token: string): Promise<ApiResponse<T> |
     if (!response.ok) {
       return payload;
     }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+async function adminApi<T>(
+  path: string,
+  token: string,
+  options: {
+    method?: "GET" | "POST" | "PATCH" | "DELETE";
+    body?: Record<string, unknown> | FormData;
+  } = {}
+): Promise<ApiResponse<T> | null> {
+  try {
+    const isFormData = options.body instanceof FormData;
+    const requestBody: BodyInit | undefined = options.body
+      ? isFormData
+        ? options.body as FormData
+        : JSON.stringify(options.body)
+      : undefined;
+    const response = await fetch(`${API_URL}${path}`, {
+      method: options.method ?? "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(isFormData ? {} : { "Content-Type": "application/json" })
+      },
+      body: requestBody,
+      cache: "no-store"
+    });
+
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: "Deleted successfully.",
+        data: null as T
+      };
+    }
+
+    const payload = (await response.json()) as ApiResponse<T>;
     return payload;
   } catch {
     return null;
@@ -324,4 +404,93 @@ export async function getAdminArticles(token: string) {
     ...response,
     data: response.data.map(mapArticle)
   };
+}
+
+export async function adminCreateArticle(token: string, payload: Record<string, unknown>) {
+  return adminApi<BackendArticle>("/articles/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminUpdateArticle(token: string, slug: string, payload: Record<string, unknown>) {
+  return adminApi<BackendArticle>(`/articles/${slug}/`, token, {
+    method: "PATCH",
+    body: payload
+  });
+}
+
+export async function adminDeleteArticle(token: string, slug: string) {
+  return adminApi<null>(`/articles/${slug}/`, token, {
+    method: "DELETE"
+  });
+}
+
+export async function getAdminCategories(token: string) {
+  return adminApi<AdminCategory[]>("/categories/?page_size=50", token);
+}
+
+export async function adminCreateCategory(token: string, payload: Record<string, unknown>) {
+  return adminApi<AdminCategory>("/categories/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminUpdateCategory(token: string, slug: string, payload: Record<string, unknown>) {
+  return adminApi<AdminCategory>(`/categories/${slug}/`, token, {
+    method: "PATCH",
+    body: payload
+  });
+}
+
+export async function adminDeleteCategory(token: string, slug: string) {
+  return adminApi<null>(`/categories/${slug}/`, token, {
+    method: "DELETE"
+  });
+}
+
+export async function getAdminComments(token: string) {
+  return adminApi<AdminComment[]>("/comments/?page_size=50&ordering=-created_at", token);
+}
+
+export async function adminApproveComment(token: string, commentId: number) {
+  return adminApi<AdminComment>(`/comments/${commentId}/approve/`, token, {
+    method: "POST"
+  });
+}
+
+export async function adminDeleteComment(token: string, commentId: number) {
+  return adminApi<null>(`/comments/${commentId}/`, token, {
+    method: "DELETE"
+  });
+}
+
+export async function getAdminUsers(token: string) {
+  return adminApi<AdminUser[]>("/users/?page_size=50", token);
+}
+
+export async function adminCreateUser(token: string, payload: Record<string, unknown>) {
+  return adminApi<AdminUser>("/users/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminUpdateUser(token: string, userId: number, payload: Record<string, unknown>) {
+  return adminApi<AdminUser>(`/users/${userId}/`, token, {
+    method: "PATCH",
+    body: payload
+  });
+}
+
+export async function getAdminMedia(token: string) {
+  return adminApi<AdminMediaAsset[]>("/media/?page_size=50", token);
+}
+
+export async function adminUploadMedia(token: string, payload: FormData) {
+  return adminApi<AdminMediaAsset>("/media/", token, {
+    method: "POST",
+    body: payload
+  });
 }

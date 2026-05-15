@@ -13,6 +13,7 @@ import {
   Tags
 } from "lucide-react";
 import DistributionPanel from "@/components/DistributionPanel";
+import AdminManagementPanel from "@/components/AdminManagementPanel";
 import LoadingButton from "@/components/LoadingButton";
 import { getAdminArticles, getAdminOverview, login } from "@/lib/api";
 import { Article } from "@/types/article";
@@ -257,6 +258,13 @@ export default function AdminDashboard() {
           <div className="mt-8">
             <DistributionPanel articles={articles} />
           </div>
+
+          <AdminManagementPanel
+            token={session.access}
+            role={session.role}
+            articles={articles}
+            onRefresh={() => loadDashboard(session.access)}
+          />
         </section>
       )}
     </main>

@@ -1,7 +1,9 @@
-from rest_framework import generics, permissions, status
+from rest_framework import filters, generics, permissions, status, viewsets
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from apps.accounts.serializers import RegisterSerializer, SolakutiTokenObtainPairSerializer, UserSerializer
+from apps.accounts.models import User
+from apps.accounts.serializers import AdminUserSerializer, RegisterSerializer, SolakutiTokenObtainPairSerializer, UserSerializer
+from core.permissions import IsAdmin
 from core.responses import ApiResponseMixin, api_response
 
 
@@ -41,3 +43,16 @@ class ProfileView(ApiResponseMixin, generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserAdminViewSet(ApiResponseMixin, viewsets.ModelViewSet):
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdmin]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["full_name", "email", "bio", "role"]
+    ordering_fields = ["full_name", "email", "role", "date_joined"]
+    ordering = ["full_name"]
+    success_message = "Users fetched successfully."
+
+    def get_queryset(self):
+        return User.objects.all()
