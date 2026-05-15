@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { MessageCircle, Send, UserRound } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
 import { Comment } from "@/types/article";
@@ -21,6 +21,7 @@ type AuthMode = "register" | "login";
 
 export default function CommentsSection({ articleId, initialComments }: CommentsSectionProps) {
   const [comments, setComments] = useState(initialComments);
+  const [pendingComments, setPendingComments] = useState<Comment[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("register");
   const [fullName, setFullName] = useState("");
@@ -31,9 +32,32 @@ export default function CommentsSection({ articleId, initialComments }: Comments
   const [busy, setBusy] = useState(false);
 
   const commentCount = useMemo(
-    () => comments.reduce((count, comment) => count + 1 + comment.replies.length, 0),
-    [comments]
+    () =>
+      comments.reduce((count, comment) => count + 1 + comment.replies.length, 0) +
+      pendingComments.length,
+    [comments, pendingComments]
   );
+
+  const pendingStorageKey = `solakuti:pending-comments:${articleId}`;
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(pendingStorageKey);
+      if (saved) {
+        setPendingComments(JSON.parse(saved) as Comment[]);
+      }
+    } catch {
+      setPendingComments([]);
+    }
+  }, [pendingStorageKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(pendingStorageKey, JSON.stringify(pendingComments));
+    } catch {
+      // Local storage is only a convenience for the current reader.
+    }
+  }, [pendingComments, pendingStorageKey]);
 
   async function establishSession(userEmail = email, userPassword = password) {
     const response = await login(userEmail, userPassword);
@@ -102,20 +126,22 @@ export default function CommentsSection({ articleId, initialComments }: Comments
     }
 
     setContent("");
-    setMessage(response.message);
+    const nextComment = {
+      id: String(response.data.id),
+      article: String(response.data.article),
+      user: session.fullName,
+      content: response.data.content,
+      createdAt: response.data.created_at,
+      isApproved: response.data.is_approved,
+      replies: []
+    };
+
     if (response.data.is_approved) {
-      setComments((current) => [
-        {
-          id: String(response.data.id),
-          article: String(response.data.article),
-          user: session.fullName,
-          content: response.data.content,
-          createdAt: response.data.created_at,
-          isApproved: response.data.is_approved,
-          replies: []
-        },
-        ...current
-      ]);
+      setMessage("Comment posted.");
+      setComments((current) => [nextComment, ...current]);
+    } else {
+      setMessage("Comment submitted and waiting for moderation. You can see it here, but it will appear publicly after approval.");
+      setPendingComments((current) => [nextComment, ...current.filter((comment) => comment.id !== nextComment.id)]);
     }
   }
 
@@ -138,6 +164,28 @@ export default function CommentsSection({ articleId, initialComments }: Comments
           </div>
 
           <div className="space-y-4">
+            {pendingComments.map((comment) => (
+              <article key={comment.id} className="rounded-lg border border-amber-400/45 bg-amber-50 p-5">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-200/70 text-amber-900">
+                    <UserRound className="size-5" />
+                  </span>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-black tracking-[-0.03em]">{comment.user}</h3>
+                      <span className="rounded-full bg-amber-200 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-900">
+                        Pending moderation
+                      </span>
+                      <span className="text-xs font-bold text-black/38">
+                        {formatDate(comment.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-2 leading-7 text-black/68">{comment.content}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+
             {comments.length ? (
               comments.map((comment) => (
                 <article key={comment.id} className="rounded-lg border border-black/10 bg-white p-5">
@@ -169,11 +217,13 @@ export default function CommentsSection({ articleId, initialComments }: Comments
                 </article>
               ))
             ) : (
+              !pendingComments.length && (
               <div className="rounded-lg border border-dashed border-black/16 bg-white/55 p-6">
                 <p className="font-bold text-black/58">
                   No approved comments yet. Start the conversation once you sign in.
                 </p>
               </div>
+              )
             )}
           </div>
         </div>
