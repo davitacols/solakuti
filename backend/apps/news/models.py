@@ -1,0 +1,96 @@
+import math
+import re
+
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+from django.utils.text import slugify
+
+
+class Tag(models.Model):
+    name = models.CharField(max_length=80, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
+
+    class Meta:
+        ordering = ["name"]
+        indexes = [models.Index(fields=["slug"])]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class Article(models.Model):
+    title = models.CharField(max_length=240)
+    slug = models.SlugField(max_length=270, unique=True, blank=True)
+    excerpt = models.TextField(max_length=420)
+    content = models.TextField()
+    featured_image = models.ImageField(upload_to="articles/", blank=True, null=True)
+    category = models.ForeignKey("categories.Category", on_delete=models.PROTECT, related_name="articles")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="articles")
+    tags = models.ManyToManyField(Tag, related_name="articles", blank=True)
+    is_featured = models.BooleanField(default=False, db_index=True)
+    is_breaking = models.BooleanField(default=False, db_index=True)
+    is_published = models.BooleanField(default=False, db_index=True)
+    views_count = models.PositiveIntegerField(default=0, db_index=True)
+    reading_time = models.PositiveIntegerField(default=1)
+    published_at = models.DateTimeField(blank=True, null=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-published_at", "-created_at"]
+        indexes = [
+            models.Index(fields=["slug"]),
+            models.Index(fields=["is_published", "-published_at"]),
+            models.Index(fields=["is_featured", "is_published"]),
+            models.Index(fields=["is_breaking", "is_published"]),
+            models.Index(fields=["-views_count"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self._generate_unique_slug()
+        self.reading_time = self.calculate_reading_time()
+        if self.is_published and not self.published_at:
+            self.published_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    def _generate_unique_slug(self):
+        base_slug = slugify(self.title)[:240]
+        slug = base_slug
+        counter = 2
+        while Article.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+        return slug
+
+    def calculate_reading_time(self):
+        words = re.findall(r"\w+", self.content or "")
+        return max(1, math.ceil(len(words) / 220))
+
+    def __str__(self):
+        return self.title
+
+
+class Comment(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments")
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, related_name="replies", blank=True, null=True)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["article", "is_approved"]),
+            models.Index(fields=["parent"]),
+        ]
+
+    def __str__(self):
+        return f"Comment by {self.user} on {self.article}"
