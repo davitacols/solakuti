@@ -15,6 +15,8 @@ type ArticlePageProps = {
 
 export const dynamic = "force-dynamic";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
+
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
@@ -53,9 +55,34 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   const related = getRelatedArticles(article, allArticles, 3);
   const comments = await getArticleComments(article.id);
-  const articleUrl = `https://solakuti.com/article/${article.slug}`;
+  const articleUrl = `${SITE_URL}/article/${article.slug}`;
   const shareText = encodeURIComponent(article.title);
   const shareUrl = encodeURIComponent(articleUrl);
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    description: article.excerpt,
+    image: [article.image],
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    author: [
+      {
+        "@type": "Person",
+        name: article.author
+      }
+    ],
+    publisher: {
+      "@type": "Organization",
+      name: "Solakuti",
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/solakuti-logo-transparent.png`
+      }
+    },
+    mainEntityOfPage: articleUrl,
+    articleSection: article.category
+  };
   const shareLinks = [
     {
       label: "Share on X",
@@ -86,6 +113,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <BreakingNewsBar articles={latestArticles.length ? latestArticles : allArticles} />
       <article>
         <header className="container-page py-8 lg:py-12">

@@ -3,6 +3,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
+
 export const metadata: Metadata = {
   title: {
     default: "Solakuti | Premium Nigerian News and Media",
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
     title: "Solakuti | Premium Nigerian News and Media",
     description:
       "A premium modern African digital newsroom for sharp reporting, analysis and culture.",
-    url: "https://solakuti.example.com",
+    url: SITE_URL,
     siteName: "Solakuti",
     images: [
       {
@@ -31,6 +33,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Solakuti",
     description: "Premium Nigerian news, analysis and culture."
+  },
+  alternates: {
+    canonical: SITE_URL,
+    types: {
+      "application/rss+xml": `${SITE_URL}/rss.xml`
+    }
   }
 };
 

@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Tags
 } from "lucide-react";
+import DistributionPanel from "@/components/DistributionPanel";
 import LoadingButton from "@/components/LoadingButton";
 import { getAdminArticles, getAdminOverview, login } from "@/lib/api";
 import { Article } from "@/types/article";
@@ -251,6 +252,10 @@ export default function AdminDashboard() {
                 </div>
               </section>
             </aside>
+          </div>
+
+          <div className="mt-8">
+            <DistributionPanel articles={articles} />
           </div>
         </section>
       )}
