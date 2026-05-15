@@ -75,6 +75,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [createFormKey, setCreateFormKey] = useState(0);
   const [articleEditorKey, setArticleEditorKey] = useState(0);
   const [editEditorKey, setEditEditorKey] = useState(0);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
@@ -142,6 +143,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     if (response?.success) {
       await Promise.all([loadCollections(), onRefresh()]);
     }
+    return response;
   }
 
   function getSubmitAction(event: FormEvent<HTMLFormElement>) {
@@ -227,14 +229,17 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       return;
     }
 
-    await runAction("create-article", () =>
+    const response = await runAction("create-article", () =>
       adminCreateArticle(token, articleFormPayload(form, valid.category, valid.articleContent, articleImageFile, action))
     );
-    event.currentTarget.reset();
+    if (!response?.success) {
+      return;
+    }
     setArticleImageFile(null);
-    setArticleEditorKey((current) => current + 1);
-    localStorage.removeItem("solakuti.articleDraft");
     setArticleDraft({});
+    localStorage.removeItem("solakuti.articleDraft");
+    setCreateFormKey((current) => current + 1);
+    setArticleEditorKey((current) => current + 1);
   }
 
   async function startEditingArticle(slug: string) {
@@ -355,6 +360,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
         {activeTab === "articles" && (
           <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
             <AdminForm
+              key={createFormKey}
               title="Create article"
               onSubmit={handleCreateArticle}
               busy={busy === "create-article"}
