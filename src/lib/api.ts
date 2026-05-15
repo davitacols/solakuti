@@ -156,6 +156,7 @@ const categoryImageFallback: Record<ArticleCategory, string> = {
   "Breaking News": "https://images.unsplash.com/photo-1501691223387-dd0500403074?auto=format&fit=crop&w=1200&q=80",
   Economy: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
   "Security News": "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+  Crime: "https://images.unsplash.com/photo-1453873531674-2151bcd01707?auto=format&fit=crop&w=1200&q=80",
   "World News": "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=1200&q=80",
   "General News": "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
   Entertainment: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80",
@@ -428,7 +429,7 @@ export async function getAdminOverview(token: string) {
 }
 
 export async function getAdminArticles(token: string) {
-  const response = await authApi<BackendArticle[]>("/articles/?page_size=50&ordering=-updated_at", token);
+  const response = await authApi<BackendArticle[]>("/articles/?page_size=50&ordering=-created_at", token);
   if (!response?.success || !response.data) {
     return response
       ? { ...response, data: [] as Article[] }

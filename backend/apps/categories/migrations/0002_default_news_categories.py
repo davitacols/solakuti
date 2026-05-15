@@ -7,6 +7,7 @@ DEFAULT_CATEGORIES = [
     ("Breaking News", "Fast-moving stories that need immediate public attention."),
     ("Economy", "Markets, business, fiscal policy and the Nigerian economy."),
     ("Security News", "Security, public safety and conflict reporting."),
+    ("Crime", "Crime reports, investigations, courts and public safety alerts."),
     ("World News", "Global affairs, diplomacy and international developments."),
     ("General News", "Major public-interest reports across Nigeria and everyday life."),
     ("Entertainment", "Nollywood, music, celebrity culture and creative business."),
@@ -18,9 +19,19 @@ DEFAULT_CATEGORIES = [
 def seed_default_categories(apps, schema_editor):
     Category = apps.get_model("categories", "Category")
     for name, description in DEFAULT_CATEGORIES:
-        Category.objects.update_or_create(
+        slug = slugify(name)
+        existing = Category.objects.filter(slug=slug).first() or Category.objects.filter(name=name).first()
+        if existing:
+            existing.name = name
+            existing.slug = slug
+            if not existing.description:
+                existing.description = description
+            existing.save(update_fields=["name", "slug", "description"])
+            continue
+        Category.objects.create(
             name=name,
-            defaults={"slug": slugify(name), "description": description},
+            slug=slug,
+            description=description,
         )
 
 

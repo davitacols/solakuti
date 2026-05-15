@@ -7,11 +7,14 @@ import TrendingSidebar from "@/components/TrendingSidebar";
 import { getArticles, getFeaturedArticle, getLatestArticles, getTrendingArticles } from "@/lib/api";
 import { ArticleCategory } from "@/types/article";
 
+export const dynamic = "force-dynamic";
+
 const sectionMeta: Array<{ title: ArticleCategory; kicker: string }> = [
   { title: "Politics", kicker: "Power watch" },
   { title: "Entertainment", kicker: "Culture desk" },
   { title: "Economy", kicker: "Markets and money" },
   { title: "Security News", kicker: "Safety brief" },
+  { title: "Crime", kicker: "Crime watch" },
   { title: "World News", kicker: "Global brief" },
   { title: "General News", kicker: "Public square" },
   { title: "Opinions", kicker: "Argument" }

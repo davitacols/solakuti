@@ -13,6 +13,7 @@ CATEGORIES = [
     ("Breaking News", "Fast-moving stories that need immediate public attention."),
     ("Economy", "Markets, business, fiscal policy and the Nigerian economy."),
     ("Security News", "Security, public safety and conflict reporting."),
+    ("Crime", "Crime reports, investigations, courts and public safety alerts."),
     ("World News", "Global affairs, diplomacy and international developments."),
     ("General News", "Major public-interest reports across Nigeria and everyday life."),
     ("Entertainment", "Nollywood, music, celebrity culture and creative business."),

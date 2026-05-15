@@ -3,6 +3,7 @@ export type ArticleCategory =
   | "Breaking News"
   | "Economy"
   | "Security News"
+  | "Crime"
   | "World News"
   | "General News"
   | "Entertainment"
