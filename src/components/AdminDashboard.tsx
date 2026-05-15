@@ -194,6 +194,13 @@ export default function AdminDashboard() {
 
           {message && <p className="mb-5 rounded-md bg-red-50 p-3 text-sm font-bold text-red-700">{message}</p>}
 
+          <AdminManagementPanel
+            token={session.access}
+            role={session.role}
+            articles={articles}
+            onRefresh={() => loadDashboard(session.access)}
+          />
+
           <div className="grid gap-5 md:grid-cols-3">
             <StatCard icon={FileText} label="Articles" value={overview?.total_articles ?? 0} />
             <StatCard icon={Eye} label="Views" value={overview?.total_views ?? 0} />
@@ -283,13 +290,6 @@ export default function AdminDashboard() {
           <div className="mt-8">
             <DistributionPanel articles={articles} />
           </div>
-
-          <AdminManagementPanel
-            token={session.access}
-            role={session.role}
-            articles={articles}
-            onRefresh={() => loadDashboard(session.access)}
-          />
         </section>
       )}
     </main>
