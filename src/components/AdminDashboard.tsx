@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
+  ExternalLink,
   Eye,
   FileText,
   LockKeyhole,
@@ -212,16 +213,40 @@ export default function AdminDashboard() {
                 {articles.map((article) => (
                   <article key={article.id} className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <Link href={`/article/${article.slug}`} className="font-black tracking-[-0.03em] transition hover:text-red-600">
-                        {article.title}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {article.published ? (
+                          <Link href={`/article/${article.slug}`} className="font-black tracking-[-0.03em] transition hover:text-red-600">
+                            {article.title}
+                          </Link>
+                        ) : (
+                          <span className="font-black tracking-[-0.03em] text-[#111]">{article.title}</span>
+                        )}
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
+                            article.published ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {article.published ? "Published" : "Draft"}
+                        </span>
+                      </div>
                       <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-black/38">
                         {article.category} · {formatDate(article.publishedAt)}
                       </p>
                     </div>
-                    <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-black text-black/45">
-                      {article.readTime}
-                    </span>
+                    {article.published ? (
+                      <Link
+                        href={`/article/${article.slug}`}
+                        target="_blank"
+                        className="inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1 text-xs font-black text-black/45 transition hover:bg-black hover:text-white"
+                      >
+                        <ExternalLink className="size-3.5" />
+                        Open
+                      </Link>
+                    ) : (
+                      <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-black text-black/45">
+                        {article.readTime}
+                      </span>
+                    )}
                   </article>
                 ))}
               </div>

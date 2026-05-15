@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   CheckCircle2,
+  ExternalLink,
   FileImage,
   FilePlus2,
   Layers3,
@@ -334,7 +336,27 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 </div>
               )}
               {articles.map((article) => (
-                <ListRow key={article.id} title={article.title} meta={`${article.category} - ${formatDate(article.publishedAt)}`}>
+                <ListRow
+                  key={article.id}
+                  title={article.title}
+                  meta={`${article.category} - ${formatDate(article.publishedAt)}`}
+                  status={article.published ? "Published" : "Draft"}
+                >
+                  {article.published ? (
+                    <Link
+                      href={`/article/${article.slug}`}
+                      target="_blank"
+                      className="inline-flex h-9 items-center gap-2 rounded-full border border-black/10 px-3 text-xs font-black uppercase tracking-[0.12em] text-black/60 transition hover:border-black hover:bg-black hover:text-white"
+                      aria-label={`Open ${article.title}`}
+                    >
+                      <ExternalLink className="size-3.5" />
+                      Open
+                    </Link>
+                  ) : (
+                    <span className="inline-flex h-9 items-center rounded-full border border-amber-200 bg-amber-50 px-3 text-xs font-black uppercase tracking-[0.12em] text-amber-700">
+                      Not public
+                    </span>
+                  )}
                   <LoadingButton
                     type="button"
                     loading={busy === `edit-load-${article.slug}`}
@@ -548,16 +570,32 @@ function AdminList({ title, children }: { title: string; children: React.ReactNo
 function ListRow({
   title,
   meta,
+  status,
   children
 }: {
   title: string;
   meta: string;
+  status?: "Published" | "Draft";
   children: React.ReactNode;
 }) {
+  const isPublished = status === "Published";
+
   return (
     <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <p className="line-clamp-2 font-black tracking-[-0.03em] text-[#111]">{title}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="line-clamp-2 font-black tracking-[-0.03em] text-[#111]">{title}</p>
+          {status && (
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em]",
+                isPublished ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+              )}
+            >
+              {status}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-black/38">{meta}</p>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>
