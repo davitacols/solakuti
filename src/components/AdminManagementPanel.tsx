@@ -313,7 +313,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   }
 
   return (
-    <section className="mt-8 rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+    <section className="mt-8 min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white p-3 editorial-shadow sm:p-5">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-red-600">Content management</p>
@@ -351,9 +351,9 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
 
       {message && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm font-bold text-red-700">{message}</p>}
 
-      <div className="mt-6">
+      <div className="mt-6 min-w-0">
         {activeTab === "articles" && (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
             <AdminForm
               title="Create article"
               onSubmit={handleCreateArticle}
@@ -391,7 +391,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 onPreview={(form) => handlePreview(form, articleImageFile)}
               />
             </AdminForm>
-            <div className="rounded-lg border border-black/10 bg-white">
+            <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white">
               {editingArticle && (
                 <div className="border-b border-black/10 bg-[#f7f4ef] p-4">
                   <AdminForm title={`Edit: ${editingArticle.title}`} onSubmit={handleUpdateArticle} busy={busy === "update-article"} hideDefaultSubmit>
@@ -653,9 +653,9 @@ function AdminForm({
   onInput?: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <form onSubmit={onSubmit} onInput={onInput} className="rounded-lg border border-black/10 bg-[#f7f4ef] p-4">
+    <form onSubmit={onSubmit} onInput={onInput} className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-[#f7f4ef] p-3 sm:p-4">
       <h4 className="text-lg font-black tracking-[-0.04em]">{title}</h4>
-      <div className="mt-4 space-y-3">{children}</div>
+      <div className="mt-4 min-w-0 space-y-3">{children}</div>
       {!hideDefaultSubmit && (
         <LoadingButton
           type="submit"
@@ -746,11 +746,11 @@ function ArticleTable({
   onDelete: (article: Article) => void;
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="border-b border-black/10 p-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <h4 className="text-lg font-black tracking-[-0.04em]">News desk</h4>
-          <div className="grid gap-2 sm:grid-cols-[1fr_150px_160px] xl:w-[620px]">
+          <div className="grid min-w-0 gap-2 sm:grid-cols-[1fr_150px_160px] xl:w-[620px]">
             <label className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-black/35" />
               <input
@@ -775,8 +775,47 @@ function ArticleTable({
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-[820px] w-full text-left">
+      <div className="divide-y divide-black/10 md:hidden">
+        {articles.map((article) => {
+          const articleStatus = article.editorialStatus ?? (article.published ? "published" : "draft");
+          return (
+            <article key={article.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="line-clamp-2 font-black tracking-[-0.03em] text-[#111]">{article.title}</p>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-black/38">
+                    {article.category} - {formatDate(article.publishedAt)}
+                  </p>
+                </div>
+                <span className={cn(
+                  "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em]",
+                  articleStatus === "published" ? "bg-emerald-50 text-emerald-700" : articleStatus === "review" ? "bg-amber-50 text-amber-700" : "bg-black/5 text-black/48"
+                )}>
+                  {articleStatus}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-xs font-black text-black/42">{(article.viewsCount ?? 0).toLocaleString()} views</span>
+                <div className="flex gap-2">
+                  {article.published && (
+                    <Link href={`/article/${article.slug}`} target="_blank" className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Open article">
+                      <ExternalLink className="size-4" />
+                    </Link>
+                  )}
+                  <LoadingButton type="button" loading={busy === `edit-load-${article.slug}`} onClick={() => onEdit(article.slug)} className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Edit article">
+                    <Pencil className="size-4" />
+                  </LoadingButton>
+                  <LoadingButton type="button" onClick={() => onDelete(article)} className="grid size-9 place-items-center rounded-full border border-black/10 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white" aria-label="Delete article">
+                    <Trash2 className="size-4" />
+                  </LoadingButton>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      <div className="hidden max-w-full overflow-x-auto md:block">
+        <table className="w-full min-w-[820px] text-left">
           <thead className="bg-black/[0.03] text-[11px] font-black uppercase tracking-[0.16em] text-black/42">
             <tr>
               <th className="px-4 py-3">Report</th>
@@ -919,7 +958,7 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="h-11 w-full rounded-md border border-black/10 bg-white px-3 text-sm font-semibold outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
+      className="h-11 min-w-0 w-full rounded-md border border-black/10 bg-white px-3 text-sm font-semibold outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
     />
   );
 }
@@ -928,7 +967,7 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...props}
-      className="w-full rounded-md border border-black/10 bg-white p-3 text-sm font-semibold outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
+      className="min-w-0 w-full rounded-md border border-black/10 bg-white p-3 text-sm font-semibold outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
     />
   );
 }
@@ -937,7 +976,7 @@ function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className="h-11 w-full rounded-md border border-black/10 bg-white px-3 text-sm font-black outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
+      className="h-11 min-w-0 w-full rounded-md border border-black/10 bg-white px-3 text-sm font-black outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
     />
   );
 }
@@ -952,13 +991,13 @@ function FileInput({
   onChange: (file: File | null) => void;
 }) {
   return (
-    <label className="block rounded-md border border-black/10 bg-white p-3">
+    <label className="block min-w-0 overflow-hidden rounded-md border border-black/10 bg-white p-3">
       <span className="text-xs font-black uppercase tracking-[0.14em] text-black/42">{label}</span>
       <input
         type="file"
         accept="image/*"
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-        className="mt-2 w-full text-sm font-bold text-black/62 file:mr-3 file:rounded-full file:border-0 file:bg-black file:px-4 file:py-2 file:text-xs file:font-black file:uppercase file:tracking-[0.12em] file:text-white"
+        className="mt-2 min-w-0 w-full text-xs font-bold text-black/62 file:mr-2 file:rounded-full file:border-0 file:bg-black file:px-3 file:py-2 file:text-[10px] file:font-black file:uppercase file:tracking-[0.08em] file:text-white sm:text-sm sm:file:mr-3 sm:file:px-4 sm:file:text-xs sm:file:tracking-[0.12em]"
       />
       {helper && <span className="mt-2 block text-xs font-bold text-black/38">{helper}</span>}
     </label>

@@ -171,15 +171,15 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
   }
 
   return (
-    <div className="rounded-lg border border-black/10 bg-white">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white">
       <div className="flex flex-col gap-3 border-b border-black/10 p-3">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <label className="text-xs font-black uppercase tracking-[0.18em] text-black/42">
             {label}
           </label>
           <span className="text-xs font-bold text-black/35">Rich text</span>
         </div>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex min-w-0 flex-wrap gap-1">
           {toolbar.map(({ label: itemLabel, icon: Icon, command, value }) => (
             <button
               key={`${command}-${value ?? itemLabel}`}
@@ -259,7 +259,7 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
         )}
       </div>
 
-      <div className="relative">
+      <div className="relative min-w-0">
         {!html && !focused && (
           <p className="pointer-events-none absolute left-4 top-4 text-sm font-semibold text-black/32">
             Write the story body. Use headings, lists, quotes and links where needed.
@@ -276,7 +276,7 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
           }}
           onFocus={() => setFocused(true)}
           className={cn(
-            "admin-rich-editor min-h-72 w-full rounded-b-lg p-4 text-sm font-semibold leading-7 text-black/76 outline-none",
+            "admin-rich-editor min-h-72 min-w-0 w-full max-w-full overflow-x-hidden break-words rounded-b-lg p-4 text-sm font-semibold leading-7 text-black/76 outline-none",
             "focus:ring-4 focus:ring-red-600/10"
           )}
         />
