@@ -18,10 +18,10 @@ export default function ArticleCard({ article, compact = false }: ArticleCardPro
     <motion.article
       whileHover={{ y: -6 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className="group overflow-hidden rounded-lg border border-black/10 bg-white editorial-shadow"
+      className="group overflow-hidden rounded-md border border-black/10 bg-white shadow-[0_18px_50px_rgba(18,18,18,0.08)]"
     >
       <LoadingLink href={`/article/${article.slug}`} className="block overflow-hidden">
-        <div className="relative aspect-[16/10] overflow-hidden bg-black">
+        <div className="relative aspect-[16/9] overflow-hidden bg-black">
           <Image
             src={article.image}
             alt=""

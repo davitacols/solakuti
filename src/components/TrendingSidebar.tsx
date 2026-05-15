@@ -9,10 +9,10 @@ type TrendingSidebarProps = {
 
 export default function TrendingSidebar({ articles }: TrendingSidebarProps) {
   return (
-    <aside className="rounded-lg border border-black/10 bg-[#111] p-5 text-white lg:sticky lg:top-28">
+    <aside className="border-t-2 border-black bg-[#111] p-5 text-white xl:sticky xl:top-28">
       <div className="flex items-center gap-2 border-b border-white/10 pb-4">
         <Flame className="size-5 text-red-500" />
-        <h2 className="text-lg font-black tracking-[-0.03em]">Trending Now</h2>
+        <h2 className="text-xl font-black tracking-[-0.04em]">Trending Now</h2>
       </div>
       <div className="divide-y divide-white/10">
         {articles.slice(0, 5).map((article, index) => (

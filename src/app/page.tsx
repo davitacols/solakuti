@@ -35,7 +35,7 @@ export default async function Home() {
   ]);
   const liveArticles = latestArticles.length ? latestArticles : articles;
   const liveFeatured = liveArticles.find((article) => article.featured) ?? featuredArticle ?? liveArticles[0];
-  const latest = liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 6);
+  const latest = liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 8);
   const feed = liveArticles.filter((article) => article.id !== liveFeatured.id);
   const activeCategories = categories
     .map((category) => ({
@@ -50,20 +50,20 @@ export default async function Home() {
       <BreakingNewsBar articles={liveArticles} />
       <HeroSection featured={liveFeatured} secondary={latest} />
 
-      <section className="container-page grid gap-8 py-8 lg:grid-cols-[1fr_340px]">
+      <section className="container-page grid gap-8 py-8 xl:grid-cols-[1fr_380px]">
         <div>
-          <div className="mb-6 flex items-end justify-between gap-4 border-t border-black/12 pt-6">
+          <div className="mb-6 flex items-end justify-between gap-4 border-t-2 border-black pt-6">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-red-600">
-                Latest dispatches
+                Developing feed
               </p>
-              <h2 className="mt-2 text-3xl font-black tracking-[-0.055em] text-[#111] sm:text-4xl">
-                The newsroom feed
+              <h2 className="mt-2 text-3xl font-black tracking-[-0.055em] text-[#111] sm:text-5xl">
+                Latest from the news desk
               </h2>
             </div>
           </div>
-          <div className="grid gap-5 md:grid-cols-2">
-            {feed.slice(0, 6).map((article) => (
+          <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+            {feed.slice(0, 9).map((article) => (
               <ArticleCard key={article.id} article={article} />
             ))}
           </div>

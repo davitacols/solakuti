@@ -27,8 +27,14 @@ body {
 }
 
 .container-page {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1400px, calc(100% - 32px));
   margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  .container-page {
+    width: min(1400px, calc(100% - 56px));
+  }
 }
 
 .editorial-shadow {

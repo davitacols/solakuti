@@ -17,7 +17,7 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55 }}
-      className="group relative min-h-[560px] overflow-hidden rounded-lg bg-black text-white editorial-shadow"
+      className="group relative min-h-[620px] overflow-hidden rounded-lg bg-black text-white editorial-shadow"
     >
       <Image
         src={article.image}
@@ -33,7 +33,7 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
           <span className="inline-flex rounded-full bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-[0.2em]">
             Lead Story
           </span>
-          <h1 className="mt-5 text-4xl font-black leading-[0.96] tracking-[-0.06em] sm:text-5xl lg:text-7xl">
+          <h1 className="mt-5 text-4xl font-black leading-[0.96] tracking-[-0.06em] sm:text-5xl lg:text-7xl xl:text-8xl">
             {article.title}
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-white/78 sm:text-lg">{article.excerpt}</p>

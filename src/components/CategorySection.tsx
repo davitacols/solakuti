@@ -27,7 +27,7 @@ export default function CategorySection({ title, slug, kicker, articles }: Categ
       transition={{ duration: 0.45 }}
       className="py-10"
     >
-      <div className="mb-6 flex items-end justify-between gap-5 border-t border-black/12 pt-6">
+      <div className="mb-6 flex items-end justify-between gap-5 border-t-2 border-black pt-6">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-red-600">{kicker}</p>
           <h2 className="mt-2 text-3xl font-black tracking-[-0.055em] text-[#111] sm:text-4xl">
@@ -42,8 +42,8 @@ export default function CategorySection({ title, slug, kicker, articles }: Categ
           <ArrowRight className="size-4" />
         </Link>
       </div>
-      <div className="grid gap-5 md:grid-cols-3">
-        {articles.slice(0, 3).map((article) => (
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {articles.slice(0, 4).map((article) => (
           <ArticleCard key={article.id} article={article} compact />
         ))}
       </div>
