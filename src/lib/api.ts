@@ -26,7 +26,10 @@ type BackendCategory = {
 };
 
 type BackendUser = {
+  id?: number;
   full_name: string;
+  email?: string;
+  role?: "admin" | "editor" | "journalist" | "contributor";
 };
 
 type BackendArticle = {
@@ -64,6 +67,20 @@ type LoginResponse = {
 type RegisterResponse = BackendUser & {
   id: number;
   email: string;
+};
+
+export type AdminOverview = {
+  total_articles: number;
+  total_views: number;
+  total_comments: number;
+  trending_articles: BackendArticle[];
+  popular_categories: Array<{
+    id: number;
+    name: string;
+    slug: string;
+    articles_count: number;
+    views_count: number | null;
+  }>;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -122,6 +139,24 @@ async function mutateApi<T>(
       body: JSON.stringify(body)
     });
 
+    const payload = (await response.json()) as ApiResponse<T>;
+    if (!response.ok) {
+      return payload;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+async function authApi<T>(path: string, token: string): Promise<ApiResponse<T> | null> {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      cache: "no-store"
+    });
     const payload = (await response.json()) as ApiResponse<T>;
     if (!response.ok) {
       return payload;
@@ -272,4 +307,21 @@ export async function postComment(articleId: string, content: string, token: str
     },
     token
   );
+}
+
+export async function getAdminOverview(token: string) {
+  return authApi<AdminOverview>("/analytics/overview/", token);
+}
+
+export async function getAdminArticles(token: string) {
+  const response = await authApi<BackendArticle[]>("/articles/?page_size=8", token);
+  if (!response?.success || !response.data) {
+    return response
+      ? { ...response, data: [] as Article[] }
+      : null;
+  }
+  return {
+    ...response,
+    data: response.data.map(mapArticle)
+  };
 }
