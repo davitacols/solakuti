@@ -107,6 +107,40 @@ body {
   text-underline-offset: 0.2em;
 }
 
+.admin-rich-editor .story-media,
+.article-body .story-media {
+  margin: 2rem 0;
+}
+
+.admin-rich-editor .story-media img,
+.article-body .story-media img,
+.admin-rich-editor .story-media video,
+.article-body .story-media video {
+  width: 100%;
+  border-radius: 0.75rem;
+  background: #111;
+  object-fit: cover;
+}
+
+.admin-rich-editor .story-media iframe,
+.article-body .story-media iframe {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #111;
+}
+
+.admin-rich-editor .story-media figcaption,
+.article-body .story-media figcaption {
+  margin-top: 0.75rem;
+  color: rgb(0 0 0 / 0.48);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
 .ticker-track {
   animation: ticker 34s linear infinite;
 }

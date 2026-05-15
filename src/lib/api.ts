@@ -134,7 +134,11 @@ function containsHtml(value: string) {
 
 function sanitizeArticleHtml(value: string) {
   return value
-    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|style|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<iframe\b[^>]*src=(["'])(.*?)\1[^>]*>[\s\S]*?<\/iframe>/gi, (match, _quote, src) => {
+      return /^https:\/\/(www\.youtube\.com\/embed\/|player\.vimeo\.com\/video\/)/i.test(src) ? match : "";
+    })
+    .replace(/<iframe\b(?![^>]*src=)[^>]*>[\s\S]*?<\/iframe>/gi, "")
     .replace(/\s+on\w+=(["']).*?\1/gi, "")
     .replace(/\s+on\w+=\S+/gi, "")
     .replace(/\s+(href|src)=(["'])\s*javascript:[\s\S]*?\2/gi, "")

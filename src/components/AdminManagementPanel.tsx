@@ -131,8 +131,9 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     }
     const articleContent = String(form.get("content") ?? "").trim();
     const textContent = articleContent.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-    if (!textContent) {
-      setMessage("Add the article body before saving.");
+    const hasMedia = /<(img|iframe|video)\b/i.test(articleContent);
+    if (!textContent && !hasMedia) {
+      setMessage("Add the article body, photo, or video before saving.");
       return null;
     }
     return { category, articleContent };
@@ -273,7 +274,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
             <AdminForm title="Create article" onSubmit={handleCreateArticle} busy={busy === "create-article"}>
               <TextInput name="title" placeholder="Headline" required />
               <Textarea name="excerpt" placeholder="Short excerpt" rows={3} required />
-              <RichTextEditor name="content" label="Article body" resetKey={articleEditorKey} />
+              <RichTextEditor name="content" label="Article body" resetKey={articleEditorKey} mediaAssets={media} />
               <FileInput
                 label="Featured image"
                 onChange={(file) => setArticleImageFile(file)}
@@ -299,6 +300,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       label="Article body"
                       initialHtml={editingArticle.contentHtml ?? editingArticle.body.map((paragraph) => `<p>${paragraph}</p>`).join("")}
                       resetKey={editEditorKey}
+                      mediaAssets={media}
                     />
                     <FileInput
                       label="Replace featured image"

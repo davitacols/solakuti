@@ -5,14 +5,17 @@ import {
   Bold,
   Heading2,
   Heading3,
+  Image,
   Italic,
   Link,
   List,
   ListOrdered,
   Pilcrow,
   Quote,
-  RemoveFormatting
+  RemoveFormatting,
+  Video
 } from "lucide-react";
+import type { AdminMediaAsset } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type RichTextEditorProps = {
@@ -20,6 +23,7 @@ type RichTextEditorProps = {
   label: string;
   resetKey?: number;
   initialHtml?: string;
+  mediaAssets?: AdminMediaAsset[];
 };
 
 const toolbar = [
@@ -34,10 +38,54 @@ const toolbar = [
   { label: "Clear format", icon: RemoveFormatting, command: "removeFormat" }
 ];
 
-export default function RichTextEditor({ name, label, resetKey = 0, initialHtml = "" }: RichTextEditorProps) {
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function normalizeUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+function getVideoEmbedUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtu.be")) {
+      const id = parsed.pathname.split("/").filter(Boolean)[0];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (parsed.hostname.includes("youtube.com")) {
+      const watchId = parsed.searchParams.get("v");
+      const pathParts = parsed.pathname.split("/").filter(Boolean);
+      const embedId = watchId ?? (pathParts[0] === "shorts" || pathParts[0] === "embed" ? pathParts[1] : null);
+      return embedId ? `https://www.youtube.com/embed/${embedId}` : null;
+    }
+    if (parsed.hostname.includes("vimeo.com")) {
+      const id = parsed.pathname.split("/").filter(Boolean).find((part) => /^\d+$/.test(part));
+      return id ? `https://player.vimeo.com/video/${id}` : null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function isDirectVideo(url: string) {
+  return /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
+}
+
+export default function RichTextEditor({ name, label, resetKey = 0, initialHtml = "", mediaAssets = [] }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [html, setHtml] = useState("");
   const [focused, setFocused] = useState(false);
+  const visibleMedia = mediaAssets.slice(0, 8);
 
   useEffect(() => {
     setHtml(initialHtml);
@@ -56,6 +104,12 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
     sync();
   }
 
+  function insertHtml(markup: string) {
+    editorRef.current?.focus();
+    document.execCommand("insertHTML", false, markup);
+    sync();
+  }
+
   function addLink() {
     const url = window.prompt("Paste the link URL");
     if (!url) {
@@ -63,6 +117,57 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
     }
     const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
     runCommand("createLink", normalized);
+  }
+
+  function addImage(urlValue?: string, altValue?: string) {
+    const url = normalizeUrl(urlValue ?? window.prompt("Paste image URL") ?? "");
+    if (!url) {
+      return;
+    }
+    const alt = altValue ?? window.prompt("Image caption or alt text") ?? "";
+    insertHtml(
+      `<figure class="story-media story-media-image"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />${
+        alt ? `<figcaption>${escapeHtml(alt)}</figcaption>` : ""
+      }</figure><p><br></p>`
+    );
+  }
+
+  function addVideo(urlValue?: string, titleValue?: string) {
+    const url = normalizeUrl(urlValue ?? window.prompt("Paste YouTube, Vimeo, or direct video URL") ?? "");
+    if (!url) {
+      return;
+    }
+    const title = titleValue ?? "Embedded video";
+    const embedUrl = getVideoEmbedUrl(url);
+    if (embedUrl) {
+      insertHtml(
+        `<figure class="story-media story-media-video"><iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(
+          title
+        )}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></figure><p><br></p>`
+      );
+      return;
+    }
+    if (isDirectVideo(url)) {
+      insertHtml(
+        `<figure class="story-media story-media-video"><video controls preload="metadata"><source src="${escapeHtml(
+          url
+        )}" /></video></figure><p><br></p>`
+      );
+      return;
+    }
+    window.alert("Use a YouTube, Vimeo, or direct .mp4/.webm/.ogg video link.");
+  }
+
+  function insertMediaAsset(asset: AdminMediaAsset) {
+    const url = asset.optimized_url ?? asset.file ?? asset.thumbnail_url;
+    if (!url) {
+      return;
+    }
+    if (asset.asset_type === "video") {
+      addVideo(url, asset.title);
+      return;
+    }
+    addImage(url, asset.alt_text || asset.title);
   }
 
   return (
@@ -98,7 +203,60 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
           >
             <Link className="size-4" />
           </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => addImage()}
+            className="grid size-9 place-items-center rounded-md text-black/62 transition hover:bg-black hover:text-white"
+            aria-label="Insert photo"
+            title="Insert photo"
+          >
+            <Image className="size-4" />
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => addVideo()}
+            className="grid size-9 place-items-center rounded-md text-black/62 transition hover:bg-black hover:text-white"
+            aria-label="Insert video"
+            title="Insert video"
+          >
+            <Video className="size-4" />
+          </button>
         </div>
+        {visibleMedia.length > 0 && (
+          <div className="border-t border-black/10 pt-3">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-black/35">Insert from media library</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {visibleMedia.map((asset) => (
+                <button
+                  key={asset.id}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => insertMediaAsset(asset)}
+                  className="group relative h-16 w-24 shrink-0 overflow-hidden rounded-md border border-black/10 bg-black/5 text-left transition hover:border-black"
+                  title={`Insert ${asset.title}`}
+                >
+                  {asset.asset_type === "image" && (asset.thumbnail_url || asset.optimized_url) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={asset.thumbnail_url ?? asset.optimized_url}
+                      alt={asset.alt_text || asset.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-full w-full place-items-center bg-[#111] text-white">
+                      <Video className="size-5" />
+                    </span>
+                  )}
+                  <span className="absolute inset-x-1 bottom-1 truncate rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-black text-white">
+                    {asset.asset_type}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="relative">
