@@ -23,7 +23,10 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         queryset = (
             Article.objects.select_related("category", "author")
             .prefetch_related("tags")
-            .annotate(comments_count=Count("comments", filter=Q(comments__is_approved=True)))
+            .annotate(
+                comments_count=Count("comments", filter=Q(comments__is_approved=True), distinct=True),
+                real_views_count=Count("view_events", distinct=True),
+            )
         )
         if self.request.user.is_authenticated and self.request.user.role in {"admin", "editor", "journalist"}:
             return queryset
@@ -61,7 +64,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def trending(self, request):
         since = timezone.now() - timezone.timedelta(days=7)
-        queryset = self.get_queryset().filter(published_at__gte=since).order_by("-views_count", "-published_at")
+        queryset = self.get_queryset().filter(published_at__gte=since).order_by("-real_views_count", "-published_at")
         return self._article_collection(queryset, "Trending articles fetched successfully.")
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
@@ -155,7 +158,12 @@ class SearchView(ApiResponseMixin, generics.ListAPIView):
 
     def get_queryset(self):
         query = self.request.query_params.get("q", "").strip()
-        queryset = Article.objects.filter(is_published=True).select_related("category", "author").prefetch_related("tags")
+        queryset = (
+            Article.objects.filter(is_published=True)
+            .select_related("category", "author")
+            .prefetch_related("tags")
+            .annotate(real_views_count=Count("view_events", distinct=True))
+        )
         if not query:
             return queryset.none()
         return queryset.filter(

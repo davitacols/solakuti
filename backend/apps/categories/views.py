@@ -23,7 +23,12 @@ class CategoryViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["get"], permission_classes=[permissions.AllowAny])
     def articles(self, request, slug=None):
         category = self.get_object()
-        queryset = category.articles.filter(is_published=True).select_related("category", "author").prefetch_related("tags")
+        queryset = (
+            category.articles.filter(is_published=True)
+            .select_related("category", "author")
+            .prefetch_related("tags")
+            .annotate(real_views_count=Count("view_events", distinct=True))
+        )
         page = self.paginate_queryset(queryset)
         serializer = ArticleListSerializer(page or queryset, many=True, context={"request": request})
         if page is not None:

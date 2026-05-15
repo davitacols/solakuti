@@ -1,4 +1,4 @@
-from django.db.models import Count, Sum
+from django.db.models import Count
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status, views
@@ -23,12 +23,13 @@ class AnalyticsOverviewView(views.APIView):
             Article.objects.filter(is_published=True)
             .select_related("category", "author")
             .prefetch_related("tags")
-            .order_by("-views_count")[:5]
+            .annotate(real_views_count=Count("view_events", distinct=True))
+            .order_by("-real_views_count", "-published_at")[:5]
         )
         categories = (
             Category.objects.annotate(
                 articles_count=Count("articles", distinct=True),
-                views_count=Sum("articles__views_count"),
+                views_count=Count("articles__view_events", distinct=True),
             )
             .order_by("-views_count")[:5]
             .values("id", "name", "slug", "articles_count", "views_count")
@@ -36,7 +37,7 @@ class AnalyticsOverviewView(views.APIView):
 
         data = {
             "total_articles": Article.objects.count(),
-            "total_views": Article.objects.aggregate(total=Sum("views_count"))["total"] or 0,
+            "total_views": ArticleView.objects.count(),
             "today_views": ArticleView.objects.filter(viewed_at__date=timezone.localdate()).count(),
             "total_comments": Comment.objects.count(),
             "total_newsletter_subscribers": NewsletterSubscription.objects.filter(is_active=True).count(),

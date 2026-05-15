@@ -19,6 +19,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     featured_image_url = serializers.SerializerMethodField()
     og_image_url = serializers.SerializerMethodField()
+    views_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -55,6 +56,13 @@ class ArticleListSerializer(serializers.ModelSerializer):
         if obj.og_image:
             return obj.og_image.url
         return None
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_views_count(self, obj):
+        real_views = getattr(obj, "real_views_count", None)
+        if real_views is not None:
+            return real_views
+        return obj.view_events.count()
 
 
 class ArticleDetailSerializer(ArticleListSerializer):
