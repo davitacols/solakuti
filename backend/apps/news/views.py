@@ -107,7 +107,7 @@ class CommentViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         self.perform_create(serializer)
         return api_response(
             serializer.data,
-            message="Comment submitted successfully and may require moderation.",
+            message="Comment posted successfully.",
             status_code=status.HTTP_201_CREATED,
         )
 

@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  CheckCircle2,
   Clipboard,
   ExternalLink,
   FileImage,
@@ -25,7 +24,6 @@ import {
   AdminComment,
   AdminMediaAsset,
   AdminUser,
-  adminApproveComment,
   adminCreateArticle,
   adminCreateCategory,
   adminCreateUser,
@@ -498,23 +496,13 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
         )}
 
         {activeTab === "comments" && (
-          <AdminList title="Comment moderation">
+          <AdminList title="Comments">
             {comments.map((comment) => (
               <ListRow
                 key={comment.id}
                 title={comment.content}
                 meta={`${comment.user.full_name} - /article/${comment.article_slug}`}
               >
-                {!comment.is_approved && (
-                  <LoadingButton
-                    type="button"
-                    onClick={() => runAction(`approve-comment-${comment.id}`, () => adminApproveComment(token, comment.id))}
-                    className="grid size-9 place-items-center rounded-full border border-black/10 text-emerald-700 transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white"
-                    aria-label="Approve comment"
-                  >
-                    <CheckCircle2 className="size-4" />
-                  </LoadingButton>
-                )}
                 <LoadingButton
                   type="button"
                   onClick={() => runAction(`delete-comment-${comment.id}`, () => adminDeleteComment(token, comment.id))}

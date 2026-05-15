@@ -102,9 +102,9 @@ class Comment(models.Model):
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments")
     parent = models.ForeignKey("self", on_delete=models.CASCADE, related_name="replies", blank=True, null=True)
-    content = models.TextField()
+    content = models.TextField(max_length=1200)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_approved = models.BooleanField(default=False, db_index=True)
+    is_approved = models.BooleanField(default=True, db_index=True)
 
     class Meta:
         ordering = ["created_at"]

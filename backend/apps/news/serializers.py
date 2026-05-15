@@ -1,3 +1,5 @@
+import re
+
 from rest_framework import serializers
 from drf_spectacular.utils import OpenApiTypes, extend_schema_field
 
@@ -176,6 +178,35 @@ class CommentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "user", "created_at", "is_approved", "replies", "article_slug"]
 
+    def validate_content(self, value):
+        content = " ".join(value.split())
+        if len(content) < 3:
+            raise serializers.ValidationError("Comment is too short.")
+        if len(content) > 1200:
+            raise serializers.ValidationError("Comment must be 1,200 characters or fewer.")
+        if len(re.findall(r"https?://|www\.", content, flags=re.IGNORECASE)) > 1:
+            raise serializers.ValidationError("Please keep comments to one link or fewer.")
+        blocked_terms = {"casino", "betting bonus", "crypto giveaway", "free money", "loan now"}
+        normalized = content.lower()
+        if any(term in normalized for term in blocked_terms):
+            raise serializers.ValidationError("This comment looks promotional. Please rewrite it.")
+        return content
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        article = attrs.get("article")
+        content = attrs.get("content", "")
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated and article:
+            duplicate_exists = Comment.objects.filter(
+                article=article,
+                user=user,
+                content__iexact=content,
+            ).exists()
+            if duplicate_exists:
+                raise serializers.ValidationError("You already posted this comment.")
+        return attrs
+
     @extend_schema_field(CommentReplySerializer(many=True))
     def get_replies(self, obj):
         replies = obj.replies.filter(is_approved=True).select_related("user")
@@ -183,7 +214,5 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
-        user = validated_data["user"]
-        if user.role in {"admin", "editor", "journalist"}:
-            validated_data["is_approved"] = True
+        validated_data["is_approved"] = True
         return super().create(validated_data)

@@ -523,12 +523,6 @@ export async function getAdminComments(token: string) {
   return adminApi<AdminComment[]>("/comments/?page_size=50&ordering=-created_at", token);
 }
 
-export async function adminApproveComment(token: string, commentId: number) {
-  return adminApi<AdminComment>(`/comments/${commentId}/approve/`, token, {
-    method: "POST"
-  });
-}
-
 export async function adminDeleteComment(token: string, commentId: number) {
   return adminApi<null>(`/comments/${commentId}/`, token, {
     method: "DELETE"
