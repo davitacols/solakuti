@@ -13,6 +13,7 @@ import {
   Users
 } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
+import RichTextEditor from "@/components/RichTextEditor";
 import {
   AdminCategory,
   AdminComment,
@@ -63,6 +64,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [articleEditorKey, setArticleEditorKey] = useState(0);
 
   const isAdmin = role === "admin";
   const visibleTabs = useMemo(() => tabs.filter((tab) => tab.id !== "users" || isAdmin), [isAdmin]);
@@ -104,12 +106,18 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       setMessage("Create a category before publishing an article.");
       return;
     }
+    const articleContent = String(form.get("content") ?? "").trim();
+    const textContent = articleContent.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+    if (!textContent) {
+      setMessage("Add the article body before saving.");
+      return;
+    }
 
     await runAction("create-article", () =>
       adminCreateArticle(token, {
         title: String(form.get("title") ?? ""),
         excerpt: String(form.get("excerpt") ?? ""),
-        content: String(form.get("content") ?? ""),
+        content: articleContent,
         category,
         is_featured: form.get("is_featured") === "on",
         is_breaking: form.get("is_breaking") === "on",
@@ -118,6 +126,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       })
     );
     event.currentTarget.reset();
+    setArticleEditorKey((current) => current + 1);
   }
 
   async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
@@ -203,11 +212,11 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
 
       <div className="mt-6">
         {activeTab === "articles" && (
-          <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
             <AdminForm title="Create article" onSubmit={handleCreateArticle} busy={busy === "create-article"}>
               <TextInput name="title" placeholder="Headline" required />
               <Textarea name="excerpt" placeholder="Short excerpt" rows={3} required />
-              <Textarea name="content" placeholder="Article body" rows={8} required />
+              <RichTextEditor name="content" label="Article body" resetKey={articleEditorKey} />
               <SelectInput name="category" required>
                 <option value="">Choose category</option>
                 {categories.map((category) => (

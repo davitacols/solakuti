@@ -19,6 +19,7 @@ export type Article = {
   image: string;
   featured?: boolean;
   trending?: boolean;
+  contentHtml?: string;
   body: string[];
 };
 

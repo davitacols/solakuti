@@ -127,6 +127,29 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === "phase-production-build";
 const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 1200);
 
+function containsHtml(value: string) {
+  return /<\/?[a-z][\s\S]*>/i.test(value);
+}
+
+function sanitizeArticleHtml(value: string) {
+  return value
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/\s+on\w+=(["']).*?\1/gi, "")
+    .replace(/\s+on\w+=\S+/gi, "")
+    .replace(/\s+(href|src)=(["'])\s*javascript:[\s\S]*?\2/gi, "")
+    .replace(/<\s*\/?\s*(html|body|head|meta|link)[^>]*>/gi, "");
+}
+
+function htmlToPlainParagraphs(value: string) {
+  return value
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|h1|h2|h3|h4|blockquote|li)>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.replace(/&nbsp;/g, " ").trim())
+    .filter(Boolean);
+}
+
 const categoryImageFallback: Record<ArticleCategory, string> = {
   Politics: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1200&q=80",
   "Breaking News": "https://images.unsplash.com/photo-1501691223387-dd0500403074?auto=format&fit=crop&w=1200&q=80",
@@ -260,8 +283,13 @@ function mapCategory(category: BackendCategory): Category {
 
 function mapArticle(article: BackendArticle): Article {
   const fallback = fallbackArticles.find((item) => item.slug === article.slug);
+  const contentHtml = article.content && containsHtml(article.content)
+    ? sanitizeArticleHtml(article.content)
+    : undefined;
   const body = article.content
-    ? article.content.split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean)
+    ? contentHtml
+      ? htmlToPlainParagraphs(contentHtml)
+      : article.content.split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean)
     : fallback?.body ?? [];
 
   return {
@@ -276,6 +304,7 @@ function mapArticle(article: BackendArticle): Article {
     image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name],
     featured: article.is_featured,
     trending: article.views_count >= 2500,
+    contentHtml,
     body
   };
 }

@@ -35,6 +35,78 @@ body {
   box-shadow: 0 24px 80px rgba(18, 18, 18, 0.12);
 }
 
+.admin-rich-editor h2,
+.article-body h2 {
+  margin: 2rem 0 0.85rem;
+  color: #111;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.admin-rich-editor h3,
+.article-body h3 {
+  margin: 1.6rem 0 0.65rem;
+  color: #111;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.18;
+}
+
+.admin-rich-editor p,
+.article-body p {
+  margin-bottom: 1.65rem;
+}
+
+.article-body {
+  font-size: 1.25rem;
+  letter-spacing: -0.015em;
+  line-height: 1.8;
+  color: rgb(0 0 0 / 0.76);
+}
+
+.admin-rich-editor ul,
+.admin-rich-editor ol,
+.article-body ul,
+.article-body ol {
+  margin: 0 0 1.65rem 1.35rem;
+  padding-left: 1rem;
+}
+
+.admin-rich-editor ul,
+.article-body ul {
+  list-style: disc;
+}
+
+.admin-rich-editor ol,
+.article-body ol {
+  list-style: decimal;
+}
+
+.admin-rich-editor li,
+.article-body li {
+  margin: 0.45rem 0;
+}
+
+.admin-rich-editor blockquote,
+.article-body blockquote {
+  margin: 2rem 0;
+  border-left: 4px solid #dc2626;
+  padding-left: 1.25rem;
+  color: rgb(0 0 0 / 0.66);
+  font-weight: 800;
+}
+
+.admin-rich-editor a,
+.article-body a {
+  color: #dc2626;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .ticker-track {
   animation: ticker 34s linear infinite;
 }

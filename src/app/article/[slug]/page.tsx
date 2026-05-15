@@ -172,13 +172,20 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </aside>
 
           <div className="order-1 lg:order-2">
-            <div className="prose prose-lg max-w-none">
-              {article.body.map((paragraph) => (
-                <p key={paragraph} className="mb-7 text-xl leading-9 tracking-[-0.015em] text-black/76">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
+            {article.contentHtml ? (
+              <div
+                className="article-body"
+                dangerouslySetInnerHTML={{ __html: article.contentHtml }}
+              />
+            ) : (
+              <div className="prose prose-lg max-w-none">
+                {article.body.map((paragraph) => (
+                  <p key={paragraph} className="mb-7 text-xl leading-9 tracking-[-0.015em] text-black/76">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
 
           <aside className="order-3 hidden lg:block">
