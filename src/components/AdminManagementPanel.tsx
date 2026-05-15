@@ -7,6 +7,7 @@ import {
   FilePlus2,
   Layers3,
   MessageSquareText,
+  Pencil,
   RefreshCw,
   Shield,
   Trash2,
@@ -27,7 +28,9 @@ import {
   adminDeleteCategory,
   adminDeleteComment,
   adminUpdateUser,
+  adminUpdateArticle,
   adminUploadMedia,
+  getAdminArticle,
   getAdminCategories,
   getAdminComments,
   getAdminMedia,
@@ -64,7 +67,11 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [articleEditorKey, setArticleEditorKey] = useState(0);
+  const [editEditorKey, setEditEditorKey] = useState(0);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
 
   const isAdmin = role === "admin";
   const visibleTabs = useMemo(() => tabs.filter((tab) => tab.id !== "users" || isAdmin), [isAdmin]);
@@ -98,35 +105,83 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     }
   }
 
-  async function handleCreateArticle(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  function articleFormPayload(form: FormData, category: number, content: string, imageFile?: File | null) {
+    const payload = new FormData();
+    payload.set("title", String(form.get("title") ?? ""));
+    payload.set("excerpt", String(form.get("excerpt") ?? ""));
+    payload.set("content", content);
+    payload.set("category", String(category));
+    payload.set("is_featured", String(form.get("is_featured") === "on"));
+    payload.set("is_breaking", String(form.get("is_breaking") === "on"));
+    payload.set("is_published", String(form.get("is_published") === "on"));
+    payload.set("published_at", new Date().toISOString());
+    if (imageFile) {
+      payload.set("featured_image", imageFile);
+    }
+    return payload;
+  }
+
+  function validateArticleForm(form: FormData) {
     const category = Number(form.get("category"));
     if (!category) {
-      setMessage("Create a category before publishing an article.");
-      return;
+      setMessage("Choose a category before saving the article.");
+      return null;
     }
     const articleContent = String(form.get("content") ?? "").trim();
     const textContent = articleContent.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
     if (!textContent) {
       setMessage("Add the article body before saving.");
+      return null;
+    }
+    return { category, articleContent };
+  }
+
+  async function handleCreateArticle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const valid = validateArticleForm(form);
+    if (!valid) {
       return;
     }
 
     await runAction("create-article", () =>
-      adminCreateArticle(token, {
-        title: String(form.get("title") ?? ""),
-        excerpt: String(form.get("excerpt") ?? ""),
-        content: articleContent,
-        category,
-        is_featured: form.get("is_featured") === "on",
-        is_breaking: form.get("is_breaking") === "on",
-        is_published: form.get("is_published") === "on",
-        published_at: new Date().toISOString()
-      })
+      adminCreateArticle(token, articleFormPayload(form, valid.category, valid.articleContent, articleImageFile))
     );
     event.currentTarget.reset();
+    setArticleImageFile(null);
     setArticleEditorKey((current) => current + 1);
+  }
+
+  async function startEditingArticle(slug: string) {
+    setBusy(`edit-load-${slug}`);
+    setMessage(null);
+    const response = await getAdminArticle(token, slug);
+    setBusy(null);
+    if (!response?.success || !response.data) {
+      setMessage(response?.message ?? "Could not load article for editing.");
+      return;
+    }
+    setEditingArticle(response.data);
+    setEditImageFile(null);
+    setEditEditorKey((current) => current + 1);
+  }
+
+  async function handleUpdateArticle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingArticle) {
+      return;
+    }
+    const form = new FormData(event.currentTarget);
+    const valid = validateArticleForm(form);
+    if (!valid) {
+      return;
+    }
+
+    await runAction("update-article", () =>
+      adminUpdateArticle(token, editingArticle.slug, articleFormPayload(form, valid.category, valid.articleContent, editImageFile))
+    );
+    setEditImageFile(null);
+    setEditingArticle(null);
   }
 
   async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
@@ -217,6 +272,10 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
               <TextInput name="title" placeholder="Headline" required />
               <Textarea name="excerpt" placeholder="Short excerpt" rows={3} required />
               <RichTextEditor name="content" label="Article body" resetKey={articleEditorKey} />
+              <FileInput
+                label="Featured image"
+                onChange={(file) => setArticleImageFile(file)}
+              />
               <SelectInput name="category" required>
                 <option value="">Choose category</option>
                 {categories.map((category) => (
@@ -228,8 +287,63 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
               <CheckboxRow labels={["is_published", "is_featured", "is_breaking"]} />
             </AdminForm>
             <AdminList title="Articles">
+              {editingArticle && (
+                <div className="border-b border-black/10 bg-[#f7f4ef] p-4">
+                  <AdminForm title={`Edit: ${editingArticle.title}`} onSubmit={handleUpdateArticle} busy={busy === "update-article"}>
+                    <TextInput name="title" placeholder="Headline" defaultValue={editingArticle.title} required />
+                    <Textarea name="excerpt" placeholder="Short excerpt" rows={3} defaultValue={editingArticle.excerpt} required />
+                    <RichTextEditor
+                      name="content"
+                      label="Article body"
+                      initialHtml={editingArticle.contentHtml ?? editingArticle.body.map((paragraph) => `<p>${paragraph}</p>`).join("")}
+                      resetKey={editEditorKey}
+                    />
+                    <FileInput
+                      label="Replace featured image"
+                      helper="Leave empty to keep the current image."
+                      onChange={(file) => setEditImageFile(file)}
+                    />
+                    <SelectInput
+                      name="category"
+                      required
+                      defaultValue={categories.find((category) => category.name === editingArticle.category)?.id ?? ""}
+                    >
+                      <option value="">Choose category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </SelectInput>
+                    <CheckboxRow
+                      labels={["is_published", "is_featured", "is_breaking"]}
+                      defaults={{
+                        is_published: editingArticle.published ?? true,
+                        is_featured: editingArticle.featured ?? false,
+                        is_breaking: editingArticle.breaking ?? false
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditingArticle(null)}
+                      className="mt-3 h-10 w-full rounded-md border border-black/10 text-sm font-black transition hover:border-black hover:bg-white"
+                    >
+                      Cancel edit
+                    </button>
+                  </AdminForm>
+                </div>
+              )}
               {articles.map((article) => (
                 <ListRow key={article.id} title={article.title} meta={`${article.category} - ${formatDate(article.publishedAt)}`}>
+                  <LoadingButton
+                    type="button"
+                    loading={busy === `edit-load-${article.slug}`}
+                    onClick={() => startEditingArticle(article.slug)}
+                    className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white"
+                    aria-label="Edit article"
+                  >
+                    <Pencil className="size-4" />
+                  </LoadingButton>
                   <LoadingButton
                     type="button"
                     onClick={() => runAction(`delete-article-${article.slug}`, () => adminDeleteArticle(token, article.slug))}
@@ -478,12 +592,41 @@ function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   );
 }
 
-function CheckboxRow({ labels }: { labels: string[] }) {
+function FileInput({
+  label,
+  helper,
+  onChange
+}: {
+  label: string;
+  helper?: string;
+  onChange: (file: File | null) => void;
+}) {
+  return (
+    <label className="block rounded-md border border-black/10 bg-white p-3">
+      <span className="text-xs font-black uppercase tracking-[0.14em] text-black/42">{label}</span>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        className="mt-2 w-full text-sm font-bold text-black/62 file:mr-3 file:rounded-full file:border-0 file:bg-black file:px-4 file:py-2 file:text-xs file:font-black file:uppercase file:tracking-[0.12em] file:text-white"
+      />
+      {helper && <span className="mt-2 block text-xs font-bold text-black/38">{helper}</span>}
+    </label>
+  );
+}
+
+function CheckboxRow({
+  labels,
+  defaults = { is_published: true }
+}: {
+  labels: string[];
+  defaults?: Record<string, boolean>;
+}) {
   return (
     <div className="grid gap-2 sm:grid-cols-3">
       {labels.map((label) => (
         <label key={label} className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-black/55">
-          <input name={label} type="checkbox" className="size-4 accent-red-600" defaultChecked={label === "is_published"} />
+          <input name={label} type="checkbox" className="size-4 accent-red-600" defaultChecked={defaults[label] ?? false} />
           {label.replace("is_", "").replace("_", " ")}
         </label>
       ))}

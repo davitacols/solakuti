@@ -19,6 +19,7 @@ type RichTextEditorProps = {
   name: string;
   label: string;
   resetKey?: number;
+  initialHtml?: string;
 };
 
 const toolbar = [
@@ -33,17 +34,17 @@ const toolbar = [
   { label: "Clear format", icon: RemoveFormatting, command: "removeFormat" }
 ];
 
-export default function RichTextEditor({ name, label, resetKey = 0 }: RichTextEditorProps) {
+export default function RichTextEditor({ name, label, resetKey = 0, initialHtml = "" }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [html, setHtml] = useState("");
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    setHtml("");
+    setHtml(initialHtml);
     if (editorRef.current) {
-      editorRef.current.innerHTML = "";
+      editorRef.current.innerHTML = initialHtml;
     }
-  }, [resetKey]);
+  }, [initialHtml, resetKey]);
 
   function sync() {
     setHtml(editorRef.current?.innerHTML ?? "");

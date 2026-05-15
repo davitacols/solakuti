@@ -5,6 +5,8 @@ export const categories: ArticleCategory[] = [
   "Breaking News",
   "Economy",
   "Security News",
+  "World News",
+  "General News",
   "Entertainment",
   "Opinions",
   "Nigeria"

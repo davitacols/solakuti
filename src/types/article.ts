@@ -3,6 +3,8 @@ export type ArticleCategory =
   | "Breaking News"
   | "Economy"
   | "Security News"
+  | "World News"
+  | "General News"
   | "Entertainment"
   | "Opinions"
   | "Nigeria";
@@ -18,6 +20,8 @@ export type Article = {
   readTime: string;
   image: string;
   featured?: boolean;
+  breaking?: boolean;
+  published?: boolean;
   trending?: boolean;
   contentHtml?: string;
   body: string[];

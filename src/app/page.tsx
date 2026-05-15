@@ -12,6 +12,8 @@ const sectionMeta: Array<{ title: ArticleCategory; kicker: string }> = [
   { title: "Entertainment", kicker: "Culture desk" },
   { title: "Economy", kicker: "Markets and money" },
   { title: "Security News", kicker: "Safety brief" },
+  { title: "World News", kicker: "Global brief" },
+  { title: "General News", kicker: "Public square" },
   { title: "Opinions", kicker: "Argument" }
 ];
 

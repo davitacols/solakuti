@@ -48,6 +48,7 @@ type BackendArticle = {
   author: BackendUser;
   is_featured: boolean;
   is_breaking: boolean;
+  is_published?: boolean;
   views_count: number;
   reading_time: number;
   published_at: string;
@@ -155,6 +156,8 @@ const categoryImageFallback: Record<ArticleCategory, string> = {
   "Breaking News": "https://images.unsplash.com/photo-1501691223387-dd0500403074?auto=format&fit=crop&w=1200&q=80",
   Economy: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
   "Security News": "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+  "World News": "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=1200&q=80",
+  "General News": "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
   Entertainment: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80",
   Opinions: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80",
   Nigeria: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80"
@@ -303,6 +306,8 @@ function mapArticle(article: BackendArticle): Article {
     readTime: `${article.reading_time} min read`,
     image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name],
     featured: article.is_featured,
+    breaking: article.is_breaking,
+    published: article.is_published ?? true,
     trending: article.views_count >= 2500,
     contentHtml,
     body
@@ -423,7 +428,7 @@ export async function getAdminOverview(token: string) {
 }
 
 export async function getAdminArticles(token: string) {
-  const response = await authApi<BackendArticle[]>("/articles/?page_size=8", token);
+  const response = await authApi<BackendArticle[]>("/articles/?page_size=50&ordering=-updated_at", token);
   if (!response?.success || !response.data) {
     return response
       ? { ...response, data: [] as Article[] }
@@ -435,14 +440,27 @@ export async function getAdminArticles(token: string) {
   };
 }
 
-export async function adminCreateArticle(token: string, payload: Record<string, unknown>) {
+export async function getAdminArticle(token: string, slug: string) {
+  const response = await adminApi<BackendArticle>(`/articles/${slug}/`, token);
+  if (!response?.success || !response.data) {
+    return response
+      ? { ...response, data: null as Article | null }
+      : null;
+  }
+  return {
+    ...response,
+    data: mapArticle(response.data)
+  };
+}
+
+export async function adminCreateArticle(token: string, payload: Record<string, unknown> | FormData) {
   return adminApi<BackendArticle>("/articles/", token, {
     method: "POST",
     body: payload
   });
 }
 
-export async function adminUpdateArticle(token: string, slug: string, payload: Record<string, unknown>) {
+export async function adminUpdateArticle(token: string, slug: string, payload: Record<string, unknown> | FormData) {
   return adminApi<BackendArticle>(`/articles/${slug}/`, token, {
     method: "PATCH",
     body: payload

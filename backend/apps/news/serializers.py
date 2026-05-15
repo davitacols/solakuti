@@ -32,6 +32,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "tags",
             "is_featured",
             "is_breaking",
+            "is_published",
             "views_count",
             "reading_time",
             "published_at",
