@@ -30,7 +30,9 @@ type Session = {
 type Overview = {
   total_articles: number;
   total_views: number;
+  today_views: number;
   total_comments: number;
+  total_newsletter_subscribers: number;
   popular_categories: Array<{
     id: number;
     name: string;
@@ -201,10 +203,12 @@ export default function AdminDashboard() {
             onRefresh={() => loadDashboard(session.access)}
           />
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-5">
             <StatCard icon={FileText} label="Articles" value={overview?.total_articles ?? 0} />
             <StatCard icon={Eye} label="Views" value={overview?.total_views ?? 0} />
+            <StatCard icon={BarChart3} label="Today" value={overview?.today_views ?? 0} />
             <StatCard icon={MessageSquare} label="Comments" value={overview?.total_comments ?? 0} />
+            <StatCard icon={Tags} label="Subscribers" value={overview?.total_newsletter_subscribers ?? 0} />
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">

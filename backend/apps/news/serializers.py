@@ -18,6 +18,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     featured_image_url = serializers.SerializerMethodField()
+    og_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -33,8 +34,13 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "is_featured",
             "is_breaking",
             "is_published",
+            "editorial_status",
             "views_count",
             "reading_time",
+            "seo_title",
+            "seo_description",
+            "canonical_url",
+            "og_image_url",
             "published_at",
         ]
 
@@ -42,6 +48,12 @@ class ArticleListSerializer(serializers.ModelSerializer):
     def get_featured_image_url(self, obj):
         if obj.featured_image:
             return obj.featured_image.url
+        return None
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_og_image_url(self, obj):
+        if obj.og_image:
+            return obj.og_image.url
         return None
 
 
@@ -58,6 +70,8 @@ class ArticleDetailSerializer(ArticleListSerializer):
 
 
 class ArticleWriteSerializer(serializers.ModelSerializer):
+    tag_names = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
     tag_ids = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         source="tags",
@@ -75,17 +89,41 @@ class ArticleWriteSerializer(serializers.ModelSerializer):
             "excerpt",
             "content",
             "featured_image",
+            "og_image",
             "category",
             "tag_ids",
+            "tag_names",
             "is_featured",
             "is_breaking",
             "is_published",
+            "editorial_status",
+            "seo_title",
+            "seo_description",
+            "canonical_url",
             "published_at",
         ]
         read_only_fields = ["id", "slug"]
 
+    def _resolve_tags(self, tag_names):
+        tags = []
+        for raw_name in (tag_names or "").split(","):
+            name = raw_name.strip()
+            if not name:
+                continue
+            tag, _created = Tag.objects.get_or_create(name=name)
+            tags.append(tag)
+        return tags
+
+    def validate(self, attrs):
+        if attrs.get("is_published"):
+            attrs["editorial_status"] = Article.EditorialStatus.PUBLISHED
+        return attrs
+
     def create(self, validated_data):
         tags = validated_data.pop("tags", [])
+        tag_names = validated_data.pop("tag_names", "")
+        if tag_names:
+            tags = self._resolve_tags(tag_names)
         validated_data["author"] = self.context["request"].user
         article = Article.objects.create(**validated_data)
         article.tags.set(tags)
@@ -93,6 +131,9 @@ class ArticleWriteSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         tags = validated_data.pop("tags", None)
+        tag_names = validated_data.pop("tag_names", None)
+        if tag_names is not None:
+            tags = self._resolve_tags(tag_names)
         article = super().update(instance, validated_data)
         if tags is not None:
             article.tags.set(tags)

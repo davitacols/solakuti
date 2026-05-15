@@ -18,3 +18,19 @@ class ArticleView(models.Model):
 
     def __str__(self):
         return f"{self.article} viewed at {self.viewed_at}"
+
+
+class NewsletterSubscription(models.Model):
+    email = models.EmailField(unique=True)
+    source = models.CharField(max_length=80, default="website")
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["is_active", "-created_at"], name="analytics_n_is_acti_eb660f_idx"),
+        ]
+
+    def __str__(self):
+        return self.email

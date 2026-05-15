@@ -1,11 +1,13 @@
 from django.db.models import Count, Sum
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-from rest_framework import permissions, views
+from rest_framework import permissions, status, views
 
 from apps.categories.models import Category
 from apps.news.models import Article, Comment
 from apps.news.serializers import ArticleListSerializer
-from apps.analytics.serializers import AnalyticsOverviewSerializer
+from apps.analytics.models import ArticleView, NewsletterSubscription
+from apps.analytics.serializers import AnalyticsOverviewSerializer, NewsletterSubscriptionSerializer
 from core.responses import api_response
 
 
@@ -35,8 +37,32 @@ class AnalyticsOverviewView(views.APIView):
         data = {
             "total_articles": Article.objects.count(),
             "total_views": Article.objects.aggregate(total=Sum("views_count"))["total"] or 0,
+            "today_views": ArticleView.objects.filter(viewed_at__date=timezone.localdate()).count(),
             "total_comments": Comment.objects.count(),
+            "total_newsletter_subscribers": NewsletterSubscription.objects.filter(is_active=True).count(),
             "trending_articles": ArticleListSerializer(trending, many=True, context={"request": request}).data,
             "popular_categories": list(categories),
         }
         return api_response(data, message="Analytics overview fetched successfully.")
+
+
+class NewsletterSubscriptionView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = NewsletterSubscriptionSerializer
+
+    @extend_schema(request=NewsletterSubscriptionSerializer, responses=NewsletterSubscriptionSerializer)
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].lower()
+        source = serializer.validated_data.get("source", "website")
+        subscription, created = NewsletterSubscription.objects.update_or_create(
+            email=email,
+            defaults={"source": source, "is_active": True},
+        )
+        response = self.serializer_class(subscription)
+        return api_response(
+            response.data,
+            message="Subscription saved successfully." if created else "You are already subscribed.",
+            status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )

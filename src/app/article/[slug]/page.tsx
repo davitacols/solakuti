@@ -28,12 +28,13 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   }
 
   return {
-    title: article.title,
-    description: article.excerpt,
+    title: article.seoTitle || article.title,
+    description: article.seoDescription || article.excerpt,
+    alternates: article.canonicalUrl ? { canonical: article.canonicalUrl } : undefined,
     openGraph: {
-      title: article.title,
-      description: article.excerpt,
-      images: [{ url: article.image, width: 1200, height: 630, alt: article.title }],
+      title: article.seoTitle || article.title,
+      description: article.seoDescription || article.excerpt,
+      images: [{ url: article.ogImage || article.image, width: 1200, height: 630, alt: article.title }],
       type: "article",
       publishedTime: article.publishedAt,
       authors: [article.author]
@@ -61,9 +62,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    headline: article.title,
-    description: article.excerpt,
-    image: [article.image],
+    headline: article.seoTitle || article.title,
+    description: article.seoDescription || article.excerpt,
+    image: [article.ogImage || article.image],
     datePublished: article.publishedAt,
     dateModified: article.publishedAt,
     author: [
@@ -80,7 +81,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         url: `${SITE_URL}/solakuti-logo-transparent.png`
       }
     },
-    mainEntityOfPage: articleUrl,
+    mainEntityOfPage: article.canonicalUrl || articleUrl,
     articleSection: article.category
   };
   const shareLinks = [

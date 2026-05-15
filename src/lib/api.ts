@@ -44,13 +44,19 @@ type BackendArticle = {
   excerpt: string;
   content?: string;
   featured_image_url?: string | null;
+  og_image_url?: string | null;
   category: BackendCategory;
   author: BackendUser;
+  tags?: Array<{ id: number; name: string; slug: string }>;
   is_featured: boolean;
   is_breaking: boolean;
   is_published?: boolean;
+  editorial_status?: "draft" | "review" | "published";
   views_count: number;
   reading_time: number;
+  seo_title?: string;
+  seo_description?: string;
+  canonical_url?: string;
   published_at: string;
 };
 
@@ -113,7 +119,9 @@ export type AdminMediaAsset = {
 export type AdminOverview = {
   total_articles: number;
   total_views: number;
+  today_views: number;
   total_comments: number;
+  total_newsletter_subscribers: number;
   trending_articles: BackendArticle[];
   popular_categories: Array<{
     id: number;
@@ -310,6 +318,13 @@ function mapArticle(article: BackendArticle): Article {
     publishedAt: article.published_at,
     readTime: `${article.reading_time} min read`,
     image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name],
+    viewsCount: article.views_count,
+    tags: article.tags?.map((tag) => tag.name) ?? [],
+    editorialStatus: article.editorial_status ?? (article.is_published ? "published" : "draft"),
+    seoTitle: article.seo_title,
+    seoDescription: article.seo_description,
+    canonicalUrl: article.canonical_url,
+    ogImage: article.og_image_url ?? null,
     featured: article.is_featured,
     breaking: article.is_breaking,
     published: article.is_published ?? true,
@@ -544,5 +559,18 @@ export async function adminUploadMedia(token: string, payload: FormData) {
   return adminApi<AdminMediaAsset>("/media/", token, {
     method: "POST",
     body: payload
+  });
+}
+
+export async function adminDeleteMedia(token: string, mediaId: number) {
+  return adminApi<null>(`/media/${mediaId}/`, token, {
+    method: "DELETE"
+  });
+}
+
+export async function subscribeToNewsletter(email: string) {
+  return mutateApi<{ id: number; email: string }>("/newsletter/subscribe/", {
+    email,
+    source: "website"
   });
 }

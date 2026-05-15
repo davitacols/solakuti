@@ -25,6 +25,11 @@ class Tag(models.Model):
 
 
 class Article(models.Model):
+    class EditorialStatus(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        REVIEW = "review", "In Review"
+        PUBLISHED = "published", "Published"
+
     title = models.CharField(max_length=240)
     slug = models.SlugField(max_length=270, unique=True, blank=True)
     excerpt = models.TextField(max_length=420)
@@ -36,8 +41,18 @@ class Article(models.Model):
     is_featured = models.BooleanField(default=False, db_index=True)
     is_breaking = models.BooleanField(default=False, db_index=True)
     is_published = models.BooleanField(default=False, db_index=True)
+    editorial_status = models.CharField(
+        max_length=20,
+        choices=EditorialStatus.choices,
+        default=EditorialStatus.DRAFT,
+        db_index=True,
+    )
     views_count = models.PositiveIntegerField(default=0, db_index=True)
     reading_time = models.PositiveIntegerField(default=1)
+    seo_title = models.CharField(max_length=255, blank=True)
+    seo_description = models.CharField(max_length=320, blank=True)
+    canonical_url = models.URLField(blank=True)
+    og_image = models.ImageField(upload_to="articles/og/", blank=True, null=True)
     published_at = models.DateTimeField(blank=True, null=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -56,6 +71,12 @@ class Article(models.Model):
         if not self.slug:
             self.slug = self._generate_unique_slug()
         self.reading_time = self.calculate_reading_time()
+        if self.editorial_status == self.EditorialStatus.PUBLISHED:
+            self.is_published = True
+        elif self.editorial_status in {self.EditorialStatus.DRAFT, self.EditorialStatus.REVIEW}:
+            self.is_published = False
+        elif self.is_published:
+            self.editorial_status = self.EditorialStatus.PUBLISHED
         if self.is_published and not self.published_at:
             self.published_at = timezone.now()
         super().save(*args, **kwargs)

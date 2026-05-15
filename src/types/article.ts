@@ -20,6 +20,13 @@ export type Article = {
   publishedAt: string;
   readTime: string;
   image: string;
+  viewsCount?: number;
+  tags?: string[];
+  editorialStatus?: "draft" | "review" | "published";
+  seoTitle?: string;
+  seoDescription?: string;
+  canonicalUrl?: string;
+  ogImage?: string | null;
   featured?: boolean;
   breaking?: boolean;
   published?: boolean;

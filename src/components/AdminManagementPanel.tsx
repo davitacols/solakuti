@@ -4,13 +4,16 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
+  Clipboard,
   ExternalLink,
   FileImage,
   FilePlus2,
   Layers3,
   MessageSquareText,
   Pencil,
+  Search,
   RefreshCw,
+  Send,
   Shield,
   Trash2,
   Users
@@ -29,6 +32,7 @@ import {
   adminDeleteArticle,
   adminDeleteCategory,
   adminDeleteComment,
+  adminDeleteMedia,
   adminUpdateUser,
   adminUpdateArticle,
   adminUploadMedia,
@@ -74,12 +78,45 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   const [articleEditorKey, setArticleEditorKey] = useState(0);
   const [editEditorKey, setEditEditorKey] = useState(0);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [articleQuery, setArticleQuery] = useState("");
+  const [articleStatus, setArticleStatus] = useState("all");
+  const [articleCategory, setArticleCategory] = useState("all");
+  const [articleDraft, setArticleDraft] = useState<Record<string, string>>({});
+  const [previewArticle, setPreviewArticle] = useState<{
+    title: string;
+    excerpt: string;
+    category: string;
+    content: string;
+    image?: string;
+    tags: string;
+    status: string;
+  } | null>(null);
 
   const isAdmin = role === "admin";
   const visibleTabs = useMemo(() => tabs.filter((tab) => tab.id !== "users" || isAdmin), [isAdmin]);
+  const filteredArticles = useMemo(() => {
+    const query = articleQuery.trim().toLowerCase();
+    return articles.filter((article) => {
+      const matchesQuery = !query || [article.title, article.excerpt, article.category, ...(article.tags ?? [])]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+      const matchesStatus = articleStatus === "all" || (article.editorialStatus ?? (article.published ? "published" : "draft")) === articleStatus;
+      const matchesCategory = articleCategory === "all" || article.category === articleCategory;
+      return matchesQuery && matchesStatus && matchesCategory;
+    });
+  }, [articleCategory, articleQuery, articleStatus, articles]);
 
   useEffect(() => {
     loadCollections();
+    try {
+      const savedDraft = localStorage.getItem("solakuti.articleDraft");
+      if (savedDraft) {
+        setArticleDraft(JSON.parse(savedDraft) as Record<string, string>);
+      }
+    } catch {
+      setArticleDraft({});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -107,20 +144,62 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     }
   }
 
-  function articleFormPayload(form: FormData, category: number, content: string, imageFile?: File | null) {
+  function getSubmitAction(event: FormEvent<HTMLFormElement>) {
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    return submitter?.value || "publish";
+  }
+
+  function getEditorialState(action: string) {
+    if (action === "draft") {
+      return { isPublished: false, editorialStatus: "draft" };
+    }
+    if (action === "review") {
+      return { isPublished: false, editorialStatus: "review" };
+    }
+    return { isPublished: true, editorialStatus: "published" };
+  }
+
+  function articleFormPayload(form: FormData, category: number, content: string, imageFile?: File | null, action = "publish") {
+    const editorial = getEditorialState(action);
     const payload = new FormData();
     payload.set("title", String(form.get("title") ?? ""));
     payload.set("excerpt", String(form.get("excerpt") ?? ""));
     payload.set("content", content);
     payload.set("category", String(category));
+    payload.set("tag_names", String(form.get("tag_names") ?? ""));
+    payload.set("seo_title", String(form.get("seo_title") ?? ""));
+    payload.set("seo_description", String(form.get("seo_description") ?? ""));
+    payload.set("canonical_url", String(form.get("canonical_url") ?? ""));
     payload.set("is_featured", String(form.get("is_featured") === "on"));
     payload.set("is_breaking", String(form.get("is_breaking") === "on"));
-    payload.set("is_published", String(form.get("is_published") === "on"));
-    payload.set("published_at", new Date().toISOString());
+    payload.set("is_published", String(editorial.isPublished));
+    payload.set("editorial_status", editorial.editorialStatus);
+    if (editorial.isPublished) {
+      payload.set("published_at", new Date().toISOString());
+    }
     if (imageFile) {
       payload.set("featured_image", imageFile);
     }
     return payload;
+  }
+
+  function saveLocalDraft(form: HTMLFormElement, key = "solakuti.articleDraft") {
+    const data = Object.fromEntries(new FormData(form).entries());
+    localStorage.setItem(key, JSON.stringify(data));
+    setArticleDraft(data as Record<string, string>);
+  }
+
+  function handlePreview(form: HTMLFormElement, imageFile?: File | null) {
+    const data = new FormData(form);
+    setPreviewArticle({
+      title: String(data.get("title") || "Untitled report"),
+      excerpt: String(data.get("excerpt") || ""),
+      category: categories.find((category) => String(category.id) === String(data.get("category")))?.name ?? "Uncategorized",
+      content: String(data.get("content") || ""),
+      image: imageFile ? URL.createObjectURL(imageFile) : undefined,
+      tags: String(data.get("tag_names") || ""),
+      status: getEditorialState(String(data.get("publish_action") || "draft")).editorialStatus
+    });
   }
 
   function validateArticleForm(form: FormData) {
@@ -141,6 +220,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
 
   async function handleCreateArticle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const action = getSubmitAction(event);
     const form = new FormData(event.currentTarget);
     const valid = validateArticleForm(form);
     if (!valid) {
@@ -148,11 +228,13 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     }
 
     await runAction("create-article", () =>
-      adminCreateArticle(token, articleFormPayload(form, valid.category, valid.articleContent, articleImageFile))
+      adminCreateArticle(token, articleFormPayload(form, valid.category, valid.articleContent, articleImageFile, action))
     );
     event.currentTarget.reset();
     setArticleImageFile(null);
     setArticleEditorKey((current) => current + 1);
+    localStorage.removeItem("solakuti.articleDraft");
+    setArticleDraft({});
   }
 
   async function startEditingArticle(slug: string) {
@@ -171,6 +253,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
 
   async function handleUpdateArticle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const action = getSubmitAction(event);
     if (!editingArticle) {
       return;
     }
@@ -181,7 +264,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     }
 
     await runAction("update-article", () =>
-      adminUpdateArticle(token, editingArticle.slug, articleFormPayload(form, valid.category, valid.articleContent, editImageFile))
+      adminUpdateArticle(token, editingArticle.slug, articleFormPayload(form, valid.category, valid.articleContent, editImageFile, action))
     );
     setEditImageFile(null);
     setEditingArticle(null);
@@ -271,10 +354,16 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       <div className="mt-6">
         {activeTab === "articles" && (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
-            <AdminForm title="Create article" onSubmit={handleCreateArticle} busy={busy === "create-article"}>
-              <TextInput name="title" placeholder="Headline" required />
-              <Textarea name="excerpt" placeholder="Short excerpt" rows={3} required />
-              <RichTextEditor name="content" label="Article body" resetKey={articleEditorKey} mediaAssets={media} />
+            <AdminForm
+              title="Create article"
+              onSubmit={handleCreateArticle}
+              busy={busy === "create-article"}
+              hideDefaultSubmit
+              onInput={(event) => saveLocalDraft(event.currentTarget)}
+            >
+              <TextInput name="title" placeholder="Headline" defaultValue={articleDraft.title ?? ""} required />
+              <Textarea name="excerpt" placeholder="Short excerpt" rows={3} defaultValue={articleDraft.excerpt ?? ""} required />
+              <RichTextEditor name="content" label="Article body" resetKey={articleEditorKey} initialHtml={articleDraft.content ?? ""} mediaAssets={media} />
               <FileInput
                 label="Featured image"
                 onChange={(file) => setArticleImageFile(file)}
@@ -287,12 +376,25 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                   </option>
                 ))}
               </SelectInput>
-              <CheckboxRow labels={["is_published", "is_featured", "is_breaking"]} />
+              <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={articleDraft.tag_names ?? ""} />
+              <div className="rounded-md border border-black/10 bg-white p-3">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">SEO optional</p>
+                <div className="mt-3 space-y-3">
+                  <TextInput name="seo_title" placeholder="SEO title" defaultValue={articleDraft.seo_title ?? ""} />
+                  <Textarea name="seo_description" placeholder="SEO description" rows={2} defaultValue={articleDraft.seo_description ?? ""} />
+                  <TextInput name="canonical_url" placeholder="Canonical URL" defaultValue={articleDraft.canonical_url ?? ""} />
+                </div>
+              </div>
+              <CheckboxRow labels={["is_featured", "is_breaking"]} defaults={{ is_featured: false, is_breaking: false }} />
+              <ArticleFormActions
+                busy={busy === "create-article"}
+                onPreview={(form) => handlePreview(form, articleImageFile)}
+              />
             </AdminForm>
-            <AdminList title="Articles">
+            <div className="rounded-lg border border-black/10 bg-white">
               {editingArticle && (
                 <div className="border-b border-black/10 bg-[#f7f4ef] p-4">
-                  <AdminForm title={`Edit: ${editingArticle.title}`} onSubmit={handleUpdateArticle} busy={busy === "update-article"}>
+                  <AdminForm title={`Edit: ${editingArticle.title}`} onSubmit={handleUpdateArticle} busy={busy === "update-article"} hideDefaultSubmit>
                     <TextInput name="title" placeholder="Headline" defaultValue={editingArticle.title} required />
                     <Textarea name="excerpt" placeholder="Short excerpt" rows={3} defaultValue={editingArticle.excerpt} required />
                     <RichTextEditor
@@ -307,6 +409,15 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       helper="Leave empty to keep the current image."
                       onChange={(file) => setEditImageFile(file)}
                     />
+                    <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={(editingArticle.tags ?? []).join(", ")} />
+                    <div className="rounded-md border border-black/10 bg-white p-3">
+                      <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">SEO optional</p>
+                      <div className="mt-3 space-y-3">
+                        <TextInput name="seo_title" placeholder="SEO title" defaultValue={editingArticle.seoTitle ?? ""} />
+                        <Textarea name="seo_description" placeholder="SEO description" rows={2} defaultValue={editingArticle.seoDescription ?? ""} />
+                        <TextInput name="canonical_url" placeholder="Canonical URL" defaultValue={editingArticle.canonicalUrl ?? ""} />
+                      </div>
+                    </div>
                     <SelectInput
                       name="category"
                       required
@@ -320,12 +431,15 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       ))}
                     </SelectInput>
                     <CheckboxRow
-                      labels={["is_published", "is_featured", "is_breaking"]}
+                      labels={["is_featured", "is_breaking"]}
                       defaults={{
-                        is_published: editingArticle.published ?? true,
                         is_featured: editingArticle.featured ?? false,
                         is_breaking: editingArticle.breaking ?? false
                       }}
+                    />
+                    <ArticleFormActions
+                      busy={busy === "update-article"}
+                      onPreview={(form) => handlePreview(form, editImageFile)}
                     />
                     <button
                       type="button"
@@ -337,48 +451,20 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                   </AdminForm>
                 </div>
               )}
-              {articles.map((article) => (
-                <ListRow
-                  key={article.id}
-                  title={article.title}
-                  meta={`${article.category} - ${formatDate(article.publishedAt)}`}
-                  status={article.published ? "Published" : "Draft"}
-                >
-                  {article.published ? (
-                    <Link
-                      href={`/article/${article.slug}`}
-                      target="_blank"
-                      className="inline-flex h-9 items-center gap-2 rounded-full border border-black/10 px-3 text-xs font-black uppercase tracking-[0.12em] text-black/60 transition hover:border-black hover:bg-black hover:text-white"
-                      aria-label={`Open ${article.title}`}
-                    >
-                      <ExternalLink className="size-3.5" />
-                      Open
-                    </Link>
-                  ) : (
-                    <span className="inline-flex h-9 items-center rounded-full border border-amber-200 bg-amber-50 px-3 text-xs font-black uppercase tracking-[0.12em] text-amber-700">
-                      Not public
-                    </span>
-                  )}
-                  <LoadingButton
-                    type="button"
-                    loading={busy === `edit-load-${article.slug}`}
-                    onClick={() => startEditingArticle(article.slug)}
-                    className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white"
-                    aria-label="Edit article"
-                  >
-                    <Pencil className="size-4" />
-                  </LoadingButton>
-                  <LoadingButton
-                    type="button"
-                    onClick={() => runAction(`delete-article-${article.slug}`, () => adminDeleteArticle(token, article.slug))}
-                    className="grid size-9 place-items-center rounded-full border border-black/10 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
-                    aria-label="Delete article"
-                  >
-                    <Trash2 className="size-4" />
-                  </LoadingButton>
-                </ListRow>
-              ))}
-            </AdminList>
+              <ArticleTable
+                articles={filteredArticles}
+                categories={categories}
+                query={articleQuery}
+                status={articleStatus}
+                category={articleCategory}
+                busy={busy}
+                onQueryChange={setArticleQuery}
+                onStatusChange={setArticleStatus}
+                onCategoryChange={setArticleCategory}
+                onEdit={startEditingArticle}
+                onDelete={(article) => runAction(`delete-article-${article.slug}`, () => adminDeleteArticle(token, article.slug))}
+              />
+            </div>
           </div>
         )}
 
@@ -522,12 +608,31 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       Open
                     </a>
                   ) : null}
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(asset.optimized_url ?? asset.file ?? asset.thumbnail_url ?? "")}
+                    className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white"
+                    aria-label="Copy media URL"
+                  >
+                    <Clipboard className="size-4" />
+                  </button>
+                  <LoadingButton
+                    type="button"
+                    onClick={() => runAction(`delete-media-${asset.id}`, () => adminDeleteMedia(token, asset.id))}
+                    className="grid size-9 place-items-center rounded-full border border-black/10 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                    aria-label="Delete media"
+                  >
+                    <Trash2 className="size-4" />
+                  </LoadingButton>
                 </ListRow>
               ))}
             </AdminList>
           </div>
         )}
       </div>
+      {previewArticle && (
+        <PreviewModal preview={previewArticle} onClose={() => setPreviewArticle(null)} />
+      )}
     </section>
   );
 }
@@ -535,26 +640,231 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
 function AdminForm({
   title,
   busy,
+  hideDefaultSubmit = false,
   children,
-  onSubmit
+  onSubmit,
+  onInput
 }: {
   title: string;
   busy: boolean;
+  hideDefaultSubmit?: boolean;
   children: React.ReactNode;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onInput?: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <form onSubmit={onSubmit} className="rounded-lg border border-black/10 bg-[#f7f4ef] p-4">
+    <form onSubmit={onSubmit} onInput={onInput} className="rounded-lg border border-black/10 bg-[#f7f4ef] p-4">
       <h4 className="text-lg font-black tracking-[-0.04em]">{title}</h4>
       <div className="mt-4 space-y-3">{children}</div>
+      {!hideDefaultSubmit && (
+        <LoadingButton
+          type="submit"
+          loading={busy}
+          className="mt-4 h-11 w-full rounded-md bg-[#111] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-red-600"
+        >
+          Save
+        </LoadingButton>
+      )}
+    </form>
+  );
+}
+
+function ArticleFormActions({
+  busy,
+  onPreview
+}: {
+  busy: boolean;
+  onPreview: (form: HTMLFormElement) => void;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      <button
+        type="button"
+        onClick={(event) => {
+          const form = event.currentTarget.form;
+          if (form) onPreview(form);
+        }}
+        className="h-11 rounded-md border border-black/10 bg-white text-sm font-black uppercase tracking-[0.12em] transition hover:border-black hover:bg-black hover:text-white"
+      >
+        Preview
+      </button>
       <LoadingButton
         type="submit"
+        name="publish_action"
+        value="draft"
         loading={busy}
-        className="mt-4 h-11 w-full rounded-md bg-[#111] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-red-600"
+        className="h-11 rounded-md border border-black/10 bg-white text-sm font-black uppercase tracking-[0.12em] transition hover:border-black hover:bg-black hover:text-white"
       >
-        Save
+        Save draft
       </LoadingButton>
-    </form>
+      <LoadingButton
+        type="submit"
+        name="publish_action"
+        value="review"
+        loading={busy}
+        className="h-11 rounded-md bg-amber-500 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:bg-amber-600"
+      >
+        <Send className="size-4" />
+        Review
+      </LoadingButton>
+      <LoadingButton
+        type="submit"
+        name="publish_action"
+        value="publish"
+        loading={busy}
+        className="h-11 rounded-md bg-red-600 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#111]"
+      >
+        Publish
+      </LoadingButton>
+    </div>
+  );
+}
+
+function ArticleTable({
+  articles,
+  categories,
+  query,
+  status,
+  category,
+  busy,
+  onQueryChange,
+  onStatusChange,
+  onCategoryChange,
+  onEdit,
+  onDelete
+}: {
+  articles: Article[];
+  categories: AdminCategory[];
+  query: string;
+  status: string;
+  category: string;
+  busy: string | null;
+  onQueryChange: (value: string) => void;
+  onStatusChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
+  onEdit: (slug: string) => void;
+  onDelete: (article: Article) => void;
+}) {
+  return (
+    <div>
+      <div className="border-b border-black/10 p-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <h4 className="text-lg font-black tracking-[-0.04em]">News desk</h4>
+          <div className="grid gap-2 sm:grid-cols-[1fr_150px_160px] xl:w-[620px]">
+            <label className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-black/35" />
+              <input
+                value={query}
+                onChange={(event) => onQueryChange(event.target.value)}
+                placeholder="Search reports"
+                className="h-10 w-full rounded-md border border-black/10 pl-9 pr-3 text-sm font-semibold outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
+              />
+            </label>
+            <select value={status} onChange={(event) => onStatusChange(event.target.value)} className="h-10 rounded-md border border-black/10 px-3 text-sm font-black">
+              <option value="all">All status</option>
+              <option value="draft">Draft</option>
+              <option value="review">Review</option>
+              <option value="published">Published</option>
+            </select>
+            <select value={category} onChange={(event) => onCategoryChange(event.target.value)} className="h-10 rounded-md border border-black/10 px-3 text-sm font-black">
+              <option value="all">All categories</option>
+              {categories.map((item) => (
+                <option key={item.id} value={item.name}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-[820px] w-full text-left">
+          <thead className="bg-black/[0.03] text-[11px] font-black uppercase tracking-[0.16em] text-black/42">
+            <tr>
+              <th className="px-4 py-3">Report</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Category</th>
+              <th className="px-4 py-3">Views</th>
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/10">
+            {articles.map((article) => {
+              const articleStatus = article.editorialStatus ?? (article.published ? "published" : "draft");
+              return (
+                <tr key={article.id} className="align-top">
+                  <td className="px-4 py-4">
+                    <p className="line-clamp-2 font-black tracking-[-0.03em] text-[#111]">{article.title}</p>
+                    <p className="mt-1 line-clamp-1 text-xs font-bold text-black/42">{(article.tags ?? []).join(", ") || article.author}</p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={cn(
+                      "rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em]",
+                      articleStatus === "published" ? "bg-emerald-50 text-emerald-700" : articleStatus === "review" ? "bg-amber-50 text-amber-700" : "bg-black/5 text-black/48"
+                    )}>
+                      {articleStatus}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-sm font-black text-black/60">{article.category}</td>
+                  <td className="px-4 py-4 text-sm font-black text-black/60">{(article.viewsCount ?? 0).toLocaleString()}</td>
+                  <td className="px-4 py-4 text-xs font-bold uppercase tracking-[0.12em] text-black/38">{formatDate(article.publishedAt)}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex justify-end gap-2">
+                      {article.published && (
+                        <Link href={`/article/${article.slug}`} target="_blank" className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Open article">
+                          <ExternalLink className="size-4" />
+                        </Link>
+                      )}
+                      <LoadingButton type="button" loading={busy === `edit-load-${article.slug}`} onClick={() => onEdit(article.slug)} className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Edit article">
+                        <Pencil className="size-4" />
+                      </LoadingButton>
+                      <LoadingButton type="button" onClick={() => onDelete(article)} className="grid size-9 place-items-center rounded-full border border-black/10 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white" aria-label="Delete article">
+                        <Trash2 className="size-4" />
+                      </LoadingButton>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {articles.length === 0 && <p className="p-4 text-sm font-bold text-black/45">No reports match this view.</p>}
+    </div>
+  );
+}
+
+function PreviewModal({
+  preview,
+  onClose
+}: {
+  preview: { title: string; excerpt: string; category: string; content: string; image?: string; tags: string; status: string };
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-lg bg-white editorial-shadow">
+        <div className="sticky top-0 flex items-center justify-between border-b border-black/10 bg-white p-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Preview - {preview.status}</p>
+            <h4 className="text-xl font-black tracking-[-0.04em]">Article preview</h4>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full border border-black/10 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] transition hover:bg-black hover:text-white">
+            Close
+          </button>
+        </div>
+        {preview.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview.image} alt="" className="h-72 w-full object-cover" />
+        )}
+        <article className="p-6">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">{preview.category}</p>
+          <h1 className="mt-3 text-4xl font-black leading-none tracking-[-0.06em] text-[#111]">{preview.title}</h1>
+          <p className="mt-4 text-lg leading-8 text-black/60">{preview.excerpt}</p>
+          {preview.tags && <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-black/35">{preview.tags}</p>}
+          <div className="article-body mt-8" dangerouslySetInnerHTML={{ __html: preview.content }} />
+        </article>
+      </div>
+    </div>
   );
 }
 
@@ -657,7 +967,7 @@ function FileInput({
 
 function CheckboxRow({
   labels,
-  defaults = { is_published: true }
+  defaults = {}
 }: {
   labels: string[];
   defaults?: Record<string, boolean>;
