@@ -222,6 +222,16 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     setArticleDraft(data as Record<string, string>);
   }
 
+  function saveDraftContent(html: string, key = "solakuti.articleDraft") {
+    try {
+      const savedDraft = localStorage.getItem(key);
+      const currentDraft = savedDraft ? (JSON.parse(savedDraft) as Record<string, string>) : {};
+      localStorage.setItem(key, JSON.stringify({ ...currentDraft, content: html }));
+    } catch {
+      localStorage.setItem(key, JSON.stringify({ content: html }));
+    }
+  }
+
   function handlePreview(form: HTMLFormElement, imageFile?: File | null) {
     const data = new FormData(form);
     setPreviewArticle({
@@ -496,6 +506,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 initialHtml={articleDraft.content ?? ""}
                 mediaAssets={media}
                 onUploadMediaFiles={(files) => uploadMediaFiles(files, "image", "Photo speak")}
+                onHtmlChange={saveDraftContent}
               />
               <FileInput
                 label="Featured image"

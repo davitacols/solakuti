@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import {
   Bold,
   Heading2,
@@ -12,7 +12,9 @@ import {
   ListOrdered,
   Pilcrow,
   Quote,
+  Redo2,
   RemoveFormatting,
+  Undo2,
   Video
 } from "lucide-react";
 import type { AdminMediaAsset } from "@/lib/api";
@@ -25,6 +27,7 @@ type RichTextEditorProps = {
   initialHtml?: string;
   mediaAssets?: AdminMediaAsset[];
   onUploadMediaFiles?: (files: File[]) => Promise<AdminMediaAsset[]>;
+  onHtmlChange?: (html: string) => void;
 };
 
 const toolbar = [
@@ -88,7 +91,8 @@ export default function RichTextEditor({
   resetKey = 0,
   initialHtml = "",
   mediaAssets = [],
-  onUploadMediaFiles
+  onUploadMediaFiles,
+  onHtmlChange
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
@@ -112,8 +116,8 @@ export default function RichTextEditor({
     const nextHtml = editorRef.current?.innerHTML ?? "";
     if (hiddenInputRef.current) {
       hiddenInputRef.current.value = nextHtml;
-      hiddenInputRef.current.dispatchEvent(new Event("input", { bubbles: true }));
     }
+    onHtmlChange?.(nextHtml);
     const nextIsEmpty = !htmlToText(nextHtml);
     setIsEmpty((current) => (current === nextIsEmpty ? current : nextIsEmpty));
   }
@@ -205,14 +209,11 @@ export default function RichTextEditor({
     }
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Backspace" && event.key !== "Delete") {
-      return;
-    }
+  function removeMediaAtSelection(event: { preventDefault: () => void }) {
     const selection = window.getSelection();
     const current = editorRef.current;
     if (!selection || !current || !selection.isCollapsed) {
-      return;
+      return false;
     }
     const node = selection.anchorNode;
     const element = node instanceof Element ? node : node?.parentElement;
@@ -221,7 +222,24 @@ export default function RichTextEditor({
       event.preventDefault();
       media.remove();
       sync();
+      return true;
     }
+    return false;
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Backspace" && event.key !== "Delete") {
+      return;
+    }
+    removeMediaAtSelection(event);
+  }
+
+  function handleBeforeInput(event: FormEvent<HTMLDivElement>) {
+    const inputType = (event.nativeEvent as InputEvent).inputType;
+    if (inputType !== "deleteContentBackward" && inputType !== "deleteContentForward") {
+      return;
+    }
+    removeMediaAtSelection(event);
   }
 
   return (
@@ -234,6 +252,26 @@ export default function RichTextEditor({
           <span className="text-xs font-bold text-black/35">Rich text</span>
         </div>
         <div className="flex min-w-0 flex-wrap gap-1">
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runCommand("undo")}
+            className="grid size-9 place-items-center rounded-md text-black/62 transition hover:bg-black hover:text-white"
+            aria-label="Undo"
+            title="Undo"
+          >
+            <Undo2 className="size-4" />
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runCommand("redo")}
+            className="grid size-9 place-items-center rounded-md text-black/62 transition hover:bg-black hover:text-white"
+            aria-label="Redo"
+            title="Redo"
+          >
+            <Redo2 className="size-4" />
+          </button>
           {toolbar.map(({ label: itemLabel, icon: Icon, command, value }) => (
             <button
               key={`${command}-${value ?? itemLabel}`}
@@ -347,6 +385,7 @@ export default function RichTextEditor({
           contentEditable
           suppressContentEditableWarning
           onInput={sync}
+          onBeforeInput={handleBeforeInput}
           onKeyDown={handleKeyDown}
           onBlur={() => {
             setFocused(false);
