@@ -42,6 +42,16 @@ type Overview = {
     articles_count: number;
     views_count: number | null;
   }>;
+  article_performance?: Array<{
+    id: number;
+    title: string;
+    slug: string;
+    category: string;
+    views_count: number;
+    today_views: number;
+    comments_count: number;
+    published_at: string | null;
+  }>;
   recent_activity?: Array<{
     id: number;
     action: string;
@@ -75,6 +85,7 @@ export default function AdminDashboard() {
   const topArticle = useMemo(() => articles[0], [articles]);
   const recentActivity = overview?.recent_activity ?? [];
   const recentLogins = overview?.recent_login_attempts ?? [];
+  const articlePerformance = overview?.article_performance ?? [];
 
   useEffect(() => {
     if (!session) {
@@ -283,6 +294,36 @@ export default function AdminDashboard() {
             </p>
           )}
 
+          <section className="mt-8 rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+            <div className="mb-5 flex flex-col justify-between gap-3 border-b border-black/10 pb-4 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-red-600">Article performance</p>
+                <h3 className="mt-1 text-2xl font-black tracking-[-0.05em]">Real views per article</h3>
+              </div>
+              <Eye className="size-6 text-black/25" />
+            </div>
+            <div className="divide-y divide-black/10">
+              {articlePerformance.map((article) => (
+                <article key={article.id} className="grid gap-3 py-4 lg:grid-cols-[minmax(0,1fr)_120px_120px_120px] lg:items-center">
+                  <div className="min-w-0">
+                    <Link href={`/article/${article.slug}`} target="_blank" className="line-clamp-2 font-black tracking-[-0.03em] text-[#111] transition hover:text-red-600">
+                      {article.title}
+                    </Link>
+                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-black/38">
+                      {article.category} - {article.published_at ? formatDate(article.published_at) : "No publish date"}
+                    </p>
+                  </div>
+                  <MetricPill label="Total" value={article.views_count} />
+                  <MetricPill label="Today" value={article.today_views} />
+                  <MetricPill label="Comments" value={article.comments_count} />
+                </article>
+              ))}
+              {articlePerformance.length === 0 && (
+                <p className="py-4 text-sm font-bold text-black/45">No article views have been recorded yet.</p>
+              )}
+            </div>
+          </section>
+
           <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
             <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
               <div className="mb-4 flex items-center justify-between gap-3">
@@ -438,6 +479,15 @@ function StatCard({
         <Icon className="size-5 text-red-600" />
       </div>
       <p className="mt-4 text-4xl font-black tracking-[-0.06em] text-[#111]">{value.toLocaleString()}</p>
+    </div>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md bg-black/[0.03] px-3 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-black/35">{label}</p>
+      <p className="mt-1 text-lg font-black tracking-[-0.04em] text-[#111]">{value.toLocaleString()}</p>
     </div>
   );
 }

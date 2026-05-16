@@ -53,6 +53,33 @@ class AnalyticsOverviewView(views.APIView):
             .order_by("-views_count")[:5]
             .values("id", "name", "slug", "articles_count", "views_count")
         )
+        article_performance = (
+            public_articles
+            .select_related("category")
+            .annotate(
+                real_views_count=Count("view_events", distinct=True),
+                today_views_count=Count(
+                    "view_events",
+                    filter=Q(view_events__viewed_at__date=timezone.localdate()),
+                    distinct=True,
+                ),
+                live_comments_count=Count("comments", filter=Q(comments__is_approved=True), distinct=True),
+            )
+            .order_by("-real_views_count", "-today_views_count", "-published_at")[:12]
+        )
+        article_performance_data = [
+            {
+                "id": article.id,
+                "title": article.title,
+                "slug": article.slug,
+                "category": article.category.name,
+                "views_count": article.real_views_count,
+                "today_views": article.today_views_count,
+                "comments_count": article.live_comments_count,
+                "published_at": article.published_at,
+            }
+            for article in article_performance
+        ]
         live_views = ArticleView.objects.filter(article__is_published=True, article__published_at__lte=now)
         live_comments = Comment.objects.filter(article__is_published=True, article__published_at__lte=now, is_approved=True)
 
@@ -63,6 +90,7 @@ class AnalyticsOverviewView(views.APIView):
             "total_comments": live_comments.count(),
             "total_newsletter_subscribers": NewsletterSubscription.objects.filter(is_active=True).count(),
             "trending_articles": ArticleListSerializer(trending, many=True, context={"request": request}).data,
+            "article_performance": article_performance_data,
             "popular_categories": list(categories),
             "recent_activity": ActivityLogSerializer(ActivityLog.objects.select_related("user")[:12], many=True).data,
             "recent_login_attempts": LoginAttemptSerializer(LoginAttempt.objects.select_related("user")[:8], many=True).data,

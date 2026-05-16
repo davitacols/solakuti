@@ -10,6 +10,7 @@ class AnalyticsOverviewSerializer(serializers.Serializer):
     total_comments = serializers.IntegerField()
     total_newsletter_subscribers = serializers.IntegerField()
     trending_articles = serializers.ListField()
+    article_performance = serializers.ListField(required=False)
     popular_categories = serializers.ListField()
     recent_activity = serializers.ListField(required=False)
     recent_login_attempts = serializers.ListField(required=False)

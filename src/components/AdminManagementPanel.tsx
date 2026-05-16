@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Clipboard,
@@ -102,6 +102,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   const [articleCategory, setArticleCategory] = useState("all");
   const [articleDraft, setArticleDraft] = useState<Record<string, string>>({});
   const [articleRevisions, setArticleRevisions] = useState<AdminArticleRevision[]>([]);
+  const editFormRef = useRef<HTMLDivElement>(null);
   const [previewArticle, setPreviewArticle] = useState<{
     title: string;
     excerpt: string;
@@ -324,6 +325,9 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     setEditingArticle(response.data);
     setEditImageFile(null);
     setEditEditorKey((current) => current + 1);
+    window.setTimeout(() => {
+      editFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
     const revisionsResponse = await getArticleRevisions(token, slug);
     setArticleRevisions(revisionsResponse?.data ?? []);
   }
@@ -352,6 +356,19 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     setEditImageFile(null);
     setEditingArticle(null);
     setArticleRevisions([]);
+  }
+
+  async function handleDeleteArticle(article: Article) {
+    const confirmed = window.confirm(`Delete "${article.title}" permanently? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+    const response = await runAction(`delete-article-${article.slug}`, () => adminDeleteArticle(token, article.slug));
+    if (response?.success && editingArticle?.slug === article.slug) {
+      setEditingArticle(null);
+      setEditImageFile(null);
+      setArticleRevisions([]);
+    }
   }
 
   async function handleRestoreRevision(revisionId: number) {
@@ -543,7 +560,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
             </AdminForm>
             <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white">
               {editingArticle && (
-                <div className="border-b border-black/10 bg-[#f7f4ef] p-4">
+                <div ref={editFormRef} className="scroll-mt-24 border-b border-black/10 bg-[#f7f4ef] p-4">
                   <AdminForm title={`Edit: ${editingArticle.title}`} onSubmit={handleUpdateArticle} busy={busy === "update-article"} hideDefaultSubmit>
                     <TextInput name="title" placeholder="Headline" defaultValue={editingArticle.title} required />
                     <Textarea name="excerpt" placeholder="Short excerpt" rows={3} defaultValue={editingArticle.excerpt} required />
@@ -624,7 +641,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 onStatusChange={setArticleStatus}
                 onCategoryChange={setArticleCategory}
                 onEdit={startEditingArticle}
-                onDelete={(article) => runAction(`delete-article-${article.slug}`, () => adminDeleteArticle(token, article.slug))}
+                onDelete={handleDeleteArticle}
               />
             </div>
           </div>
@@ -1005,11 +1022,13 @@ function ArticleTable({
                       <ExternalLink className="size-4" />
                     </Link>
                   )}
-                  <LoadingButton type="button" loading={busy === `edit-load-${article.slug}`} onClick={() => onEdit(article.slug)} className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Edit article">
+                  <LoadingButton type="button" loading={busy === `edit-load-${article.slug}`} onClick={() => onEdit(article.slug)} className="inline-flex h-9 items-center gap-2 rounded-full border border-black/10 px-3 text-xs font-black text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Edit article">
                     <Pencil className="size-4" />
+                    Edit
                   </LoadingButton>
-                  <LoadingButton type="button" onClick={() => onDelete(article)} className="grid size-9 place-items-center rounded-full border border-black/10 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white" aria-label="Delete article">
+                  <LoadingButton type="button" loading={busy === `delete-article-${article.slug}`} onClick={() => onDelete(article)} className="inline-flex h-9 items-center gap-2 rounded-full border border-black/10 px-3 text-xs font-black text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white" aria-label="Delete article">
                     <Trash2 className="size-4" />
+                    Delete
                   </LoadingButton>
                 </div>
               </div>
@@ -1059,7 +1078,7 @@ function ArticleTable({
                       <LoadingButton type="button" loading={busy === `edit-load-${article.slug}`} onClick={() => onEdit(article.slug)} className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Edit article">
                         <Pencil className="size-4" />
                       </LoadingButton>
-                      <LoadingButton type="button" onClick={() => onDelete(article)} className="grid size-9 place-items-center rounded-full border border-black/10 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white" aria-label="Delete article">
+                      <LoadingButton type="button" loading={busy === `delete-article-${article.slug}`} onClick={() => onDelete(article)} className="grid size-9 place-items-center rounded-full border border-black/10 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white" aria-label="Delete article">
                         <Trash2 className="size-4" />
                       </LoadingButton>
                     </div>
