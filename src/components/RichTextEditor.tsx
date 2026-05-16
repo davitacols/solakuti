@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import {
   Bold,
   Heading2,
@@ -24,6 +24,7 @@ type RichTextEditorProps = {
   resetKey?: number;
   initialHtml?: string;
   mediaAssets?: AdminMediaAsset[];
+  onUploadMediaFiles?: (files: File[]) => Promise<AdminMediaAsset[]>;
 };
 
 const toolbar = [
@@ -81,21 +82,40 @@ function isDirectVideo(url: string) {
   return /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
 }
 
-export default function RichTextEditor({ name, label, resetKey = 0, initialHtml = "", mediaAssets = [] }: RichTextEditorProps) {
+export default function RichTextEditor({
+  name,
+  label,
+  resetKey = 0,
+  initialHtml = "",
+  mediaAssets = [],
+  onUploadMediaFiles
+}: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [html, setHtml] = useState("");
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [isEmpty, setIsEmpty] = useState(true);
   const [focused, setFocused] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const visibleMedia = mediaAssets.slice(0, 8);
 
   useEffect(() => {
-    setHtml(initialHtml);
     if (editorRef.current) {
       editorRef.current.innerHTML = initialHtml;
     }
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.value = initialHtml;
+    }
+    setIsEmpty(!htmlToText(initialHtml));
   }, [initialHtml, resetKey]);
 
   function sync() {
-    setHtml(editorRef.current?.innerHTML ?? "");
+    const nextHtml = editorRef.current?.innerHTML ?? "";
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.value = nextHtml;
+      hiddenInputRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    const nextIsEmpty = !htmlToText(nextHtml);
+    setIsEmpty((current) => (current === nextIsEmpty ? current : nextIsEmpty));
   }
 
   function runCommand(command: string, value?: string) {
@@ -170,6 +190,40 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
     addImage(url, asset.alt_text || asset.title);
   }
 
+  async function handleUploadSelection(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!files.length || !onUploadMediaFiles) {
+      return;
+    }
+    setUploading(true);
+    try {
+      const uploadedAssets = await onUploadMediaFiles(files);
+      uploadedAssets.forEach((asset) => insertMediaAsset(asset));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Backspace" && event.key !== "Delete") {
+      return;
+    }
+    const selection = window.getSelection();
+    const current = editorRef.current;
+    if (!selection || !current || !selection.isCollapsed) {
+      return;
+    }
+    const node = selection.anchorNode;
+    const element = node instanceof Element ? node : node?.parentElement;
+    const media = element?.closest(".story-media");
+    if (media && current.contains(media)) {
+      event.preventDefault();
+      media.remove();
+      sync();
+    }
+  }
+
   return (
     <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white">
       <div className="flex flex-col gap-3 border-b border-black/10 p-3">
@@ -213,6 +267,29 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
           >
             <Image className="size-4" />
           </button>
+          {onUploadMediaFiles && (
+            <>
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => uploadInputRef.current?.click()}
+                className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-black uppercase tracking-[0.1em] text-black/62 transition hover:bg-black hover:text-white"
+                aria-label="Upload photo story images"
+                title="Upload multiple photos"
+              >
+                <Image className="size-4" />
+                {uploading ? "Uploading" : "Photo speak"}
+              </button>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                className="hidden"
+                onChange={handleUploadSelection}
+              />
+            </>
+          )}
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
@@ -260,7 +337,7 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
       </div>
 
       <div className="relative min-w-0">
-        {!html && !focused && (
+        {isEmpty && !focused && (
           <p className="pointer-events-none absolute left-4 top-4 text-sm font-semibold text-black/32">
             Write the story body. Use headings, lists, quotes and links where needed.
           </p>
@@ -270,6 +347,7 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
           contentEditable
           suppressContentEditableWarning
           onInput={sync}
+          onKeyDown={handleKeyDown}
           onBlur={() => {
             setFocused(false);
             sync();
@@ -281,7 +359,11 @@ export default function RichTextEditor({ name, label, resetKey = 0, initialHtml 
           )}
         />
       </div>
-      <input type="hidden" name={name} value={html} />
+      <input ref={hiddenInputRef} type="hidden" name={name} defaultValue={initialHtml} />
     </div>
   );
+}
+
+function htmlToText(value: string) {
+  return value.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 }

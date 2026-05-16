@@ -90,7 +90,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   const [media, setMedia] = useState<AdminMediaAsset[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [createFormKey, setCreateFormKey] = useState(0);
@@ -386,19 +386,55 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
 
   async function handleUploadMedia(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!mediaFile) {
-      setMessage("Choose an image or video file first.");
+    if (!mediaFiles.length) {
+      setMessage("Choose at least one image or video file first.");
       return;
     }
     const form = new FormData(event.currentTarget);
     const assetType = String(form.get("asset_type") ?? "image") === "video" ? "video" : "image";
-    if (!validateUploadFile(mediaFile, assetType)) {
+    const uploaded = await uploadMediaFiles(
+      mediaFiles,
+      assetType,
+      String(form.get("title") ?? ""),
+      String(form.get("alt_text") ?? "")
+    );
+    if (!uploaded.length) {
       return;
     }
-    form.set("file", mediaFile);
-    await runAction("upload-media", () => adminUploadMedia(token, form));
     event.currentTarget.reset();
-    setMediaFile(null);
+    setMediaFiles([]);
+  }
+
+  async function uploadMediaFiles(files: File[], assetType: "image" | "video", titlePrefix = "", altText = "") {
+    const validFiles = files.filter((file) => validateUploadFile(file, assetType));
+    if (!validFiles.length) {
+      return [];
+    }
+
+    setBusy("upload-media");
+    setMessage(null);
+    const uploaded: AdminMediaAsset[] = [];
+
+    for (const [index, file] of validFiles.entries()) {
+      const form = new FormData();
+      form.set("title", titlePrefix || file.name.replace(/\.[^.]+$/, "") || `Photo ${index + 1}`);
+      form.set("alt_text", altText || file.name.replace(/\.[^.]+$/, ""));
+      form.set("asset_type", assetType);
+      form.set("file", file);
+      const response = await adminUploadMedia(token, form);
+      if (!response?.success || !response.data) {
+        setMessage(response?.message ?? `Could not upload ${file.name}.`);
+        setBusy(null);
+        return uploaded;
+      }
+      uploaded.push(response.data);
+    }
+
+    setMedia((current) => [...uploaded, ...current]);
+    setBusy(null);
+    setMessage(`${uploaded.length} media file${uploaded.length === 1 ? "" : "s"} uploaded.`);
+    await loadCollections();
+    return uploaded;
   }
 
   return (
@@ -453,7 +489,14 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
             >
               <TextInput name="title" placeholder="Headline" defaultValue={articleDraft.title ?? ""} required />
               <Textarea name="excerpt" placeholder="Short excerpt" rows={3} defaultValue={articleDraft.excerpt ?? ""} required />
-              <RichTextEditor name="content" label="Article body" resetKey={articleEditorKey} initialHtml={articleDraft.content ?? ""} mediaAssets={media} />
+              <RichTextEditor
+                name="content"
+                label="Article body"
+                resetKey={articleEditorKey}
+                initialHtml={articleDraft.content ?? ""}
+                mediaAssets={media}
+                onUploadMediaFiles={(files) => uploadMediaFiles(files, "image", "Photo speak")}
+              />
               <FileInput
                 label="Featured image"
                 onChange={(file) => setArticleImageFile(file)}
@@ -499,6 +542,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       initialHtml={editingArticle.contentHtml ?? editingArticle.body.map((paragraph) => `<p>${paragraph}</p>`).join("")}
                       resetKey={editEditorKey}
                       mediaAssets={media}
+                      onUploadMediaFiles={(files) => uploadMediaFiles(files, "image", "Photo speak")}
                     />
                     <FileInput
                       label="Replace featured image"
@@ -688,10 +732,16 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
               <input
                 name="file"
                 type="file"
-                onChange={(event) => setMediaFile(event.target.files?.[0] ?? null)}
+                multiple
+                onChange={(event) => setMediaFiles(Array.from(event.target.files ?? []))}
                 className="w-full rounded-md border border-black/10 bg-white p-3 text-sm font-bold"
                 accept="image/*,video/*"
               />
+              {mediaFiles.length > 0 && (
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">
+                  {mediaFiles.length} file{mediaFiles.length === 1 ? "" : "s"} selected
+                </p>
+              )}
             </AdminForm>
             <AdminList title="Media library">
               {media.map((asset) => (
