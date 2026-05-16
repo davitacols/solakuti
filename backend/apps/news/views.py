@@ -3,9 +3,16 @@ from django.utils import timezone
 from rest_framework import decorators, filters, generics, permissions, status, viewsets
 
 from apps.news.filters import ArticleFilter
-from apps.news.models import Article, Comment
-from apps.news.serializers import ArticleDetailSerializer, ArticleListSerializer, ArticleWriteSerializer, CommentSerializer
-from apps.analytics.models import ArticleView
+from apps.news.models import Article, ArticleRevision, Comment
+from apps.news.serializers import (
+    ArticleDetailSerializer,
+    ArticleListSerializer,
+    ArticleRevisionSerializer,
+    ArticleWriteSerializer,
+    CommentSerializer,
+)
+from apps.analytics.models import ActivityLog, ArticleView
+from apps.analytics.utils import get_client_ip, log_activity
 from core.permissions import IsAuthorOrEditor, IsWriterOrReadOnly
 from core.responses import ApiResponseMixin, api_response
 
@@ -30,7 +37,9 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         )
         if self.request.user.is_authenticated and self.request.user.role in {"admin", "editor", "journalist"}:
             return queryset
-        return queryset.filter(is_published=True)
+        if self.request.user.is_authenticated and self.request.user.role == "contributor":
+            return queryset.filter(Q(is_published=True, published_at__lte=timezone.now()) | Q(author=self.request.user))
+        return queryset.filter(is_published=True, published_at__lte=timezone.now())
 
     def get_serializer_class(self):
         if self.action in {"create", "update", "partial_update"}:
@@ -46,7 +55,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
             ArticleView.objects.create(
                 article=instance,
                 user=request.user if request.user.is_authenticated else None,
-                ip_address=self._get_client_ip(request),
+                ip_address=get_client_ip(request),
                 user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
             )
             instance.refresh_from_db(fields=["views_count"])
@@ -71,6 +80,76 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     def latest(self, request):
         return self._article_collection(self.get_queryset().order_by("-published_at"), "Latest articles fetched successfully.")
 
+    @decorators.action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    def revisions(self, request, slug=None):
+        article = self.get_object()
+        if not self._can_manage_article(request, article):
+            return api_response(None, message="You do not have permission to view revisions.", success=False, status_code=403)
+        serializer = ArticleRevisionSerializer(article.revisions.select_related("created_by")[:20], many=True)
+        return api_response(serializer.data, message="Article revisions fetched successfully.")
+
+    @decorators.action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated], url_path="restore-revision")
+    def restore_revision(self, request, slug=None):
+        article = self.get_object()
+        if not self._can_manage_article(request, article):
+            return api_response(None, message="You do not have permission to restore this article.", success=False, status_code=403)
+        revision_id = request.data.get("revision_id")
+        try:
+            revision = article.revisions.get(pk=revision_id)
+        except ArticleRevision.DoesNotExist:
+            return api_response(None, message="Revision not found.", success=False, status_code=404)
+
+        ArticleRevision.capture(article, request.user, note="Before revision restore")
+        restored = revision.restore_to_article()
+        log_activity(
+            request,
+            ActivityLog.Action.RESTORED,
+            "article",
+            f"Restored article revision: {restored.title}",
+            object_id=restored.pk,
+            metadata={"slug": restored.slug, "revision_id": revision.pk},
+        )
+        serializer = ArticleDetailSerializer(restored, context={"request": request})
+        return api_response(serializer.data, message="Article revision restored successfully.")
+
+    def perform_create(self, serializer):
+        article = serializer.save()
+        action = ActivityLog.Action.PUBLISHED if article.is_published else ActivityLog.Action.CREATED
+        log_activity(
+            self.request,
+            action,
+            "article",
+            f"{'Published' if article.is_published else 'Created'} article: {article.title}",
+            object_id=article.pk,
+            metadata={"slug": article.slug, "status": article.editorial_status},
+        )
+
+    def perform_update(self, serializer):
+        article = self.get_object()
+        was_published = article.is_published
+        ArticleRevision.capture(article, self.request.user, note="Before article update")
+        updated = serializer.save()
+        action = ActivityLog.Action.PUBLISHED if updated.is_published and not was_published else ActivityLog.Action.UPDATED
+        log_activity(
+            self.request,
+            action,
+            "article",
+            f"{'Published' if action == ActivityLog.Action.PUBLISHED else 'Updated'} article: {updated.title}",
+            object_id=updated.pk,
+            metadata={"slug": updated.slug, "status": updated.editorial_status},
+        )
+
+    def perform_destroy(self, instance):
+        log_activity(
+            self.request,
+            ActivityLog.Action.DELETED,
+            "article",
+            f"Deleted article: {instance.title}",
+            object_id=instance.pk,
+            metadata={"slug": instance.slug},
+        )
+        instance.delete()
+
     def _article_collection(self, queryset, message):
         page = self.paginate_queryset(queryset)
         serializer = ArticleListSerializer(page or queryset, many=True, context={"request": self.request})
@@ -79,11 +158,12 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         return api_response(serializer.data, message=message)
 
     @staticmethod
-    def _get_client_ip(request):
-        forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR")
+    def _can_manage_article(request, article):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (request.user.role in {"admin", "editor"} or article.author_id == request.user.id)
+        )
 
 
 class CommentViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -111,6 +191,17 @@ class CommentViewSet(ApiResponseMixin, viewsets.ModelViewSet):
             status_code=status.HTTP_201_CREATED,
         )
 
+    def perform_create(self, serializer):
+        comment = serializer.save()
+        log_activity(
+            self.request,
+            ActivityLog.Action.CREATED,
+            "comment",
+            f"Posted comment on: {comment.article.title}",
+            object_id=comment.pk,
+            metadata={"article_slug": comment.article.slug},
+        )
+
     def update(self, request, *args, **kwargs):
         comment = self.get_object()
         if not self._can_manage_comment(request, comment):
@@ -128,6 +219,17 @@ class CommentViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         if not self._can_manage_comment(request, comment):
             return api_response(None, message="You do not have permission to delete this comment.", success=False, status_code=403)
         return super().destroy(request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        log_activity(
+            self.request,
+            ActivityLog.Action.DELETED,
+            "comment",
+            f"Deleted comment on: {instance.article.title}",
+            object_id=instance.pk,
+            metadata={"article_slug": instance.article.slug},
+        )
+        instance.delete()
 
     @decorators.action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def approve(self, request, pk=None):
@@ -159,7 +261,7 @@ class SearchView(ApiResponseMixin, generics.ListAPIView):
     def get_queryset(self):
         query = self.request.query_params.get("q", "").strip()
         queryset = (
-            Article.objects.filter(is_published=True)
+            Article.objects.filter(is_published=True, published_at__lte=timezone.now())
             .select_related("category", "author")
             .prefetch_related("tags")
             .annotate(real_views_count=Count("view_events", distinct=True))

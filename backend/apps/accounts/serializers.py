@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from drf_spectacular.utils import OpenApiTypes, extend_schema_field
 
@@ -67,6 +68,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop("password")
+        validate_password(password)
         return User.objects.create_user(password=password, **validated_data)
 
 
@@ -84,3 +86,17 @@ class SolakutiTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data["user"] = UserSerializer(self.user, context=self.context).data
         return data
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value

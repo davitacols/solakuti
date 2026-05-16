@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
-import { Mail } from "lucide-react";
+import { Bell, Mail, MessageCircle } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
 import { subscribeToNewsletter } from "@/lib/api";
 
@@ -21,6 +21,15 @@ export default function NewsletterSection() {
     if (response?.success) {
       setEmail("");
     }
+  }
+
+  async function handleNotificationOptIn() {
+    if (!("Notification" in window)) {
+      setMessage("Push notifications are not supported on this browser.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setMessage(permission === "granted" ? "Notifications enabled on this device." : "Notifications were not enabled.");
   }
 
   return (
@@ -65,6 +74,25 @@ export default function NewsletterSection() {
             Subscribe
           </LoadingButton>
           {message && <p className="text-sm font-bold text-white/72">{message}</p>}
+          <div className="grid gap-2 pt-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={handleNotificationOptIn}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/12 text-xs font-black uppercase tracking-[0.12em] text-white/76 transition hover:border-white hover:text-white"
+            >
+              <Bell className="size-4" />
+              Alerts
+            </button>
+            <a
+              href="https://wa.me/?text=Follow%20Solakuti%20for%20premium%20Nigerian%20news%20and%20analysis."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/12 text-xs font-black uppercase tracking-[0.12em] text-white/76 transition hover:border-white hover:text-white"
+            >
+              <MessageCircle className="size-4" />
+              WhatsApp
+            </a>
+          </div>
         </form>
       </div>
     </motion.section>

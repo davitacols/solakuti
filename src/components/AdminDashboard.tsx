@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
@@ -16,15 +16,17 @@ import {
 import DistributionPanel from "@/components/DistributionPanel";
 import AdminManagementPanel from "@/components/AdminManagementPanel";
 import LoadingButton from "@/components/LoadingButton";
-import { getAdminArticles, getAdminOverview, login } from "@/lib/api";
+import { exportNewsletterSubscribers, getAdminArticles, getAdminOverview, login, logout } from "@/lib/api";
 import { Article } from "@/types/article";
 import { formatDate } from "@/lib/utils";
 
 type Session = {
   access: string;
+  refresh: string;
   fullName: string;
   email: string;
   role: string;
+  expiresAt: number;
 };
 
 type Overview = {
@@ -40,9 +42,26 @@ type Overview = {
     articles_count: number;
     views_count: number | null;
   }>;
+  recent_activity?: Array<{
+    id: number;
+    action: string;
+    object_type: string;
+    description: string;
+    created_at: string;
+  }>;
+  recent_login_attempts?: Array<{
+    id: number;
+    email: string;
+    success: boolean;
+    created_at: string;
+  }>;
+  last_updated?: string;
+  source?: "live_api";
 };
 
 const allowedRoles = new Set(["admin", "editor"]);
+const sessionLengthMs = 30 * 60 * 1000;
+const sessionWarningMs = 5 * 60 * 1000;
 
 export default function AdminDashboard() {
   const [email, setEmail] = useState("");
@@ -54,6 +73,29 @@ export default function AdminDashboard() {
   const [busy, setBusy] = useState(false);
 
   const topArticle = useMemo(() => articles[0], [articles]);
+  const recentActivity = overview?.recent_activity ?? [];
+  const recentLogins = overview?.recent_login_attempts ?? [];
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+    const warningDelay = Math.max(0, session.expiresAt - Date.now() - sessionWarningMs);
+    const expiryDelay = Math.max(0, session.expiresAt - Date.now());
+    const warningTimer = window.setTimeout(() => {
+      setMessage("Security notice: this admin session will close soon. Save your work.");
+    }, warningDelay);
+    const expiryTimer = window.setTimeout(() => {
+      setSession(null);
+      setOverview(null);
+      setArticles([]);
+      setMessage("Your admin session expired. Please sign in again.");
+    }, expiryDelay);
+    return () => {
+      window.clearTimeout(warningTimer);
+      window.clearTimeout(expiryTimer);
+    };
+  }, [session]);
 
   async function loadDashboard(token: string) {
     const [overviewResponse, articlesResponse] = await Promise.all([
@@ -91,14 +133,43 @@ export default function AdminDashboard() {
 
     const nextSession = {
       access: response.data.access,
+      refresh: response.data.refresh,
       fullName: response.data.user.full_name,
       email: response.data.user.email ?? email,
-      role
+      role,
+      expiresAt: Date.now() + sessionLengthMs
     };
 
     setSession(nextSession);
     await loadDashboard(nextSession.access);
     setBusy(false);
+  }
+
+  async function handleSignOut() {
+    if (session?.refresh) {
+      await logout(session.refresh, session.access);
+    }
+    setSession(null);
+    setOverview(null);
+    setArticles([]);
+    setMessage(null);
+  }
+
+  async function handleExportSubscribers() {
+    if (!session) {
+      return;
+    }
+    const blob = await exportNewsletterSubscribers(session.access);
+    if (!blob) {
+      setMessage("Could not export newsletter subscribers.");
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "solakuti-newsletter-subscribers.csv";
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -183,11 +254,7 @@ export default function AdminDashboard() {
             </div>
             <LoadingButton
               type="button"
-              onClick={() => {
-                setSession(null);
-                setOverview(null);
-                setArticles([]);
-              }}
+              onClick={handleSignOut}
               className="h-11 rounded-full border border-black/10 bg-white px-5 text-sm font-black transition hover:border-black hover:bg-black hover:text-white"
             >
               Sign out
@@ -204,12 +271,67 @@ export default function AdminDashboard() {
           />
 
           <div className="grid gap-5 md:grid-cols-5">
-            <StatCard icon={FileText} label="Articles" value={overview?.total_articles ?? 0} />
-            <StatCard icon={Eye} label="Views" value={overview?.total_views ?? 0} />
+            <StatCard icon={FileText} label="Live articles" value={overview?.total_articles ?? 0} />
+            <StatCard icon={Eye} label="Real views" value={overview?.total_views ?? 0} />
             <StatCard icon={BarChart3} label="Today" value={overview?.today_views ?? 0} />
-            <StatCard icon={MessageSquare} label="Comments" value={overview?.total_comments ?? 0} />
+            <StatCard icon={MessageSquare} label="Live comments" value={overview?.total_comments ?? 0} />
             <StatCard icon={Tags} label="Subscribers" value={overview?.total_newsletter_subscribers ?? 0} />
           </div>
+          {overview?.last_updated && (
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-black/35">
+              Live API data - refreshed {formatDate(overview.last_updated)}
+            </p>
+          )}
+
+          <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+            <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-red-600">Security audit</p>
+                  <h3 className="mt-1 text-2xl font-black tracking-[-0.05em]">Recent activity</h3>
+                </div>
+                <ShieldCheck className="size-6 text-black/25" />
+              </div>
+              <div className="divide-y divide-black/10">
+                {recentActivity.slice(0, 8).map((item) => (
+                  <div key={item.id} className="py-3">
+                    <p className="text-sm font-black text-[#111]">{item.description}</p>
+                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-black/38">
+                      {item.action} · {item.object_type} · {formatDate(item.created_at)}
+                    </p>
+                  </div>
+                ))}
+                {recentActivity.length === 0 && <p className="text-sm font-bold text-black/45">No activity yet.</p>}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="font-black tracking-[-0.03em]">Login attempts</h3>
+                <LoadingButton
+                  type="button"
+                  onClick={handleExportSubscribers}
+                  className="h-9 rounded-full bg-black px-3 text-xs font-black text-white transition hover:bg-red-600"
+                >
+                  Export CSV
+                </LoadingButton>
+              </div>
+              <div className="space-y-3">
+                {recentLogins.slice(0, 6).map((attempt) => (
+                  <div key={attempt.id} className="rounded-md bg-black/5 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-black">{attempt.email || "Unknown email"}</p>
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${attempt.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                        {attempt.success ? "Success" : "Failed"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs font-bold text-black/38">{formatDate(attempt.created_at)}</p>
+                  </div>
+                ))}
+                {recentLogins.length === 0 && <p className="text-sm font-bold text-black/45">No login attempts yet.</p>}
+              </div>
+            </div>
+          </section>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
             <section className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">

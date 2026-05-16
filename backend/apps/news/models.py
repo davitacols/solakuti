@@ -98,6 +98,58 @@ class Article(models.Model):
         return self.title
 
 
+class ArticleRevision(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="revisions")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="article_revisions")
+    title = models.CharField(max_length=240)
+    excerpt = models.TextField(max_length=420)
+    content = models.TextField()
+    editorial_status = models.CharField(max_length=20, choices=Article.EditorialStatus.choices)
+    is_featured = models.BooleanField(default=False)
+    is_breaking = models.BooleanField(default=False)
+    is_published = models.BooleanField(default=False)
+    published_at = models.DateTimeField(blank=True, null=True)
+    note = models.CharField(max_length=160, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["article", "-created_at"]),
+        ]
+
+    @classmethod
+    def capture(cls, article, user=None, note=""):
+        return cls.objects.create(
+            article=article,
+            created_by=user if user and user.is_authenticated else None,
+            title=article.title,
+            excerpt=article.excerpt,
+            content=article.content,
+            editorial_status=article.editorial_status,
+            is_featured=article.is_featured,
+            is_breaking=article.is_breaking,
+            is_published=article.is_published,
+            published_at=article.published_at,
+            note=note,
+        )
+
+    def restore_to_article(self):
+        self.article.title = self.title
+        self.article.excerpt = self.excerpt
+        self.article.content = self.content
+        self.article.editorial_status = self.editorial_status
+        self.article.is_featured = self.is_featured
+        self.article.is_breaking = self.is_breaking
+        self.article.is_published = self.is_published
+        self.article.published_at = self.published_at
+        self.article.save()
+        return self.article
+
+    def __str__(self):
+        return f"{self.article} revision {self.created_at}"
+
+
 class Comment(models.Model):
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments")

@@ -22,6 +22,7 @@ import RichTextEditor from "@/components/RichTextEditor";
 import {
   AdminCategory,
   AdminComment,
+  AdminArticleRevision,
   AdminMediaAsset,
   AdminUser,
   adminCreateArticle,
@@ -38,7 +39,10 @@ import {
   getAdminCategories,
   getAdminComments,
   getAdminMedia,
-  getAdminUsers
+  getAdminUsers,
+  getArticleRevisions,
+  restoreArticleRevision,
+  sanitizeArticleHtml
 } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
 import { Article } from "@/types/article";
@@ -61,6 +65,22 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof FilePlus2 }> = [
 ];
 
 const roleOptions = ["admin", "editor", "journalist", "contributor"];
+const maxImageUploadSize = 5 * 1024 * 1024;
+const maxVideoUploadSize = 50 * 1024 * 1024;
+const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const allowedVideoTypes = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+
+function toDateTimeLocalValue(value?: string) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
 
 export default function AdminManagementPanel({ token, role, articles, onRefresh }: AdminManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("articles");
@@ -81,6 +101,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   const [articleStatus, setArticleStatus] = useState("all");
   const [articleCategory, setArticleCategory] = useState("all");
   const [articleDraft, setArticleDraft] = useState<Record<string, string>>({});
+  const [articleRevisions, setArticleRevisions] = useState<AdminArticleRevision[]>([]);
   const [previewArticle, setPreviewArticle] = useState<{
     title: string;
     excerpt: string;
@@ -92,7 +113,18 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   } | null>(null);
 
   const isAdmin = role === "admin";
-  const visibleTabs = useMemo(() => tabs.filter((tab) => tab.id !== "users" || isAdmin), [isAdmin]);
+  const canManageStructure = ["admin", "editor"].includes(role);
+  const canManageMedia = ["admin", "editor", "journalist"].includes(role);
+  const visibleTabs = useMemo(
+    () =>
+      tabs.filter((tab) => {
+        if (tab.id === "users") return isAdmin;
+        if (tab.id === "categories" || tab.id === "comments") return canManageStructure;
+        if (tab.id === "media") return canManageMedia;
+        return true;
+      }),
+    [canManageMedia, canManageStructure, isAdmin]
+  );
   const filteredArticles = useMemo(() => {
     const query = articleQuery.trim().toLowerCase();
     return articles.filter((article) => {
@@ -161,6 +193,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
 
   function articleFormPayload(form: FormData, category: number, content: string, imageFile?: File | null, action = "publish") {
     const editorial = getEditorialState(action);
+    const scheduledAt = String(form.get("scheduled_at") ?? "").trim();
     const payload = new FormData();
     payload.set("title", String(form.get("title") ?? ""));
     payload.set("excerpt", String(form.get("excerpt") ?? ""));
@@ -175,7 +208,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     payload.set("is_published", String(editorial.isPublished));
     payload.set("editorial_status", editorial.editorialStatus);
     if (editorial.isPublished) {
-      payload.set("published_at", new Date().toISOString());
+      payload.set("published_at", scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString());
     }
     if (imageFile) {
       payload.set("featured_image", imageFile);
@@ -218,12 +251,41 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     return { category, articleContent };
   }
 
+  function validateUploadFile(file: File, assetType: "image" | "video") {
+    if (assetType === "image") {
+      if (!allowedImageTypes.has(file.type)) {
+        setMessage("Use a JPG, PNG, WebP, or GIF image.");
+        return false;
+      }
+      if (file.size > maxImageUploadSize) {
+        setMessage("Images must be 5MB or smaller.");
+        return false;
+      }
+    }
+
+    if (assetType === "video") {
+      if (!allowedVideoTypes.has(file.type)) {
+        setMessage("Use an MP4, WebM, or MOV video.");
+        return false;
+      }
+      if (file.size > maxVideoUploadSize) {
+        setMessage("Videos must be 50MB or smaller.");
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   async function handleCreateArticle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const action = getSubmitAction(event);
     const form = new FormData(event.currentTarget);
     const valid = validateArticleForm(form);
     if (!valid) {
+      return;
+    }
+    if (articleImageFile && !validateUploadFile(articleImageFile, "image")) {
       return;
     }
 
@@ -252,6 +314,8 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     setEditingArticle(response.data);
     setEditImageFile(null);
     setEditEditorKey((current) => current + 1);
+    const revisionsResponse = await getArticleRevisions(token, slug);
+    setArticleRevisions(revisionsResponse?.data ?? []);
   }
 
   async function handleUpdateArticle(event: FormEvent<HTMLFormElement>) {
@@ -265,12 +329,30 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     if (!valid) {
       return;
     }
+    if (editImageFile && !validateUploadFile(editImageFile, "image")) {
+      return;
+    }
 
-    await runAction("update-article", () =>
+    const response = await runAction("update-article", () =>
       adminUpdateArticle(token, editingArticle.slug, articleFormPayload(form, valid.category, valid.articleContent, editImageFile, action))
     );
+    if (!response?.success) {
+      return;
+    }
     setEditImageFile(null);
     setEditingArticle(null);
+    setArticleRevisions([]);
+  }
+
+  async function handleRestoreRevision(revisionId: number) {
+    if (!editingArticle) {
+      return;
+    }
+    const response = await runAction(`restore-revision-${revisionId}`, () => restoreArticleRevision(token, editingArticle.slug, revisionId));
+    if (response?.success) {
+      setEditingArticle(null);
+      setArticleRevisions([]);
+    }
   }
 
   async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
@@ -309,6 +391,10 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       return;
     }
     const form = new FormData(event.currentTarget);
+    const assetType = String(form.get("asset_type") ?? "image") === "video" ? "video" : "image";
+    if (!validateUploadFile(mediaFile, assetType)) {
+      return;
+    }
     form.set("file", mediaFile);
     await runAction("upload-media", () => adminUploadMedia(token, form));
     event.currentTarget.reset();
@@ -381,6 +467,12 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 ))}
               </SelectInput>
               <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={articleDraft.tag_names ?? ""} />
+              <TextInput
+                name="scheduled_at"
+                type="datetime-local"
+                placeholder="Schedule publish time"
+                defaultValue={articleDraft.scheduled_at ?? ""}
+              />
               <div className="rounded-md border border-black/10 bg-white p-3">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">SEO optional</p>
                 <div className="mt-3 space-y-3">
@@ -414,6 +506,12 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       onChange={(file) => setEditImageFile(file)}
                     />
                     <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={(editingArticle.tags ?? []).join(", ")} />
+                    <TextInput
+                      name="scheduled_at"
+                      type="datetime-local"
+                      placeholder="Schedule publish time"
+                      defaultValue={toDateTimeLocalValue(editingArticle.publishedAt)}
+                    />
                     <div className="rounded-md border border-black/10 bg-white p-3">
                       <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">SEO optional</p>
                       <div className="mt-3 space-y-3">
@@ -452,6 +550,11 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                     >
                       Cancel edit
                     </button>
+                    <RevisionList
+                      revisions={articleRevisions}
+                      busy={busy}
+                      onRestore={handleRestoreRevision}
+                    />
                   </AdminForm>
                 </div>
               )}
@@ -714,6 +817,51 @@ function ArticleFormActions({
   );
 }
 
+function RevisionList({
+  revisions,
+  busy,
+  onRestore
+}: {
+  revisions: AdminArticleRevision[];
+  busy: string | null;
+  onRestore: (revisionId: number) => void;
+}) {
+  if (revisions.length === 0) {
+    return (
+      <div className="mt-3 rounded-md border border-black/10 bg-white p-3">
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Revision history</p>
+        <p className="mt-2 text-sm font-bold text-black/42">No saved revisions yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-md border border-black/10 bg-white p-3">
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Revision history</p>
+      <div className="mt-3 space-y-2">
+        {revisions.slice(0, 5).map((revision) => (
+          <div key={revision.id} className="flex flex-col gap-2 rounded-md bg-black/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-black text-[#111]">{revision.note || revision.title}</p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-black/38">
+                {revision.editorial_status} - {formatDate(revision.created_at)}
+              </p>
+            </div>
+            <LoadingButton
+              type="button"
+              loading={busy === `restore-revision-${revision.id}`}
+              onClick={() => onRestore(revision.id)}
+              className="h-9 rounded-full border border-black/10 bg-white px-3 text-xs font-black transition hover:border-black hover:bg-black hover:text-white"
+            >
+              Restore
+            </LoadingButton>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ArticleTable({
   articles,
   categories,
@@ -894,7 +1042,7 @@ function PreviewModal({
           <h1 className="mt-3 text-4xl font-black leading-none tracking-[-0.06em] text-[#111]">{preview.title}</h1>
           <p className="mt-4 text-lg leading-8 text-black/60">{preview.excerpt}</p>
           {preview.tags && <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-black/35">{preview.tags}</p>}
-          <div className="article-body mt-8" dangerouslySetInnerHTML={{ __html: preview.content }} />
+          <div className="article-body mt-8" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(preview.content) }} />
         </article>
       </div>
     </div>

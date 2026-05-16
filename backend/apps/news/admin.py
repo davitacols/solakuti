@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from apps.news.models import Article, Comment, Tag
+from apps.news.models import Article, ArticleRevision, Comment, Tag
 
 
 @admin.register(Tag)
@@ -65,3 +65,13 @@ class CommentAdmin(admin.ModelAdmin):
     @admin.action(description="Approve selected comments")
     def approve_comments(self, request, queryset):
         queryset.update(is_approved=True)
+
+
+@admin.register(ArticleRevision)
+class ArticleRevisionAdmin(admin.ModelAdmin):
+    list_display = ["article", "created_by", "editorial_status", "note", "created_at"]
+    list_filter = ["editorial_status", "created_at"]
+    search_fields = ["article__title", "created_by__email", "title", "note"]
+    readonly_fields = ["article", "created_by", "title", "excerpt", "content", "editorial_status", "is_featured", "is_breaking", "is_published", "published_at", "note", "created_at"]
+    autocomplete_fields = ["article", "created_by"]
+    date_hierarchy = "created_at"

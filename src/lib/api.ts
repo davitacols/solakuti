@@ -57,7 +57,9 @@ type BackendArticle = {
   seo_title?: string;
   seo_description?: string;
   canonical_url?: string;
-  published_at: string;
+  published_at: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type BackendComment = {
@@ -130,6 +132,48 @@ export type AdminOverview = {
     articles_count: number;
     views_count: number | null;
   }>;
+  recent_activity?: AdminActivityLog[];
+  recent_login_attempts?: AdminLoginAttempt[];
+  last_updated?: string;
+  source?: "live_api";
+};
+
+export type AdminActivityLog = {
+  id: number;
+  user_name?: string;
+  user_email?: string;
+  action: string;
+  object_type: string;
+  object_id: string;
+  description: string;
+  metadata: Record<string, unknown>;
+  ip_address?: string | null;
+  created_at: string;
+};
+
+export type AdminLoginAttempt = {
+  id: number;
+  email: string;
+  user_name?: string;
+  success: boolean;
+  ip_address?: string | null;
+  user_agent: string;
+  created_at: string;
+};
+
+export type AdminArticleRevision = {
+  id: number;
+  created_by?: BackendUser;
+  title: string;
+  excerpt: string;
+  content: string;
+  editorial_status: "draft" | "review" | "published";
+  is_featured: boolean;
+  is_breaking: boolean;
+  is_published: boolean;
+  published_at: string | null;
+  note: string;
+  created_at: string;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -140,17 +184,20 @@ function containsHtml(value: string) {
   return /<\/?[a-z][\s\S]*>/i.test(value);
 }
 
-function sanitizeArticleHtml(value: string) {
+export function sanitizeArticleHtml(value: string) {
   return value
     .replace(/<\s*(script|style|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
     .replace(/<iframe\b[^>]*src=(["'])(.*?)\1[^>]*>[\s\S]*?<\/iframe>/gi, (match, _quote, src) => {
       return /^https:\/\/(www\.youtube\.com\/embed\/|player\.vimeo\.com\/video\/)/i.test(src) ? match : "";
     })
     .replace(/<iframe\b(?![^>]*src=)[^>]*>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/\s+srcdoc=(["']).*?\1/gi, "")
+    .replace(/\s+style=(["']).*?\1/gi, "")
+    .replace(/\s+style=\S+/gi, "")
     .replace(/\s+on\w+=(["']).*?\1/gi, "")
     .replace(/\s+on\w+=\S+/gi, "")
-    .replace(/\s+(href|src)=(["'])\s*javascript:[\s\S]*?\2/gi, "")
-    .replace(/<\s*\/?\s*(html|body|head|meta|link)[^>]*>/gi, "");
+    .replace(/\s+(href|src)=(["'])\s*(javascript|data|vbscript|file):[\s\S]*?\2/gi, "")
+    .replace(/<\s*\/?\s*(html|body|head|meta|link|base|form|input|button|textarea|select|svg|math)[^>]*>/gi, "");
 }
 
 function htmlToPlainParagraphs(value: string) {
@@ -317,7 +364,8 @@ function mapArticle(article: BackendArticle): Article {
     excerpt: article.excerpt,
     category: article.category.name,
     author: article.author.full_name,
-    publishedAt: article.published_at,
+    publishedAt: article.published_at ?? article.updated_at ?? article.created_at ?? new Date().toISOString(),
+    updatedAt: article.updated_at,
     readTime: `${article.reading_time} min read`,
     image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name] ?? defaultCategoryImage,
     viewsCount: article.views_count,
@@ -425,6 +473,10 @@ export async function login(email: string, password: string) {
   return mutateApi<LoginResponse>("/auth/login/", { email, password });
 }
 
+export async function logout(refresh: string, token: string) {
+  return mutateApi<null>("/auth/logout/", { refresh }, token);
+}
+
 export async function register(fullName: string, email: string, password: string) {
   return mutateApi<RegisterResponse>("/auth/register/", {
     full_name: fullName,
@@ -447,6 +499,22 @@ export async function postComment(articleId: string, content: string, token: str
 
 export async function getAdminOverview(token: string) {
   return authApi<AdminOverview>("/analytics/overview/", token);
+}
+
+export async function exportNewsletterSubscribers(token: string) {
+  try {
+    const response = await fetch(`${API_URL}/analytics/newsletter/export/`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return response.blob();
+  } catch {
+    return null;
+  }
 }
 
 export async function getAdminArticles(token: string) {
@@ -486,6 +554,17 @@ export async function adminUpdateArticle(token: string, slug: string, payload: R
   return adminApi<BackendArticle>(`/articles/${slug}/`, token, {
     method: "PATCH",
     body: payload
+  });
+}
+
+export async function getArticleRevisions(token: string, slug: string) {
+  return adminApi<AdminArticleRevision[]>(`/articles/${slug}/revisions/`, token);
+}
+
+export async function restoreArticleRevision(token: string, slug: string, revisionId: number) {
+  return adminApi<BackendArticle>(`/articles/${slug}/restore-revision/`, token, {
+    method: "POST",
+    body: { revision_id: revisionId }
   });
 }
 

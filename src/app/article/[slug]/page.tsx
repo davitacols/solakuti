@@ -34,9 +34,10 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     openGraph: {
       title: article.seoTitle || article.title,
       description: article.seoDescription || article.excerpt,
-      images: [{ url: article.ogImage || article.image, width: 1200, height: 630, alt: article.title }],
+      images: [{ url: `${SITE_URL}/article/${article.slug}/opengraph-image`, width: 1200, height: 630, alt: article.title }],
       type: "article",
       publishedTime: article.publishedAt,
+      modifiedTime: article.updatedAt ?? article.publishedAt,
       authors: [article.author]
     }
   };
@@ -66,7 +67,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     description: article.seoDescription || article.excerpt,
     image: [article.ogImage || article.image],
     datePublished: article.publishedAt,
-    dateModified: article.publishedAt,
+    dateModified: article.updatedAt ?? article.publishedAt,
     author: [
       {
         "@type": "Person",

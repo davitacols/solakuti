@@ -4,6 +4,7 @@ from pathlib import Path
 
 import dj_database_url
 from decouple import Csv, config
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -19,6 +20,12 @@ SECRET_KEY = config("SECRET_KEY", default="unsafe-dev-secret-key-change-me")
 DEBUG = env_bool("DJANGO_DEBUG", env_bool("DEBUG", True))
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
+if not DEBUG and SECRET_KEY.startswith("unsafe-"):
+    raise ImproperlyConfigured("Set a strong SECRET_KEY before running in production.")
+
+if not DEBUG and "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured("Do not use '*' in ALLOWED_HOSTS in production.")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -28,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "corsheaders",
     "drf_spectacular",
@@ -42,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.SecurityHeadersMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -128,6 +137,15 @@ CORS_ALLOWED_ORIGINS = config(
     cast=Csv(),
 )
 CORS_ALLOW_CREDENTIALS = True
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:3000,http://127.0.0.1:3000",
+    cast=Csv(),
+)
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = config("DATA_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024, cast=int)
+FILE_UPLOAD_MAX_MEMORY_SIZE = config("FILE_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024, cast=int)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -151,9 +169,11 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "120/hour",
         "user": "1000/hour",
-        "auth": "20/min",
-        "comments": "30/hour",
-        "uploads": "60/hour",
+        "auth": "10/min",
+        "comments": "20/hour",
+        "newsletter": "10/hour",
+        "password_reset": "5/hour",
+        "uploads": "30/hour",
     },
     "EXCEPTION_HANDLER": "core.responses.custom_exception_handler",
 }
@@ -162,7 +182,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=config("ACCESS_TOKEN_LIFETIME_MINUTES", default=30, cast=int)),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=config("REFRESH_TOKEN_LIFETIME_DAYS", default=7, cast=int)),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -175,6 +195,15 @@ SPECTACULAR_SETTINGS = {
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=0 if DEBUG else 31536000, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
+SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", False)
+REFERRER_POLICY = "strict-origin-when-cross-origin"
+CONTENT_SECURITY_POLICY = config("CONTENT_SECURITY_POLICY", default="")
 X_FRAME_OPTIONS = "DENY"

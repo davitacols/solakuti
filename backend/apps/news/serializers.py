@@ -5,7 +5,7 @@ from drf_spectacular.utils import OpenApiTypes, extend_schema_field
 
 from apps.accounts.serializers import UserSerializer
 from apps.categories.serializers import CategorySerializer
-from apps.news.models import Article, Comment, Tag
+from apps.news.models import Article, ArticleRevision, Comment, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -76,6 +76,27 @@ class ArticleDetailSerializer(ArticleListSerializer):
             "comments_count",
             "created_at",
             "updated_at",
+        ]
+
+
+class ArticleRevisionSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = ArticleRevision
+        fields = [
+            "id",
+            "created_by",
+            "title",
+            "excerpt",
+            "content",
+            "editorial_status",
+            "is_featured",
+            "is_breaking",
+            "is_published",
+            "published_at",
+            "note",
+            "created_at",
         ]
 
 

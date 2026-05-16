@@ -8,6 +8,7 @@ export type Article = {
   category: ArticleCategory;
   author: string;
   publishedAt: string;
+  updatedAt?: string;
   readTime: string;
   image: string;
   viewsCount?: number;

@@ -2,6 +2,8 @@ from rest_framework import parsers, permissions, viewsets
 
 from apps.media.models import MediaAsset
 from apps.media.serializers import MediaAssetSerializer
+from apps.analytics.models import ActivityLog
+from apps.analytics.utils import log_activity
 from core.permissions import IsEditorialStaffOrReadOnly
 from core.responses import ApiResponseMixin
 
@@ -19,3 +21,15 @@ class MediaAssetViewSet(ApiResponseMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         return MediaAsset.objects.select_related("uploaded_by")
+
+    def perform_create(self, serializer):
+        asset = serializer.save()
+        log_activity(self.request, ActivityLog.Action.CREATED, "media", f"Uploaded media: {asset.title}", object_id=asset.pk)
+
+    def perform_update(self, serializer):
+        asset = serializer.save()
+        log_activity(self.request, ActivityLog.Action.UPDATED, "media", f"Updated media: {asset.title}", object_id=asset.pk)
+
+    def perform_destroy(self, instance):
+        log_activity(self.request, ActivityLog.Action.DELETED, "media", f"Deleted media: {instance.title}", object_id=instance.pk)
+        instance.delete()
