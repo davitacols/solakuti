@@ -35,7 +35,9 @@ export default function Navbar({ navCategories }: NavbarProps) {
               <span>Premium Nigerian reporting</span>
             </div>
             <div className="flex items-center gap-4 text-white/62">
+              <Link href="/about" className="transition hover:text-white">About</Link>
               <Link href="/rss.xml" className="transition hover:text-white">RSS</Link>
+              <Link href="/news-sitemap.xml" className="transition hover:text-white">News sitemap</Link>
               <Link href="/search" className="transition hover:text-white">Archive search</Link>
             </div>
           </div>

@@ -51,9 +51,15 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/42">More</h3>
           <div className="mt-4 grid gap-3">
-            {categories.slice(4).map((category) => (
-              <Link key={category} href={`/category/${categoryToSlug(category)}`} className="text-sm font-bold text-white/70 transition hover:text-white">
-                {category}
+            {[
+              { label: "About", href: "/about" },
+              { label: "Contact", href: "/contact" },
+              { label: "Editorial Policy", href: "/editorial-policy" },
+              { label: "Privacy Policy", href: "/privacy-policy" },
+              { label: "Advertise", href: "/advertise" }
+            ].map((item) => (
+              <Link key={item.href} href={item.href} className="text-sm font-bold text-white/70 transition hover:text-white">
+                {item.label}
               </Link>
             ))}
           </div>

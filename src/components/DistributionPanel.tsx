@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { Check, Copy, Facebook, MessageCircle, Radio, Twitter } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
 import { Article } from "@/types/article";
-import { formatDate } from "@/lib/utils";
+import { categoryToSlug, formatDate } from "@/lib/utils";
 
 type DistributionPanelProps = {
   articles: Article[];
@@ -29,6 +29,18 @@ function buildHashtags(article: Article) {
 export default function DistributionPanel({ articles }: DistributionPanelProps) {
   const [selectedSlug, setSelectedSlug] = useState(articles[0]?.slug ?? "");
   const [copied, setCopied] = useState<string | null>(null);
+  const feedLinks = useMemo(() => {
+    const categoryNames = Array.from(new Set(articles.map((article) => article.category))).slice(0, 8);
+    return [
+      { label: "Main RSS", href: "/rss.xml" },
+      { label: "News sitemap", href: "/news-sitemap.xml" },
+      { label: "Standard sitemap", href: "/sitemap.xml" },
+      ...categoryNames.map((category) => ({
+        label: `${category} RSS`,
+        href: `/feeds/${categoryToSlug(category)}.xml`
+      }))
+    ];
+  }, [articles]);
 
   const selectedArticle = useMemo(
     () => articles.find((article) => article.slug === selectedSlug) ?? articles[0],
@@ -113,12 +125,11 @@ export default function DistributionPanel({ articles }: DistributionPanelProps) 
         <div className="rounded-md bg-[#111] p-4 text-white">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">Discovery links</p>
           <div className="mt-3 space-y-2 text-sm font-bold">
-            <a href="/rss.xml" target="_blank" className="block rounded-md bg-white/8 px-3 py-2 transition hover:bg-white/14">
-              /rss.xml
-            </a>
-            <a href="/sitemap.xml" target="_blank" className="block rounded-md bg-white/8 px-3 py-2 transition hover:bg-white/14">
-              /sitemap.xml
-            </a>
+            {feedLinks.slice(0, 5).map((link) => (
+              <a key={link.href} href={link.href} target="_blank" className="block rounded-md bg-white/8 px-3 py-2 transition hover:bg-white/14">
+                {link.href}
+              </a>
+            ))}
           </div>
         </div>
       </div>
@@ -173,6 +184,30 @@ export default function DistributionPanel({ articles }: DistributionPanelProps) 
             </pre>
           </article>
         ))}
+      </div>
+
+      <div className="mt-5 rounded-lg border border-black/10 bg-[#111] p-4 text-white">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-red-300">Publisher submission pack</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {feedLinks.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              className="rounded-md bg-white/8 px-3 py-2 text-sm font-bold text-white/76 transition hover:bg-white/14 hover:text-white"
+            >
+              <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-white/38">{link.label}</span>
+              {link.href}
+            </a>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-2 text-sm font-bold sm:grid-cols-2 lg:grid-cols-4">
+          {["/about", "/contact", "/editorial-policy", "/privacy-policy"].map((href) => (
+            <a key={href} href={href} target="_blank" className="rounded-md border border-white/10 px-3 py-2 text-white/68 transition hover:border-white hover:text-white">
+              {href}
+            </a>
+          ))}
+        </div>
       </div>
     </section>
   );
