@@ -35,6 +35,15 @@ export const metadata: Metadata = {
     title: "Solakuti",
     description: "Premium Nigerian news, analysis and culture."
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.png", sizes: "512x512", type: "image/png" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
+  },
+  manifest: "/site.webmanifest",
   alternates: {
     canonical: SITE_URL,
     types: {

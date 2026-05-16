@@ -27,6 +27,9 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     };
   }
 
+  const articleUrl = `${SITE_URL}/article/${article.slug}`;
+  const previewImage = article.ogImage || article.image;
+
   return {
     title: article.seoTitle || article.title,
     description: article.seoDescription || article.excerpt,
@@ -34,11 +37,21 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     openGraph: {
       title: article.seoTitle || article.title,
       description: article.seoDescription || article.excerpt,
-      images: [{ url: `${SITE_URL}/article/${article.slug}/opengraph-image`, width: 1200, height: 630, alt: article.title }],
+      url: articleUrl,
+      siteName: "Solakuti",
+      images: [{ url: previewImage, width: 1200, height: 630, alt: article.title }],
       type: "article",
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt ?? article.publishedAt,
-      authors: [article.author]
+      authors: [article.author],
+      section: article.category,
+      tags: article.tags
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.seoTitle || article.title,
+      description: article.seoDescription || article.excerpt,
+      images: [previewImage]
     }
   };
 }
