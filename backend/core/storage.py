@@ -11,7 +11,7 @@ class MixedMediaCloudinaryStorage(MediaCloudinaryStorage):
             return RESOURCE_TYPES["VIDEO"]
         if extension in self.IMAGE_EXTENSIONS:
             return RESOURCE_TYPES["IMAGE"]
-        return RESOURCE_TYPES["RAW"]
+        return RESOURCE_TYPES["IMAGE"]
 
 
 class SolakutiVideoCloudinaryStorage(VideoMediaCloudinaryStorage):

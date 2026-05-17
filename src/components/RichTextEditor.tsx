@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, KeyboardEvent, MouseEvent, useEffect, useRef, useState } from "react";
 import {
   Bold,
   Heading2,
@@ -14,6 +14,7 @@ import {
   Quote,
   Redo2,
   RemoveFormatting,
+  Trash2,
   Undo2,
   Video
 } from "lucide-react";
@@ -100,6 +101,8 @@ export default function RichTextEditor({
   const [isEmpty, setIsEmpty] = useState(true);
   const [focused, setFocused] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const selectedMediaRef = useRef<Element | null>(null);
+  const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
   const visibleMedia = mediaAssets.slice(0, 8);
 
   useEffect(() => {
@@ -120,6 +123,15 @@ export default function RichTextEditor({
     onHtmlChange?.(nextHtml);
     const nextIsEmpty = !htmlToText(nextHtml);
     setIsEmpty((current) => (current === nextIsEmpty ? current : nextIsEmpty));
+  }
+
+  function selectMedia(media: Element | null) {
+    selectedMediaRef.current = media;
+    if (!media) {
+      setSelectedMediaType(null);
+      return;
+    }
+    setSelectedMediaType(media.classList.contains("story-media-video") ? "video" : "media");
   }
 
   function runCommand(command: string, value?: string) {
@@ -229,10 +241,24 @@ export default function RichTextEditor({
     if (media && current.contains(media)) {
       event.preventDefault();
       media.remove();
+      selectMedia(null);
       sync();
       return true;
     }
     return false;
+  }
+
+  function removeSelectedMedia() {
+    const media = selectedMediaRef.current;
+    const current = editorRef.current;
+    if (!media || !current || !current.contains(media)) {
+      selectMedia(null);
+      return;
+    }
+    media.remove();
+    selectMedia(null);
+    sync();
+    editorRef.current?.focus();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -248,6 +274,16 @@ export default function RichTextEditor({
       return;
     }
     removeMediaAtSelection(event);
+  }
+
+  function handleEditorClick(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target instanceof Element ? event.target : null;
+    const media = target?.closest(".story-media") ?? null;
+    if (media && editorRef.current?.contains(media)) {
+      selectMedia(media);
+      return;
+    }
+    selectMedia(null);
   }
 
   return (
@@ -346,6 +382,19 @@ export default function RichTextEditor({
           >
             <Video className="size-4" />
           </button>
+          {selectedMediaType && (
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={removeSelectedMedia}
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-red-50 px-3 text-xs font-black uppercase tracking-[0.1em] text-red-700 transition hover:bg-red-600 hover:text-white"
+              aria-label={`Remove selected ${selectedMediaType}`}
+              title={`Remove selected ${selectedMediaType}`}
+            >
+              <Trash2 className="size-4" />
+              Remove {selectedMediaType}
+            </button>
+          )}
         </div>
         {visibleMedia.length > 0 && (
           <div className="border-t border-black/10 pt-3">
@@ -395,6 +444,7 @@ export default function RichTextEditor({
           onInput={sync}
           onBeforeInput={handleBeforeInput}
           onKeyDown={handleKeyDown}
+          onClick={handleEditorClick}
           onBlur={() => {
             setFocused(false);
             sync();

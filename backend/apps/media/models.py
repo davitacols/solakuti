@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+import cloudinary
 
 from core.storage import MixedMediaCloudinaryStorage
 
@@ -30,7 +31,7 @@ class MediaAsset(models.Model):
     def optimized_url(self):
         if not self.file:
             return None
-        url = self.file.url
+        url = self._cloudinary_url()
         if "res.cloudinary.com" in url and "/upload/" in url:
             return url.replace("/upload/", "/upload/f_auto,q_auto,c_limit,w_1600/")
         return url
@@ -39,7 +40,11 @@ class MediaAsset(models.Model):
     def thumbnail_url(self):
         if not self.file:
             return None
-        url = self.file.url
+        url = self._cloudinary_url()
         if "res.cloudinary.com" in url and "/upload/" in url:
             return url.replace("/upload/", "/upload/f_auto,q_auto,c_fill,w_480,h_320/")
         return url
+
+    def _cloudinary_url(self):
+        resource_type = "video" if self.asset_type == self.AssetType.VIDEO else "image"
+        return cloudinary.CloudinaryResource(str(self.file), resource_type=resource_type).url

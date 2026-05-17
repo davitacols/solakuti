@@ -557,7 +557,9 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 label="Featured media"
                 helper="Upload a photo or video for the main story hero."
                 accept="image/*,video/mp4,video/webm,video/quicktime"
+                selectedFile={articleImageFile}
                 onChange={(file) => setArticleImageFile(file)}
+                onClear={() => setArticleImageFile(null)}
               />
               <SelectInput name="category" required>
                 <option value="">Choose category</option>
@@ -606,7 +608,9 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       label="Replace featured media"
                       helper="Leave empty to keep the current photo or video."
                       accept="image/*,video/mp4,video/webm,video/quicktime"
+                      selectedFile={editImageFile}
                       onChange={(file) => setEditImageFile(file)}
+                      onClear={() => setEditImageFile(null)}
                     />
                     <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={(editingArticle.tags ?? []).join(", ")} />
                     <TextInput
@@ -1241,24 +1245,55 @@ function FileInput({
   label,
   helper,
   accept = "image/*",
-  onChange
+  selectedFile,
+  onChange,
+  onClear
 }: {
   label: string;
   helper?: string;
   accept?: string;
+  selectedFile?: File | null;
   onChange: (file: File | null) => void;
+  onClear?: () => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function clearFile() {
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+    onClear?.();
+    onChange(null);
+  }
+
   return (
-    <label className="block min-w-0 overflow-hidden rounded-md border border-black/10 bg-white p-3">
-      <span className="text-xs font-black uppercase tracking-[0.14em] text-black/42">{label}</span>
+    <div className="block min-w-0 overflow-hidden rounded-md border border-black/10 bg-white p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-black uppercase tracking-[0.14em] text-black/42">{label}</span>
+        {selectedFile && (
+          <button
+            type="button"
+            onClick={clearFile}
+            className="rounded-full bg-red-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-red-700 transition hover:bg-red-600 hover:text-white"
+          >
+            Remove
+          </button>
+        )}
+      </div>
       <input
+        ref={inputRef}
         type="file"
         accept={accept}
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
         className="mt-2 min-w-0 w-full text-xs font-bold text-black/62 file:mr-2 file:rounded-full file:border-0 file:bg-black file:px-3 file:py-2 file:text-[10px] file:font-black file:uppercase file:tracking-[0.08em] file:text-white sm:text-sm sm:file:mr-3 sm:file:px-4 sm:file:text-xs sm:file:tracking-[0.12em]"
       />
+      {selectedFile && (
+        <span className="mt-2 block truncate text-xs font-black text-black/55">
+          Selected: {selectedFile.name}
+        </span>
+      )}
       {helper && <span className="mt-2 block text-xs font-bold text-black/38">{helper}</span>}
-    </label>
+    </div>
   );
 }
 
