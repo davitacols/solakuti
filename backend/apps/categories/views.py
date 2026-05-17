@@ -4,6 +4,7 @@ from rest_framework import decorators, permissions, viewsets
 
 from apps.categories.models import Category
 from apps.categories.serializers import CategorySerializer
+from apps.categories.defaults import ensure_default_categories
 from apps.analytics.models import ActivityLog
 from apps.analytics.utils import log_activity
 from apps.news.serializers import ArticleListSerializer
@@ -21,6 +22,8 @@ class CategoryViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Categories fetched successfully."
 
     def get_queryset(self):
+        if self.request.method == "GET":
+            ensure_default_categories(Category)
         return Category.objects.annotate(articles_count=Count("articles"))
 
     @decorators.action(detail=True, methods=["get"], permission_classes=[permissions.AllowAny])
