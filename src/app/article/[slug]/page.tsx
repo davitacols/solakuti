@@ -205,13 +205,15 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-black editorial-shadow">
             {article.featuredMediaType === "video" && article.featuredVideo ? (
               <video
-                src={article.featuredVideo}
                 poster={article.image}
                 controls
                 playsInline
                 preload="metadata"
-                className="h-full w-full object-cover"
-              />
+                className="h-full w-full object-contain"
+              >
+                <source src={article.featuredVideo} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             ) : (
               <>
                 <Image

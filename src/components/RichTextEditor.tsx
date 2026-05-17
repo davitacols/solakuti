@@ -186,7 +186,7 @@ export default function RichTextEditor({
     insertHtml(
       `<figure class="story-media story-media-video"><video controls playsinline preload="metadata" title="${escapeHtml(
         title
-      )}"><source src="${escapeHtml(url)}" /></video></figure><p><br></p>`
+      )}"><source src="${escapeHtml(url)}" type="video/mp4" /></video></figure><p><br></p>`
     );
   }
 

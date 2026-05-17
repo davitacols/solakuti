@@ -1,4 +1,4 @@
-from cloudinary_storage.storage import MediaCloudinaryStorage, RESOURCE_TYPES
+from cloudinary_storage.storage import MediaCloudinaryStorage, RESOURCE_TYPES, VideoMediaCloudinaryStorage
 
 
 class MixedMediaCloudinaryStorage(MediaCloudinaryStorage):
@@ -12,3 +12,7 @@ class MixedMediaCloudinaryStorage(MediaCloudinaryStorage):
         if extension in self.IMAGE_EXTENSIONS:
             return RESOURCE_TYPES["IMAGE"]
         return RESOURCE_TYPES["RAW"]
+
+
+class SolakutiVideoCloudinaryStorage(VideoMediaCloudinaryStorage):
+    pass

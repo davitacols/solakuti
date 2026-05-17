@@ -6,6 +6,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
+from core.storage import SolakutiVideoCloudinaryStorage
+
 
 class Tag(models.Model):
     name = models.CharField(max_length=80, unique=True)
@@ -39,7 +41,7 @@ class Article(models.Model):
     excerpt = models.TextField(max_length=420)
     content = models.TextField()
     featured_image = models.ImageField(upload_to="articles/", blank=True, null=True)
-    featured_video = models.FileField(upload_to="articles/videos/", blank=True, null=True)
+    featured_video = models.FileField(upload_to="articles/videos/", storage=SolakutiVideoCloudinaryStorage(), blank=True, null=True)
     featured_media_type = models.CharField(
         max_length=20,
         choices=FeaturedMediaType.choices,

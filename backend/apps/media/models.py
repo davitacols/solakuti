@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+from core.storage import MixedMediaCloudinaryStorage
+
 
 class MediaAsset(models.Model):
     class AssetType(models.TextChoices):
@@ -9,7 +11,7 @@ class MediaAsset(models.Model):
         DOCUMENT = "document", "Document"
 
     title = models.CharField(max_length=180)
-    file = models.FileField(upload_to="uploads/")
+    file = models.FileField(upload_to="uploads/", storage=MixedMediaCloudinaryStorage())
     asset_type = models.CharField(max_length=20, choices=AssetType.choices, default=AssetType.IMAGE)
     alt_text = models.CharField(max_length=220, blank=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="media_assets")
