@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Analytics from "@/components/Analytics";
 import { getCategories } from "@/lib/api";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
+const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
   title: {
@@ -43,6 +45,11 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
   },
+  verification: GOOGLE_SITE_VERIFICATION
+    ? {
+        google: GOOGLE_SITE_VERIFICATION
+      }
+    : undefined,
   manifest: "/site.webmanifest",
   alternates: {
     canonical: SITE_URL,
@@ -63,6 +70,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Analytics />
         <Navbar navCategories={navCategories} />
         {children}
         <Footer />
