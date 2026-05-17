@@ -335,10 +335,32 @@ async function adminApi<T>(
     }
 
     const payload = (await response.json()) as ApiResponse<T>;
+    if (!response.ok && !payload.message && payload.data && typeof payload.data === "object") {
+      return {
+        ...payload,
+        message: flattenApiErrors(payload.data)
+      };
+    }
     return payload;
   } catch {
     return null;
   }
+}
+
+function flattenApiErrors(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(flattenApiErrors).filter(Boolean).join(" ");
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(([field, error]) => `${field}: ${flattenApiErrors(error)}`)
+      .filter(Boolean)
+      .join(" ");
+  }
+  return "Request failed.";
 }
 
 function mapCategory(category: BackendCategory): Category {
