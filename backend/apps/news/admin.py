@@ -31,9 +31,10 @@ class ArticleAdmin(admin.ModelAdmin):
         "views_count",
         "reading_time",
         "published_at",
+        "featured_media_type",
         "image_preview",
     ]
-    list_filter = ["category", "editorial_status", "is_featured", "is_breaking", "is_published", "published_at"]
+    list_filter = ["category", "editorial_status", "featured_media_type", "is_featured", "is_breaking", "is_published", "published_at"]
     search_fields = ["title", "excerpt", "content", "tags__name", "author__email"]
     autocomplete_fields = ["author", "category", "tags"]
     prepopulated_fields = {"slug": ("title",)}
@@ -41,7 +42,7 @@ class ArticleAdmin(admin.ModelAdmin):
     date_hierarchy = "published_at"
     inlines = [CommentInline]
     fieldsets = (
-        ("Story", {"fields": ("title", "slug", "excerpt", "content", "featured_image", "image_preview")}),
+        ("Story", {"fields": ("title", "slug", "excerpt", "content", "featured_media_type", "featured_image", "featured_video", "image_preview")}),
         ("Editorial", {"fields": ("category", "author", "tags", "editorial_status", "is_featured", "is_breaking", "is_published")}),
         ("SEO", {"fields": ("seo_title", "seo_description", "canonical_url", "og_image")}),
         ("Performance", {"fields": ("views_count", "reading_time")}),

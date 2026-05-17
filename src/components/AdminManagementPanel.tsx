@@ -109,6 +109,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     category: string;
     content: string;
     image?: string;
+    mediaType?: "image" | "video";
     tags: string;
     status: string;
   } | null>(null);
@@ -192,7 +193,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     return { isPublished: true, editorialStatus: "published" };
   }
 
-  function articleFormPayload(form: FormData, category: number, content: string, imageFile?: File | null, action = "publish") {
+  function articleFormPayload(form: FormData, category: number, content: string, mediaFile?: File | null, action = "publish") {
     const editorial = getEditorialState(action);
     const scheduledAt = String(form.get("scheduled_at") ?? "").trim();
     const payload = new FormData();
@@ -211,8 +212,10 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     if (editorial.isPublished) {
       payload.set("published_at", scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString());
     }
-    if (imageFile) {
-      payload.set("featured_image", imageFile);
+    if (mediaFile) {
+      const isVideo = mediaFile.type.startsWith("video/");
+      payload.set("featured_media_type", isVideo ? "video" : "image");
+      payload.set(isVideo ? "featured_video" : "featured_image", mediaFile);
     }
     return payload;
   }
@@ -233,14 +236,15 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     }
   }
 
-  function handlePreview(form: HTMLFormElement, imageFile?: File | null) {
+  function handlePreview(form: HTMLFormElement, mediaFile?: File | null) {
     const data = new FormData(form);
     setPreviewArticle({
       title: String(data.get("title") || "Untitled report"),
       excerpt: String(data.get("excerpt") || ""),
       category: categories.find((category) => String(category.id) === String(data.get("category")))?.name ?? "Uncategorized",
       content: String(data.get("content") || ""),
-      image: imageFile ? URL.createObjectURL(imageFile) : undefined,
+      image: mediaFile ? URL.createObjectURL(mediaFile) : undefined,
+      mediaType: mediaFile?.type.startsWith("video/") ? "video" : "image",
       tags: String(data.get("tag_names") || ""),
       status: getEditorialState(String(data.get("publish_action") || "draft")).editorialStatus
     });
@@ -288,6 +292,17 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     return true;
   }
 
+  function validateFeaturedMedia(file: File) {
+    if (file.type.startsWith("image/")) {
+      return validateUploadFile(file, "image");
+    }
+    if (file.type.startsWith("video/")) {
+      return validateUploadFile(file, "video");
+    }
+    setMessage("Use a JPG, PNG, WebP, GIF, MP4, WebM, or MOV file.");
+    return false;
+  }
+
   async function handleCreateArticle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const action = getSubmitAction(event);
@@ -296,7 +311,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     if (!valid) {
       return;
     }
-    if (articleImageFile && !validateUploadFile(articleImageFile, "image")) {
+    if (articleImageFile && !validateFeaturedMedia(articleImageFile)) {
       return;
     }
 
@@ -343,7 +358,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     if (!valid) {
       return;
     }
-    if (editImageFile && !validateUploadFile(editImageFile, "image")) {
+    if (editImageFile && !validateFeaturedMedia(editImageFile)) {
       return;
     }
 
@@ -464,6 +479,19 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     return uploaded;
   }
 
+  async function uploadMixedArticleMedia(files: File[]) {
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+    const videoFiles = files.filter((file) => file.type.startsWith("video/"));
+    const invalidFiles = files.filter((file) => !file.type.startsWith("image/") && !file.type.startsWith("video/"));
+    if (invalidFiles.length) {
+      setMessage("Article media uploads support images and MP4, WebM, or MOV videos.");
+      return [];
+    }
+    const uploadedImages = imageFiles.length ? await uploadMediaFiles(imageFiles, "image", "Article image") : [];
+    const uploadedVideos = videoFiles.length ? await uploadMediaFiles(videoFiles, "video", "Article video") : [];
+    return [...uploadedImages, ...uploadedVideos];
+  }
+
   return (
     <section className="mt-8 min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white p-3 editorial-shadow sm:p-5">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
@@ -522,11 +550,13 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 resetKey={articleEditorKey}
                 initialHtml={articleDraft.content ?? ""}
                 mediaAssets={media}
-                onUploadMediaFiles={(files) => uploadMediaFiles(files, "image", "Photo speak")}
+                onUploadMediaFiles={uploadMixedArticleMedia}
                 onHtmlChange={saveDraftContent}
               />
               <FileInput
-                label="Featured image"
+                label="Featured media"
+                helper="Upload a photo or video for the main story hero."
+                accept="image/*,video/mp4,video/webm,video/quicktime"
                 onChange={(file) => setArticleImageFile(file)}
               />
               <SelectInput name="category" required>
@@ -570,11 +600,12 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       initialHtml={editingArticle.contentHtml ?? editingArticle.body.map((paragraph) => `<p>${paragraph}</p>`).join("")}
                       resetKey={editEditorKey}
                       mediaAssets={media}
-                      onUploadMediaFiles={(files) => uploadMediaFiles(files, "image", "Photo speak")}
+                      onUploadMediaFiles={uploadMixedArticleMedia}
                     />
                     <FileInput
-                      label="Replace featured image"
-                      helper="Leave empty to keep the current image."
+                      label="Replace featured media"
+                      helper="Leave empty to keep the current photo or video."
+                      accept="image/*,video/mp4,video/webm,video/quicktime"
                       onChange={(file) => setEditImageFile(file)}
                     />
                     <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={(editingArticle.tags ?? []).join(", ")} />
@@ -1098,7 +1129,7 @@ function PreviewModal({
   preview,
   onClose
 }: {
-  preview: { title: string; excerpt: string; category: string; content: string; image?: string; tags: string; status: string };
+  preview: { title: string; excerpt: string; category: string; content: string; image?: string; mediaType?: "image" | "video"; tags: string; status: string };
   onClose: () => void;
 }) {
   return (
@@ -1113,7 +1144,10 @@ function PreviewModal({
             Close
           </button>
         </div>
-        {preview.image && (
+        {preview.image && preview.mediaType === "video" && (
+          <video src={preview.image} controls playsInline className="h-72 w-full bg-black object-cover" />
+        )}
+        {preview.image && preview.mediaType !== "video" && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={preview.image} alt="" className="h-72 w-full object-cover" />
         )}
@@ -1206,10 +1240,12 @@ function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 function FileInput({
   label,
   helper,
+  accept = "image/*",
   onChange
 }: {
   label: string;
   helper?: string;
+  accept?: string;
   onChange: (file: File | null) => void;
 }) {
   return (
@@ -1217,7 +1253,7 @@ function FileInput({
       <span className="text-xs font-black uppercase tracking-[0.14em] text-black/42">{label}</span>
       <input
         type="file"
-        accept="image/*"
+        accept={accept}
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
         className="mt-2 min-w-0 w-full text-xs font-bold text-black/62 file:mr-2 file:rounded-full file:border-0 file:bg-black file:px-3 file:py-2 file:text-[10px] file:font-black file:uppercase file:tracking-[0.08em] file:text-white sm:text-sm sm:file:mr-3 sm:file:px-4 sm:file:text-xs sm:file:tracking-[0.12em]"
       />

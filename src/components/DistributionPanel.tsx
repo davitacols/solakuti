@@ -21,6 +21,13 @@ type ChannelDraft = {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 
+function getDistributionSiteUrl() {
+  if (typeof window !== "undefined" && window.location.hostname.endsWith("solakuti.com")) {
+    return window.location.origin;
+  }
+  return SITE_URL.replace("https://solakuti.vercel.app", "https://solakuti.com");
+}
+
 function buildHashtags(article: Article) {
   const categoryTag = article.category.replace(/\s+/g, "");
   return ["Solakuti", "Nigeria", categoryTag].map((tag) => `#${tag}`).join(" ");
@@ -52,7 +59,7 @@ export default function DistributionPanel({ articles }: DistributionPanelProps) 
       return [];
     }
 
-    const url = `${SITE_URL}/article/${selectedArticle.slug}`;
+    const url = `${getDistributionSiteUrl()}/article/${selectedArticle.slug}`;
     const hashtags = buildHashtags(selectedArticle);
 
     return [

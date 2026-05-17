@@ -37,6 +37,7 @@ export const metadata: Metadata = {
     title: "Solakuti",
     description: "Premium Nigerian news, analysis and culture."
   },
+  robots: "index, follow, max-image-preview:large",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },

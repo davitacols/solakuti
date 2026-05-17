@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import ArticleCard from "@/components/ArticleCard";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
@@ -11,6 +12,7 @@ type CategoryPageProps = {
 };
 
 export const dynamic = "force-dynamic";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -25,7 +27,10 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
   return {
     title: `${category.name} News`,
-    description: category.description || `Latest ${category.name.toLowerCase()} coverage from Solakuti.`
+    description: category.description || `Latest ${category.name.toLowerCase()} coverage from Solakuti.`,
+    alternates: {
+      canonical: `${SITE_URL}/category/${category.slug}`
+    }
   };
 }
 
@@ -45,12 +50,39 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
   const categoryName = category?.name ?? categoryArticles[0]?.category ?? "News";
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: SITE_URL
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: categoryName,
+        item: `${SITE_URL}/category/${slug}`
+      }
+    ]
+  };
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <BreakingNewsBar articles={latestArticles.length ? latestArticles : allArticles} />
       <section className="bg-[#111] text-white">
         <div className="container-page py-12 lg:py-16">
+          <nav aria-label="Breadcrumb" className="mb-6 text-xs font-black uppercase tracking-[0.16em] text-white/38">
+            <Link href="/" className="transition hover:text-white">Home</Link>
+            <span className="mx-2">/</span>
+            <span>{categoryName}</span>
+          </nav>
           <p className="text-xs font-black uppercase tracking-[0.24em] text-red-400">Solakuti desk</p>
           <h1 className="mt-3 text-5xl font-black leading-none tracking-[-0.07em] sm:text-7xl">
             {categoryName}

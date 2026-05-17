@@ -7,10 +7,16 @@ export type Article = {
   excerpt: string;
   category: ArticleCategory;
   author: string;
+  authorSlug?: string;
+  authorBio?: string;
+  authorImage?: string | null;
+  authorRole?: string;
   publishedAt: string;
   updatedAt?: string;
   readTime: string;
   image: string;
+  featuredVideo?: string | null;
+  featuredMediaType?: "image" | "video";
   viewsCount?: number;
   tags?: string[];
   editorialStatus?: "draft" | "review" | "published";

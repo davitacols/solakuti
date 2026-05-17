@@ -25,8 +25,16 @@ export function formatDate(date: string) {
   }).format(new Date(date));
 }
 
+export function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function categoryToSlug(category: string) {
-  return category.toLowerCase().replace(/\s+/g, "-");
+  return slugify(category);
 }
 
 export function slugToCategory(slug: string): ArticleCategory | undefined {

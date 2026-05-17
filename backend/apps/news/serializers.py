@@ -20,6 +20,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     featured_image_url = serializers.SerializerMethodField()
+    featured_video_url = serializers.SerializerMethodField()
     og_image_url = serializers.SerializerMethodField()
     views_count = serializers.SerializerMethodField()
 
@@ -31,6 +32,8 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "slug",
             "excerpt",
             "featured_image_url",
+            "featured_video_url",
+            "featured_media_type",
             "category",
             "author",
             "tags",
@@ -51,6 +54,12 @@ class ArticleListSerializer(serializers.ModelSerializer):
     def get_featured_image_url(self, obj):
         if obj.featured_image:
             return obj.featured_image.url
+        return None
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_featured_video_url(self, obj):
+        if obj.featured_video:
+            return obj.featured_video.url
         return None
 
     @extend_schema_field(OpenApiTypes.URI)
@@ -120,6 +129,8 @@ class ArticleWriteSerializer(serializers.ModelSerializer):
             "excerpt",
             "content",
             "featured_image",
+            "featured_video",
+            "featured_media_type",
             "og_image",
             "category",
             "tag_ids",

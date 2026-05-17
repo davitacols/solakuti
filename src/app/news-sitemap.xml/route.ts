@@ -3,7 +3,13 @@ import { escapeXml, SITE_URL, xmlResponse } from "@/lib/feed";
 
 export async function GET() {
   const articles = await getLatestArticles();
-  const recentArticles = articles.slice(0, 100);
+  const twoDaysAgo = Date.now() - 48 * 60 * 60 * 1000;
+  const recentArticles = articles
+    .filter((article) => {
+      const publishedAt = new Date(article.publishedAt).getTime();
+      return Number.isFinite(publishedAt) && publishedAt >= twoDaysAgo;
+    })
+    .slice(0, 100);
   const urls = recentArticles
     .map((article) => {
       const keywords = [article.category, ...(article.tags ?? [])].filter(Boolean).join(", ");

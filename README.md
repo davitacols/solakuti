@@ -11,15 +11,15 @@ Use this checklist to prepare Solakuti for browser news feeds, Google News-style
 After pushing to GitHub, wait for Vercel to finish deploying the frontend. Then confirm these URLs open successfully:
 
 ```text
-https://solakuti.vercel.app/
-https://solakuti.vercel.app/rss.xml
-https://solakuti.vercel.app/news-sitemap.xml
-https://solakuti.vercel.app/sitemap.xml
-https://solakuti.vercel.app/about
-https://solakuti.vercel.app/contact
-https://solakuti.vercel.app/editorial-policy
-https://solakuti.vercel.app/privacy-policy
-https://solakuti.vercel.app/advertise
+https://solakuti.com/
+https://solakuti.com/rss.xml
+https://solakuti.com/news-sitemap.xml
+https://solakuti.com/sitemap.xml
+https://solakuti.com/about
+https://solakuti.com/contact
+https://solakuti.com/editorial-policy
+https://solakuti.com/privacy-policy
+https://solakuti.com/advertise
 ```
 
 ## 2. Submit to Google Search Console
@@ -33,7 +33,7 @@ https://search.google.com/search-console
 Add this property:
 
 ```text
-https://solakuti.vercel.app
+https://solakuti.com
 ```
 
 Submit these sitemaps:
@@ -57,19 +57,19 @@ Use these details:
 
 ```text
 Website:
-https://solakuti.vercel.app
+https://solakuti.com
 
 Main RSS:
-https://solakuti.vercel.app/rss.xml
+https://solakuti.com/rss.xml
 
 News sitemap:
-https://solakuti.vercel.app/news-sitemap.xml
+https://solakuti.com/news-sitemap.xml
 
 Contact page:
-https://solakuti.vercel.app/contact
+https://solakuti.com/contact
 
 Editorial policy:
-https://solakuti.vercel.app/editorial-policy
+https://solakuti.com/editorial-policy
 ```
 
 ## 4. Submit to Bing Webmaster Tools
@@ -83,8 +83,8 @@ https://www.bing.com/webmasters
 Add the site and submit:
 
 ```text
-https://solakuti.vercel.app/sitemap.xml
-https://solakuti.vercel.app/news-sitemap.xml
+https://solakuti.com/sitemap.xml
+https://solakuti.com/news-sitemap.xml
 ```
 
 ## 5. Browser and Aggregator Pitch
@@ -99,19 +99,19 @@ I represent Solakuti, a Nigerian digital newsroom covering politics, general new
 We would like Solakuti to be considered for inclusion in your news/browser content feed.
 
 Website:
-https://solakuti.vercel.app
+https://solakuti.com
 
 Main RSS:
-https://solakuti.vercel.app/rss.xml
+https://solakuti.com/rss.xml
 
 News sitemap:
-https://solakuti.vercel.app/news-sitemap.xml
+https://solakuti.com/news-sitemap.xml
 
 Editorial policy:
-https://solakuti.vercel.app/editorial-policy
+https://solakuti.com/editorial-policy
 
 Contact:
-https://solakuti.vercel.app/contact
+https://solakuti.com/contact
 
 We can provide category-specific feeds, logos, sample articles and editorial contact details if required.
 
@@ -124,13 +124,13 @@ Solakuti Editorial Team
 Use category feeds when a platform asks for specific sections:
 
 ```text
-https://solakuti.vercel.app/feeds/politics.xml
-https://solakuti.vercel.app/feeds/entertainment.xml
-https://solakuti.vercel.app/feeds/world-news.xml
-https://solakuti.vercel.app/feeds/general-news.xml
-https://solakuti.vercel.app/feeds/crime.xml
-https://solakuti.vercel.app/feeds/economy.xml
-https://solakuti.vercel.app/feeds/security-news.xml
+https://solakuti.com/feeds/politics.xml
+https://solakuti.com/feeds/entertainment.xml
+https://solakuti.com/feeds/world-news.xml
+https://solakuti.com/feeds/general-news.xml
+https://solakuti.com/feeds/crime.xml
+https://solakuti.com/feeds/economy.xml
+https://solakuti.com/feeds/security-news.xml
 ```
 
 ## 7. Production Domain
@@ -163,3 +163,4 @@ Backend setup lives in:
 ```text
 backend/README.md
 ```
+

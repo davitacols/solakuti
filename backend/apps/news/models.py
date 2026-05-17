@@ -30,11 +30,22 @@ class Article(models.Model):
         REVIEW = "review", "In Review"
         PUBLISHED = "published", "Published"
 
+    class FeaturedMediaType(models.TextChoices):
+        IMAGE = "image", "Image"
+        VIDEO = "video", "Video"
+
     title = models.CharField(max_length=240)
     slug = models.SlugField(max_length=270, unique=True, blank=True)
     excerpt = models.TextField(max_length=420)
     content = models.TextField()
     featured_image = models.ImageField(upload_to="articles/", blank=True, null=True)
+    featured_video = models.FileField(upload_to="articles/videos/", blank=True, null=True)
+    featured_media_type = models.CharField(
+        max_length=20,
+        choices=FeaturedMediaType.choices,
+        default=FeaturedMediaType.IMAGE,
+        db_index=True,
+    )
     category = models.ForeignKey("categories.Category", on_delete=models.PROTECT, related_name="articles")
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="articles")
     tags = models.ManyToManyField(Tag, related_name="articles", blank=True)

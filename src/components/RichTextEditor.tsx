@@ -182,13 +182,21 @@ export default function RichTextEditor({
     window.alert("Use a YouTube, Vimeo, or direct .mp4/.webm/.ogg video link.");
   }
 
+  function insertUploadedVideo(url: string, title: string) {
+    insertHtml(
+      `<figure class="story-media story-media-video"><video controls playsinline preload="metadata" title="${escapeHtml(
+        title
+      )}"><source src="${escapeHtml(url)}" /></video></figure><p><br></p>`
+    );
+  }
+
   function insertMediaAsset(asset: AdminMediaAsset) {
     const url = asset.optimized_url ?? asset.file ?? asset.thumbnail_url;
     if (!url) {
       return;
     }
     if (asset.asset_type === "video") {
-      addVideo(url, asset.title);
+      insertUploadedVideo(url, asset.title);
       return;
     }
     addImage(url, asset.alt_text || asset.title);
@@ -312,16 +320,16 @@ export default function RichTextEditor({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => uploadInputRef.current?.click()}
                 className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-black uppercase tracking-[0.1em] text-black/62 transition hover:bg-black hover:text-white"
-                aria-label="Upload photo story images"
-                title="Upload multiple photos"
+                aria-label="Upload story media"
+                title="Upload photos or videos"
               >
                 <Image className="size-4" />
-                {uploading ? "Uploading" : "Photo speak"}
+                {uploading ? "Uploading" : "Media"}
               </button>
               <input
                 ref={uploadInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
                 multiple
                 className="hidden"
                 onChange={handleUploadSelection}

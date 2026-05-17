@@ -71,6 +71,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const related = getRelatedArticles(article, allArticles, 3);
   const comments = await getArticleComments(article.id);
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
+  const categoryUrl = `${SITE_URL}/category/${categoryToSlug(article.category)}`;
+  const authorUrl = article.authorSlug ? `${SITE_URL}/author/${article.authorSlug}` : undefined;
   const shareText = encodeURIComponent(article.title);
   const shareUrl = encodeURIComponent(articleUrl);
   const articleJsonLd = {
@@ -84,7 +86,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     author: [
       {
         "@type": "Person",
-        name: article.author
+        name: article.author,
+        url: authorUrl
       }
     ],
     publisher: {
@@ -96,7 +99,32 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       }
     },
     mainEntityOfPage: article.canonicalUrl || articleUrl,
-    articleSection: article.category
+    articleSection: article.category,
+    keywords: article.tags?.join(", ")
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: SITE_URL
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: article.category,
+        item: categoryUrl
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: article.title,
+        item: articleUrl
+      }
+    ]
   };
   const shareLinks = [
     {
@@ -132,6 +160,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <BreakingNewsBar articles={latestArticles.length ? latestArticles : allArticles} />
       <article>
         <header className="container-page py-8 lg:py-12">
@@ -142,12 +174,25 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             >
               {article.category}
             </Link>
+            <nav aria-label="Breadcrumb" className="mt-5 text-xs font-black uppercase tracking-[0.16em] text-black/38">
+              <Link href="/" className="transition hover:text-red-600">Home</Link>
+              <span className="mx-2">/</span>
+              <Link href={`/category/${categoryToSlug(article.category)}`} className="transition hover:text-red-600">
+                {article.category}
+              </Link>
+            </nav>
             <h1 className="mt-6 text-4xl font-black leading-[0.95] tracking-[-0.06em] text-[#111] sm:text-6xl lg:text-7xl">
               {article.title}
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-black/62">{article.excerpt}</p>
             <div className="mt-7 flex flex-wrap items-center gap-3 text-sm font-bold text-black/50">
-              <span>{article.author}</span>
+              {article.authorSlug ? (
+                <Link href={`/author/${article.authorSlug}`} className="text-black/70 transition hover:text-red-600">
+                  {article.author}
+                </Link>
+              ) : (
+                <span>{article.author}</span>
+              )}
               <span className="size-1 rounded-full bg-black/20" />
               <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
               <span className="size-1 rounded-full bg-black/20" />
@@ -158,15 +203,28 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
         <div className="container-page">
           <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-black editorial-shadow">
-            <Image
-              src={article.image}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+            {article.featuredMediaType === "video" && article.featuredVideo ? (
+              <video
+                src={article.featuredVideo}
+                poster={article.image}
+                controls
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <>
+                <Image
+                  src={article.image}
+                  alt=""
+                  fill
+                  priority
+                  sizes="100vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+              </>
+            )}
           </div>
         </div>
 

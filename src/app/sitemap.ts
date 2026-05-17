@@ -6,6 +6,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [articles, categories] = await Promise.all([getArticles(), getCategories()]);
   const now = new Date();
+  const authorSlugs = Array.from(new Set(articles.map((article) => article.authorSlug).filter(Boolean)));
 
   return [
     {
@@ -31,6 +32,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "hourly" as const,
       priority: 0.8
+    })),
+    ...authorSlugs.map((slug) => ({
+      url: `${SITE_URL}/author/${slug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.6
     })),
     ...articles.map((article) => ({
       url: `${SITE_URL}/article/${article.slug}`,

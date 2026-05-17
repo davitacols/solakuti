@@ -1,6 +1,6 @@
 import { articles as fallbackArticles, featuredArticle as fallbackFeaturedArticle, trendingArticles as fallbackTrendingArticles } from "@/data/articles";
 import { Article, ArticleCategory, Category, Comment } from "@/types/article";
-import { categories as fallbackCategories, categoryToSlug } from "@/lib/utils";
+import { categories as fallbackCategories, categoryToSlug, slugify } from "@/lib/utils";
 
 type ApiResponse<T> = {
   success: boolean;
@@ -29,6 +29,7 @@ type BackendUser = {
   id?: number;
   full_name: string;
   email?: string;
+  profile_image_url?: string | null;
   role?: "admin" | "editor" | "journalist" | "contributor";
   bio?: string;
   is_verified?: boolean;
@@ -44,6 +45,8 @@ type BackendArticle = {
   excerpt: string;
   content?: string;
   featured_image_url?: string | null;
+  featured_video_url?: string | null;
+  featured_media_type?: "image" | "video";
   og_image_url?: string | null;
   category: BackendCategory;
   author: BackendUser;
@@ -364,10 +367,16 @@ function mapArticle(article: BackendArticle): Article {
     excerpt: article.excerpt,
     category: article.category.name,
     author: article.author.full_name,
+    authorSlug: slugify(article.author.full_name),
+    authorBio: article.author.bio,
+    authorImage: article.author.profile_image_url ?? null,
+    authorRole: article.author.role,
     publishedAt: article.published_at ?? article.updated_at ?? article.created_at ?? new Date().toISOString(),
     updatedAt: article.updated_at,
     readTime: `${article.reading_time} min read`,
     image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name] ?? defaultCategoryImage,
+    featuredVideo: article.featured_video_url ?? null,
+    featuredMediaType: article.featured_media_type ?? "image",
     viewsCount: article.views_count,
     tags: article.tags?.map((tag) => tag.name) ?? [],
     editorialStatus: article.editorial_status ?? (article.is_published ? "published" : "draft"),
