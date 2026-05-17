@@ -150,6 +150,15 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         )
         instance.delete()
 
+    @decorators.action(detail=False, methods=["delete"], url_path=r"(?P<article_id>[^/.]+)/delete-by-id")
+    def delete_by_id(self, request, article_id=None):
+        instance = self.get_queryset().filter(pk=article_id).first()
+        if not instance:
+            return api_response(None, message="Article not found.", success=False, status_code=404)
+        self.check_object_permissions(request, instance)
+        self.perform_destroy(instance)
+        return api_response(None, message="Article deleted successfully.")
+
     def _article_collection(self, queryset, message):
         page = self.paginate_queryset(queryset)
         serializer = ArticleListSerializer(page or queryset, many=True, context={"request": self.request})

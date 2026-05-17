@@ -602,8 +602,14 @@ export async function restoreArticleRevision(token: string, slug: string, revisi
   });
 }
 
-export async function adminDeleteArticle(token: string, slug: string) {
-  return adminApi<null>(`/articles/${slug}/`, token, {
+export async function adminDeleteArticle(token: string, article: Pick<Article, "id" | "slug">) {
+  const response = await adminApi<null>(`/articles/${article.slug}/`, token, {
+    method: "DELETE"
+  });
+  if (response?.success || !article.id) {
+    return response;
+  }
+  return adminApi<null>(`/articles/${article.id}/delete-by-id/`, token, {
     method: "DELETE"
   });
 }

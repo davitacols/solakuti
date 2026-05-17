@@ -378,7 +378,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     if (!confirmed) {
       return;
     }
-    const response = await runAction(`delete-article-${article.slug}`, () => adminDeleteArticle(token, article.slug));
+    const response = await runAction(`delete-article-${article.slug}`, () => adminDeleteArticle(token, article));
     if (response?.success && editingArticle?.slug === article.slug) {
       setEditingArticle(null);
       setEditImageFile(null);
