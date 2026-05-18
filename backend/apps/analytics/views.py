@@ -8,6 +8,7 @@ from rest_framework import permissions, status, views
 
 from apps.categories.models import Category
 from apps.news.models import Article, Comment
+from apps.news.query import public_article_q
 from apps.news.serializers import ArticleListSerializer
 from apps.analytics.models import ActivityLog, ArticleView, LoginAttempt, NewsletterSubscription
 from apps.analytics.serializers import (
@@ -15,7 +16,9 @@ from apps.analytics.serializers import (
     AnalyticsOverviewSerializer,
     LoginAttemptSerializer,
     NewsletterSubscriptionSerializer,
+    NewsletterUnsubscribeSerializer,
 )
+from core.pagination import StandardResultsSetPagination
 from core.responses import api_response
 
 
@@ -28,7 +31,10 @@ class AnalyticsOverviewView(views.APIView):
             return api_response(None, message="You do not have permission to view analytics.", success=False, status_code=403)
 
         now = timezone.now()
-        public_articles = Article.objects.filter(is_published=True, published_at__lte=now)
+        public_filter = public_article_q(now)
+        category_public_filter = public_article_q(now, "articles__")
+        view_public_filter = public_article_q(now, "article__")
+        public_articles = Article.objects.filter(public_filter)
         trending = (
             public_articles
             .select_related("category", "author")
@@ -40,12 +46,12 @@ class AnalyticsOverviewView(views.APIView):
             Category.objects.annotate(
                 articles_count=Count(
                     "articles",
-                    filter=Q(articles__is_published=True, articles__published_at__lte=now),
+                    filter=category_public_filter,
                     distinct=True,
                 ),
                 views_count=Count(
                     "articles__view_events",
-                    filter=Q(articles__is_published=True, articles__published_at__lte=now),
+                    filter=category_public_filter,
                     distinct=True,
                 ),
             )
@@ -80,8 +86,8 @@ class AnalyticsOverviewView(views.APIView):
             }
             for article in article_performance
         ]
-        live_views = ArticleView.objects.filter(article__is_published=True, article__published_at__lte=now)
-        live_comments = Comment.objects.filter(article__is_published=True, article__published_at__lte=now, is_approved=True)
+        live_views = ArticleView.objects.filter(view_public_filter)
+        live_comments = Comment.objects.filter(view_public_filter, is_approved=True)
 
         data = {
             "total_articles": public_articles.count(),
@@ -121,6 +127,74 @@ class NewsletterSubscriptionView(views.APIView):
             message="Subscription saved successfully." if created else "You are already subscribed.",
             status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class NewsletterUnsubscribeView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = NewsletterUnsubscribeSerializer
+    throttle_scope = "newsletter"
+
+    @extend_schema(request=NewsletterUnsubscribeSerializer, responses=NewsletterSubscriptionSerializer)
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        subscription = NewsletterSubscription.objects.filter(email=serializer.validated_data["email"]).first()
+        if subscription:
+            subscription.is_active = False
+            subscription.save(update_fields=["is_active"])
+        return api_response(None, message="You have been unsubscribed if this email was on our list.")
+
+
+class NewsletterSubscriberListView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+
+    def get(self, request):
+        if request.user.role not in {"admin", "editor"}:
+            return api_response(None, message="You do not have permission to view subscribers.", success=False, status_code=403)
+
+        queryset = NewsletterSubscription.objects.order_by("-created_at")
+        if request.query_params.get("include_inactive") != "true":
+            queryset = queryset.filter(is_active=True)
+        search = request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(email__icontains=search.strip())
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = NewsletterSubscriptionSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class NewsletterSubscriberDetailView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        if request.user.role not in {"admin", "editor"}:
+            return api_response(None, message="You do not have permission to update subscribers.", success=False, status_code=403)
+
+        subscription = NewsletterSubscription.objects.filter(pk=pk).first()
+        if not subscription:
+            return api_response(None, message="Subscriber not found.", success=False, status_code=404)
+
+        is_active = request.data.get("is_active", subscription.is_active)
+        if isinstance(is_active, str):
+            is_active = is_active.lower() in {"1", "true", "yes", "active"}
+        subscription.is_active = bool(is_active)
+        subscription.save(update_fields=["is_active"])
+        return api_response(NewsletterSubscriptionSerializer(subscription).data, message="Subscriber updated successfully.")
+
+    def delete(self, request, pk):
+        if request.user.role not in {"admin", "editor"}:
+            return api_response(None, message="You do not have permission to update subscribers.", success=False, status_code=403)
+
+        subscription = NewsletterSubscription.objects.filter(pk=pk).first()
+        if not subscription:
+            return api_response(None, message="Subscriber not found.", success=False, status_code=404)
+
+        subscription.is_active = False
+        subscription.save(update_fields=["is_active"])
+        return api_response(None, message="Subscriber deactivated successfully.")
 
 
 class NewsletterExportView(views.APIView):

@@ -209,7 +209,7 @@ export default function DistributionPanel({ articles }: DistributionPanelProps) 
           ))}
         </div>
         <div className="mt-4 grid gap-2 text-sm font-bold sm:grid-cols-2 lg:grid-cols-4">
-          {["/about", "/contact", "/editorial-policy", "/privacy-policy"].map((href) => (
+          {["/about", "/contact", "/editorial-policy", "/privacy-policy", "/terms-of-use"].map((href) => (
             <a key={href} href={href} target="_blank" className="rounded-md border border-white/10 px-3 py-2 text-white/68 transition hover:border-white hover:text-white">
               {href}
             </a>

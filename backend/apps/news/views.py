@@ -11,6 +11,7 @@ from apps.news.serializers import (
     ArticleWriteSerializer,
     CommentSerializer,
 )
+from apps.news.query import public_article_q
 from apps.analytics.models import ActivityLog, ArticleView
 from apps.analytics.utils import get_client_ip, log_activity
 from core.permissions import IsAuthorOrEditor, IsWriterOrReadOnly
@@ -35,11 +36,12 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
                 real_views_count=Count("view_events", distinct=True),
             )
         )
+        public_filter = public_article_q()
         if self.request.user.is_authenticated and self.request.user.role in {"admin", "editor", "journalist"}:
             return queryset
         if self.request.user.is_authenticated and self.request.user.role == "contributor":
-            return queryset.filter(Q(is_published=True, published_at__lte=timezone.now()) | Q(author=self.request.user))
-        return queryset.filter(is_published=True, published_at__lte=timezone.now())
+            return queryset.filter(public_filter | Q(author=self.request.user))
+        return queryset.filter(public_filter)
 
     def get_serializer_class(self):
         if self.action in {"create", "update", "partial_update"}:
@@ -73,12 +75,12 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def trending(self, request):
         since = timezone.now() - timezone.timedelta(days=7)
-        queryset = self.get_queryset().filter(published_at__gte=since).order_by("-real_views_count", "-published_at")
+        queryset = self.get_queryset().filter(Q(published_at__gte=since) | Q(published_at__isnull=True)).order_by("-real_views_count", "-published_at", "-created_at")
         return self._article_collection(queryset, "Trending articles fetched successfully.")
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def latest(self, request):
-        return self._article_collection(self.get_queryset().order_by("-published_at"), "Latest articles fetched successfully.")
+        return self._article_collection(self.get_queryset().order_by("-published_at", "-created_at"), "Latest articles fetched successfully.")
 
     @decorators.action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def revisions(self, request, slug=None):
@@ -270,7 +272,7 @@ class SearchView(ApiResponseMixin, generics.ListAPIView):
     def get_queryset(self):
         query = self.request.query_params.get("q", "").strip()
         queryset = (
-            Article.objects.filter(is_published=True, published_at__lte=timezone.now())
+            Article.objects.filter(public_article_q())
             .select_related("category", "author")
             .prefetch_related("tags")
             .annotate(real_views_count=Count("view_events", distinct=True))

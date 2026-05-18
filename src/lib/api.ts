@@ -164,6 +164,14 @@ export type AdminLoginAttempt = {
   created_at: string;
 };
 
+export type NewsletterSubscriber = {
+  id: number;
+  email: string;
+  source: string;
+  is_active: boolean;
+  created_at: string;
+};
+
 export type AdminArticleRevision = {
   id: number;
   created_by?: BackendUser;
@@ -466,11 +474,12 @@ export async function getTrendingArticles(): Promise<Article[]> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  const data = await fetchApi<BackendArticle>(`/articles/${slug}/`);
+  const normalizedSlug = decodeURIComponent(slug).trim();
+  const data = await fetchApi<BackendArticle>(`/articles/${encodeURIComponent(normalizedSlug)}/`);
   if (data) {
     return mapArticle(data);
   }
-  return fallbackArticles.find((article) => article.slug === slug) ?? null;
+  return fallbackArticles.find((article) => article.slug === normalizedSlug) ?? null;
 }
 
 export async function getCategoryArticles(slug: string): Promise<Article[]> {
@@ -549,6 +558,16 @@ export async function exportNewsletterSubscribers(token: string) {
   } catch {
     return null;
   }
+}
+
+export async function getNewsletterSubscribers(token: string) {
+  return authApi<NewsletterSubscriber[]>("/analytics/newsletter/subscribers/?page_size=8", token);
+}
+
+export async function deactivateNewsletterSubscriber(token: string, subscriberId: number) {
+  return adminApi<null>(`/analytics/newsletter/subscribers/${subscriberId}/`, token, {
+    method: "DELETE"
+  });
 }
 
 export async function getAdminArticles(token: string) {
@@ -683,9 +702,10 @@ export async function adminDeleteMedia(token: string, mediaId: number) {
   });
 }
 
-export async function subscribeToNewsletter(email: string) {
+export async function subscribeToNewsletter(email: string, source = "website", website = "") {
   return mutateApi<{ id: number; email: string }>("/newsletter/subscribe/", {
     email,
-    source: "website"
+    source,
+    website
   });
 }

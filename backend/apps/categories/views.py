@@ -7,6 +7,7 @@ from apps.categories.serializers import CategorySerializer
 from apps.categories.defaults import ensure_default_categories
 from apps.analytics.models import ActivityLog
 from apps.analytics.utils import log_activity
+from apps.news.query import public_article_q
 from apps.news.serializers import ArticleListSerializer
 from core.permissions import IsEditorialStaffOrReadOnly
 from core.responses import ApiResponseMixin, api_response
@@ -30,7 +31,7 @@ class CategoryViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     def articles(self, request, slug=None):
         category = self.get_object()
         queryset = (
-            category.articles.filter(is_published=True, published_at__lte=timezone.now())
+            category.articles.filter(public_article_q(timezone.now()))
             .select_related("category", "author")
             .prefetch_related("tags")
             .annotate(real_views_count=Count("view_events", distinct=True))

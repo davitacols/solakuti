@@ -19,10 +19,30 @@ class AnalyticsOverviewSerializer(serializers.Serializer):
 
 
 class NewsletterSubscriptionSerializer(serializers.ModelSerializer):
+    website = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = NewsletterSubscription
-        fields = ["id", "email", "source", "is_active", "created_at"]
+        fields = ["id", "email", "source", "is_active", "created_at", "website"]
         read_only_fields = ["id", "is_active", "created_at"]
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_source(self, value):
+        return (value or "website").strip()[:80]
+
+    def validate_website(self, value):
+        if value:
+            raise serializers.ValidationError("Subscription could not be saved.")
+        return value
+
+
+class NewsletterUnsubscribeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip().lower()
 
 
 class ActivityLogSerializer(serializers.ModelSerializer):

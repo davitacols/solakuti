@@ -82,6 +82,11 @@ function toDateTimeLocalValue(value?: string) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
+function isArticlePublic(article: Article) {
+  const publishedTime = new Date(article.publishedAt).getTime();
+  return Boolean(article.published && (!Number.isFinite(publishedTime) || publishedTime <= Date.now()));
+}
+
 export default function AdminManagementPanel({ token, role, articles, onRefresh }: AdminManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("articles");
   const [categories, setCategories] = useState<AdminCategory[]>([]);
@@ -1052,7 +1057,7 @@ function ArticleTable({
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <span className="text-xs font-black text-black/42">{(article.viewsCount ?? 0).toLocaleString()} views</span>
                 <div className="flex gap-2">
-                  {article.published && (
+                  {isArticlePublic(article) && (
                     <Link href={`/article/${article.slug}`} target="_blank" className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Open article">
                       <ExternalLink className="size-4" />
                     </Link>
@@ -1105,7 +1110,7 @@ function ArticleTable({
                   <td className="px-4 py-4 text-xs font-bold uppercase tracking-[0.12em] text-black/38">{formatDate(article.publishedAt)}</td>
                   <td className="px-4 py-4">
                     <div className="flex justify-end gap-2">
-                      {article.published && (
+                      {isArticlePublic(article) && (
                         <Link href={`/article/${article.slug}`} target="_blank" className="grid size-9 place-items-center rounded-full border border-black/10 text-black/60 transition hover:border-black hover:bg-black hover:text-white" aria-label="Open article">
                           <ExternalLink className="size-4" />
                         </Link>

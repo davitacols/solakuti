@@ -1,27 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, Mail, MessageCircle } from "lucide-react";
-import LoadingButton from "@/components/LoadingButton";
-import { subscribeToNewsletter } from "@/lib/api";
+import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 
 export default function NewsletterSection() {
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    setMessage(null);
-    const response = await subscribeToNewsletter(email.trim());
-    setBusy(false);
-    setMessage(response?.message ?? "Subscription failed. Please try again.");
-    if (response?.success) {
-      setEmail("");
-    }
-  }
 
   async function handleNotificationOptIn() {
     if (!("Notification" in window)) {
@@ -53,26 +38,8 @@ export default function NewsletterSection() {
             Politics, markets, security and culture, edited for readers who need context before commentary.
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="flex flex-col justify-end gap-3 border-t border-white/10 p-7 sm:p-10 lg:border-l lg:border-t-0">
-          <label htmlFor="newsletter-email" className="text-sm font-bold text-white/72">
-            Email address
-          </label>
-          <input
-            id="newsletter-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@example.com"
-            required
-            className="h-14 rounded-md border border-white/12 bg-white px-4 text-base font-semibold text-black outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/20"
-          />
-          <LoadingButton
-            type="submit"
-            loading={busy}
-            className="h-14 rounded-md bg-red-600 px-5 text-sm font-black uppercase tracking-[0.14em] transition hover:bg-white hover:text-black"
-          >
-            Subscribe
-          </LoadingButton>
+        <div className="flex flex-col justify-end gap-3 border-t border-white/10 p-7 sm:p-10 lg:border-l lg:border-t-0">
+          <NewsletterSignupForm source="homepage-newsletter" />
           {message && <p className="text-sm font-bold text-white/72">{message}</p>}
           <div className="grid gap-2 pt-2 sm:grid-cols-2">
             <button
@@ -93,7 +60,7 @@ export default function NewsletterSection() {
               WhatsApp
             </a>
           </div>
-        </form>
+        </div>
       </div>
     </motion.section>
   );

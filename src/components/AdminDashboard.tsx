@@ -8,6 +8,7 @@ import {
   Eye,
   FileText,
   LockKeyhole,
+  Mail,
   MessageSquare,
   Newspaper,
   ShieldCheck,
@@ -16,7 +17,16 @@ import {
 import DistributionPanel from "@/components/DistributionPanel";
 import AdminManagementPanel from "@/components/AdminManagementPanel";
 import LoadingButton from "@/components/LoadingButton";
-import { exportNewsletterSubscribers, getAdminArticles, getAdminOverview, login, logout } from "@/lib/api";
+import {
+  NewsletterSubscriber,
+  deactivateNewsletterSubscriber,
+  exportNewsletterSubscribers,
+  getAdminArticles,
+  getAdminOverview,
+  getNewsletterSubscribers,
+  login,
+  logout
+} from "@/lib/api";
 import { Article } from "@/types/article";
 import { formatDate } from "@/lib/utils";
 
@@ -79,6 +89,7 @@ export default function AdminDashboard() {
   const [session, setSession] = useState<Session | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -100,6 +111,7 @@ export default function AdminDashboard() {
       setSession(null);
       setOverview(null);
       setArticles([]);
+      setSubscribers([]);
       setMessage("Your admin session expired. Please sign in again.");
     }, expiryDelay);
     return () => {
@@ -109,9 +121,10 @@ export default function AdminDashboard() {
   }, [session]);
 
   async function loadDashboard(token: string) {
-    const [overviewResponse, articlesResponse] = await Promise.all([
+    const [overviewResponse, articlesResponse, subscribersResponse] = await Promise.all([
       getAdminOverview(token),
-      getAdminArticles(token)
+      getAdminArticles(token),
+      getNewsletterSubscribers(token)
     ]);
 
     if (!overviewResponse?.success || !overviewResponse.data) {
@@ -121,6 +134,7 @@ export default function AdminDashboard() {
 
     setOverview(overviewResponse.data);
     setArticles(articlesResponse?.data ?? []);
+    setSubscribers(subscribersResponse?.data ?? []);
   }
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -163,6 +177,7 @@ export default function AdminDashboard() {
     setSession(null);
     setOverview(null);
     setArticles([]);
+    setSubscribers([]);
     setMessage(null);
   }
 
@@ -181,6 +196,18 @@ export default function AdminDashboard() {
     link.download = "solakuti-newsletter-subscribers.csv";
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function handleDeactivateSubscriber(subscriberId: number) {
+    if (!session) {
+      return;
+    }
+    const response = await deactivateNewsletterSubscriber(session.access, subscriberId);
+    if (!response?.success) {
+      setMessage(response?.message ?? "Could not update subscriber.");
+      return;
+    }
+    await loadDashboard(session.access);
   }
 
   return (
@@ -346,30 +373,64 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="font-black tracking-[-0.03em]">Login attempts</h3>
+            <div className="space-y-6">
+              <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-red-600">Newsletter</p>
+                    <h3 className="mt-1 font-black tracking-[-0.03em]">Recent subscribers</h3>
+                  </div>
+                  <Mail className="size-5 text-black/25" />
+                </div>
+                <div className="space-y-3">
+                  {subscribers.map((subscriber) => (
+                    <div key={subscriber.id} className="rounded-md bg-black/5 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black">{subscriber.email}</p>
+                          <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-black/38">
+                            {subscriber.source} - {formatDate(subscriber.created_at)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeactivateSubscriber(subscriber.id)}
+                          className="rounded-full border border-black/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-black/45 transition hover:border-red-600 hover:text-red-600"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {subscribers.length === 0 && <p className="text-sm font-bold text-black/45">No subscribers yet.</p>}
+                </div>
                 <LoadingButton
                   type="button"
                   onClick={handleExportSubscribers}
-                  className="h-9 rounded-full bg-black px-3 text-xs font-black text-white transition hover:bg-red-600"
+                  className="mt-4 h-9 w-full rounded-full bg-black px-3 text-xs font-black text-white transition hover:bg-red-600"
                 >
                   Export CSV
                 </LoadingButton>
               </div>
-              <div className="space-y-3">
-                {recentLogins.slice(0, 6).map((attempt) => (
-                  <div key={attempt.id} className="rounded-md bg-black/5 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-black">{attempt.email || "Unknown email"}</p>
-                      <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${attempt.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-                        {attempt.success ? "Success" : "Failed"}
-                      </span>
+
+              <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="font-black tracking-[-0.03em]">Login attempts</h3>
+                </div>
+                <div className="space-y-3">
+                  {recentLogins.slice(0, 6).map((attempt) => (
+                    <div key={attempt.id} className="rounded-md bg-black/5 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-sm font-black">{attempt.email || "Unknown email"}</p>
+                        <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${attempt.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                          {attempt.success ? "Success" : "Failed"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-bold text-black/38">{formatDate(attempt.created_at)}</p>
                     </div>
-                    <p className="mt-1 text-xs font-bold text-black/38">{formatDate(attempt.created_at)}</p>
-                  </div>
-                ))}
-                {recentLogins.length === 0 && <p className="text-sm font-bold text-black/45">No login attempts yet.</p>}
+                  ))}
+                  {recentLogins.length === 0 && <p className="text-sm font-bold text-black/45">No login attempts yet.</p>}
+                </div>
               </div>
             </div>
           </section>

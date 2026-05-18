@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
-import LoadingButton from "@/components/LoadingButton";
+import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 import { categories, categoryToSlug } from "@/lib/utils";
 
 export default function Footer() {
@@ -56,6 +56,7 @@ export default function Footer() {
               { label: "Contact", href: "/contact" },
               { label: "Editorial Policy", href: "/editorial-policy" },
               { label: "Privacy Policy", href: "/privacy-policy" },
+              { label: "Terms of Use", href: "/terms-of-use" },
               { label: "Advertise", href: "/advertise" }
             ].map((item) => (
               <Link key={item.href} href={item.href} className="text-sm font-bold text-white/70 transition hover:text-white">
@@ -70,15 +71,8 @@ export default function Footer() {
           <p className="mt-4 text-sm leading-6 text-white/60">
             Get Solakuti's morning edit and weekend culture brief.
           </p>
-          <div className="mt-4 flex rounded-md bg-white p-1">
-            <input
-              type="email"
-              placeholder="Email address"
-              className="min-w-0 flex-1 px-3 text-sm font-semibold text-black outline-none"
-            />
-            <LoadingButton type="button" className="rounded bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-[0.12em]">
-              Join
-            </LoadingButton>
+          <div className="mt-4">
+            <NewsletterSignupForm source="footer-newsletter" compact />
           </div>
         </div>
       </div>
