@@ -228,7 +228,6 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   function saveLocalDraft(form: HTMLFormElement, key = "solakuti.articleDraft") {
     const data = Object.fromEntries(new FormData(form).entries());
     localStorage.setItem(key, JSON.stringify(data));
-    setArticleDraft(data as Record<string, string>);
   }
 
   function saveDraftContent(html: string, key = "solakuti.articleDraft") {

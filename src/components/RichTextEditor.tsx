@@ -96,11 +96,13 @@ export default function RichTextEditor({
   onHtmlChange
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const plainEditorRef = useRef<HTMLTextAreaElement>(null);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [isEmpty, setIsEmpty] = useState(true);
   const [focused, setFocused] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [simpleMode, setSimpleMode] = useState(false);
   const selectedMediaRef = useRef<Element | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
   const visibleMedia = mediaAssets.slice(0, 8);
@@ -108,6 +110,9 @@ export default function RichTextEditor({
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = initialHtml;
+    }
+    if (plainEditorRef.current) {
+      plainEditorRef.current.value = htmlToText(initialHtml);
     }
     if (hiddenInputRef.current) {
       hiddenInputRef.current.value = initialHtml;
@@ -123,6 +128,39 @@ export default function RichTextEditor({
     onHtmlChange?.(nextHtml);
     const nextIsEmpty = !htmlToText(nextHtml);
     setIsEmpty((current) => (current === nextIsEmpty ? current : nextIsEmpty));
+  }
+
+  function syncPlainText() {
+    const text = plainEditorRef.current?.value ?? "";
+    const nextHtml = textToHtml(text);
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.value = nextHtml;
+    }
+    onHtmlChange?.(nextHtml);
+    const nextIsEmpty = !text.trim();
+    setIsEmpty((current) => (current === nextIsEmpty ? current : nextIsEmpty));
+  }
+
+  function toggleSimpleMode() {
+    setSimpleMode((current) => {
+      const nextMode = !current;
+      window.setTimeout(() => {
+        if (nextMode) {
+          const html = editorRef.current?.innerHTML ?? hiddenInputRef.current?.value ?? "";
+          if (plainEditorRef.current) {
+            plainEditorRef.current.value = htmlToText(html);
+            plainEditorRef.current.focus();
+          }
+        } else {
+          const html = hiddenInputRef.current?.value ?? "";
+          if (editorRef.current) {
+            editorRef.current.innerHTML = html;
+            editorRef.current.focus();
+          }
+        }
+      }, 0);
+      return nextMode;
+    });
   }
 
   function selectMedia(media: Element | null) {
@@ -395,6 +433,19 @@ export default function RichTextEditor({
               Remove {selectedMediaType}
             </button>
           )}
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={toggleSimpleMode}
+            className={cn(
+              "inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-black uppercase tracking-[0.1em] transition",
+              simpleMode ? "bg-[#111] text-white" : "text-black/62 hover:bg-black hover:text-white"
+            )}
+            aria-label="Toggle mobile text mode"
+            title="Use this on mobile if the cursor jumps while typing"
+          >
+            Mobile text
+          </button>
         </div>
         {visibleMedia.length > 0 && (
           <div className="border-t border-black/10 pt-3">
@@ -432,29 +483,44 @@ export default function RichTextEditor({
       </div>
 
       <div className="relative min-w-0">
-        {isEmpty && !focused && (
+        {isEmpty && !focused && !simpleMode && (
           <p className="pointer-events-none absolute left-4 top-4 text-sm font-semibold text-black/32">
             Write the story body. Use headings, lists, quotes and links where needed.
           </p>
         )}
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={sync}
-          onBeforeInput={handleBeforeInput}
-          onKeyDown={handleKeyDown}
-          onClick={handleEditorClick}
-          onBlur={() => {
-            setFocused(false);
-            sync();
-          }}
-          onFocus={() => setFocused(true)}
-          className={cn(
-            "admin-rich-editor min-h-72 min-w-0 w-full max-w-full overflow-x-hidden break-words rounded-b-lg p-4 text-sm font-semibold leading-7 text-black/76 outline-none",
-            "focus:ring-4 focus:ring-red-600/10"
-          )}
-        />
+        {simpleMode ? (
+          <textarea
+            ref={plainEditorRef}
+            onInput={syncPlainText}
+            onBlur={() => {
+              setFocused(false);
+              syncPlainText();
+            }}
+            onFocus={() => setFocused(true)}
+            defaultValue={htmlToText(initialHtml)}
+            placeholder="Write or edit the story body here. Paragraphs are kept when you publish."
+            className="min-h-96 w-full resize-y rounded-b-lg border-0 bg-white p-4 text-base font-semibold leading-8 text-black/76 outline-none focus:ring-4 focus:ring-red-600/10"
+          />
+        ) : (
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={sync}
+            onBeforeInput={handleBeforeInput}
+            onKeyDown={handleKeyDown}
+            onClick={handleEditorClick}
+            onBlur={() => {
+              setFocused(false);
+              sync();
+            }}
+            onFocus={() => setFocused(true)}
+            className={cn(
+              "admin-rich-editor min-h-72 min-w-0 w-full max-w-full overflow-x-hidden break-words rounded-b-lg p-4 text-sm font-semibold leading-7 text-black/76 outline-none",
+              "focus:ring-4 focus:ring-red-600/10"
+            )}
+          />
+        )}
       </div>
       <input ref={hiddenInputRef} type="hidden" name={name} defaultValue={initialHtml} />
     </div>
@@ -462,5 +528,19 @@ export default function RichTextEditor({
 }
 
 function htmlToText(value: string) {
-  return value.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+  return value
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|h1|h2|h3|h4|blockquote|li)>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
+function textToHtml(value: string) {
+  return value
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
 }

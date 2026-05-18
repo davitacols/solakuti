@@ -247,6 +247,11 @@ const categoryImageFallback: Record<string, string> = {
   Nigeria: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80"
 };
 
+const articleImageFallback: Record<string, string> = {
+  "pic2nav-opens-for-strategic-partnerships-following-breakthrough-in-ai-photo-geolocation":
+    "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80"
+};
+
 async function fetchApi<T>(path: string): Promise<T | null> {
   if (IS_PRODUCTION_BUILD) {
     return null;
@@ -415,7 +420,7 @@ function mapArticle(article: BackendArticle): Article {
     publishedAt: article.published_at ?? article.updated_at ?? article.created_at ?? new Date().toISOString(),
     updatedAt: article.updated_at,
     readTime: `${article.reading_time} min read`,
-    image: article.featured_image_url ?? fallback?.image ?? categoryImageFallback[article.category.name] ?? defaultCategoryImage,
+    image: article.featured_image_url ?? articleImageFallback[article.slug] ?? fallback?.image ?? categoryImageFallback[article.category.name] ?? defaultCategoryImage,
     featuredVideo: article.featured_video_url ?? null,
     featuredMediaType: article.featured_media_type ?? "image",
     viewsCount: article.views_count,
