@@ -120,25 +120,53 @@ export default function RichTextEditor({
     setIsEmpty(!htmlToText(initialHtml));
   }, [initialHtml, resetKey]);
 
-  function sync() {
-    const nextHtml = editorRef.current?.innerHTML ?? "";
+  useEffect(() => {
+    const form = hiddenInputRef.current?.form;
+    if (!form) {
+      return;
+    }
+
+    const syncBeforeSubmit = () => {
+      syncCurrentContent();
+    };
+
+    const syncFormData = (event: FormDataEvent) => {
+      event.formData.set(name, syncCurrentContent());
+    };
+
+    form.addEventListener("submit", syncBeforeSubmit, true);
+    form.addEventListener("formdata", syncFormData);
+
+    return () => {
+      form.removeEventListener("submit", syncBeforeSubmit, true);
+      form.removeEventListener("formdata", syncFormData);
+    };
+  }, [name, simpleMode]);
+
+  function currentHtml() {
+    if (simpleMode) {
+      return textToHtml(plainEditorRef.current?.value ?? "");
+    }
+    return editorRef.current?.innerHTML ?? "";
+  }
+
+  function syncCurrentContent() {
+    const nextHtml = currentHtml();
     if (hiddenInputRef.current) {
       hiddenInputRef.current.value = nextHtml;
     }
     onHtmlChange?.(nextHtml);
     const nextIsEmpty = !htmlToText(nextHtml);
     setIsEmpty((current) => (current === nextIsEmpty ? current : nextIsEmpty));
+    return nextHtml;
+  }
+
+  function sync() {
+    syncCurrentContent();
   }
 
   function syncPlainText() {
-    const text = plainEditorRef.current?.value ?? "";
-    const nextHtml = textToHtml(text);
-    if (hiddenInputRef.current) {
-      hiddenInputRef.current.value = nextHtml;
-    }
-    onHtmlChange?.(nextHtml);
-    const nextIsEmpty = !text.trim();
-    setIsEmpty((current) => (current === nextIsEmpty ? current : nextIsEmpty));
+    syncCurrentContent();
   }
 
   function toggleSimpleMode() {

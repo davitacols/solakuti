@@ -254,7 +254,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     });
   }
 
-  function validateArticleForm(form: FormData) {
+  function validateArticleForm(form: FormData, mediaFile?: File | null) {
     const category = Number(form.get("category"));
     if (!category) {
       setMessage("Choose a category before saving the article.");
@@ -263,11 +263,11 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     const articleContent = String(form.get("content") ?? "").trim();
     const textContent = articleContent.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
     const hasMedia = /<(img|iframe|video)\b/i.test(articleContent);
-    if (!textContent && !hasMedia) {
+    if (!textContent && !hasMedia && !mediaFile) {
       setMessage("Add the article body, photo, or video before saving.");
       return null;
     }
-    return { category, articleContent };
+    return { category, articleContent: articleContent || "<p></p>" };
   }
 
   function validateUploadFile(file: File, assetType: "image" | "video") {
@@ -311,7 +311,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     event.preventDefault();
     const action = getSubmitAction(event);
     const form = new FormData(event.currentTarget);
-    const valid = validateArticleForm(form);
+    const valid = validateArticleForm(form, articleImageFile);
     if (!valid) {
       return;
     }
@@ -358,7 +358,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       return;
     }
     const form = new FormData(event.currentTarget);
-    const valid = validateArticleForm(form);
+    const valid = validateArticleForm(form, editImageFile);
     if (!valid) {
       return;
     }
