@@ -2,6 +2,21 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 
+def flatten_error_messages(value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return " ".join(filter(None, (flatten_error_messages(item) for item in value)))
+    if isinstance(value, dict):
+        messages = []
+        for field, detail in value.items():
+            text = flatten_error_messages(detail)
+            if text:
+                messages.append(text if field in {"detail", "non_field_errors"} else f"{field}: {text}")
+        return " ".join(messages)
+    return ""
+
+
 def api_response(data=None, message="OK", success=True, status_code=200, pagination=None):
     payload = {
         "success": success,
@@ -33,11 +48,18 @@ class ApiResponseMixin:
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
     if response is None:
-        return response
+        return api_response(
+            None,
+            message="An unexpected server error occurred.",
+            success=False,
+            status_code=500,
+        )
 
     message = "Request failed."
     if isinstance(response.data, dict):
-        message = response.data.get("detail", message)
+        message = response.data.get("detail") or flatten_error_messages(response.data) or message
+    elif isinstance(response.data, list):
+        message = flatten_error_messages(response.data) or message
     response.data = {
         "success": False,
         "message": str(message),

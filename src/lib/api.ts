@@ -191,6 +191,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === "phase-production-build";
 const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 1200);
 
+function networkError<T>(message = "Could not reach Solakuti API. Please check your connection and try again."): ApiResponse<T> {
+  return {
+    success: false,
+    message,
+    data: null as T
+  };
+}
+
 function containsHtml(value: string) {
   return /<\/?[a-z][\s\S]*>/i.test(value);
 }
@@ -287,7 +295,7 @@ async function mutateApi<T>(
     }
     return payload;
   } catch {
-    return null;
+    return networkError<T>();
   }
 }
 
@@ -305,7 +313,7 @@ async function authApi<T>(path: string, token: string): Promise<ApiResponse<T> |
     }
     return payload;
   } catch {
-    return null;
+    return networkError<T>();
   }
 }
 
@@ -351,7 +359,7 @@ async function adminApi<T>(
     }
     return payload;
   } catch {
-    return null;
+    return networkError<T>();
   }
 }
 
