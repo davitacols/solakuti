@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
+  Download,
   ExternalLink,
   Eye,
   FileText,
@@ -290,13 +291,23 @@ export default function AdminDashboard() {
                 Welcome, {session.fullName}
               </h2>
             </div>
-            <LoadingButton
-              type="button"
-              onClick={handleSignOut}
-              className="h-11 rounded-full border border-black/10 bg-white px-5 text-sm font-black transition hover:border-black hover:bg-black hover:text-white"
-            >
-              Sign out
-            </LoadingButton>
+            <div className="flex flex-wrap gap-2">
+              <LoadingButton
+                type="button"
+                onClick={handleExportSubscribers}
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-red-600 px-5 text-sm font-black text-white transition hover:bg-black"
+              >
+                <Download className="size-4" />
+                Export subscribers
+              </LoadingButton>
+              <LoadingButton
+                type="button"
+                onClick={handleSignOut}
+                className="h-11 rounded-full border border-black/10 bg-white px-5 text-sm font-black transition hover:border-black hover:bg-black hover:text-white"
+              >
+                Sign out
+              </LoadingButton>
+            </div>
           </div>
 
           {message && <p className="mb-5 rounded-md bg-red-50 p-3 text-sm font-bold text-red-700">{message}</p>}
@@ -313,7 +324,17 @@ export default function AdminDashboard() {
             <StatCard icon={Eye} label="Real views" value={overview?.total_views ?? 0} />
             <StatCard icon={BarChart3} label="Today" value={overview?.today_views ?? 0} />
             <StatCard icon={MessageSquare} label="Live comments" value={overview?.total_comments ?? 0} />
-            <StatCard icon={Tags} label="Subscribers" value={overview?.total_newsletter_subscribers ?? 0} />
+            <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+              <StatCard icon={Tags} label="Subscribers" value={overview?.total_newsletter_subscribers ?? 0} plain />
+              <LoadingButton
+                type="button"
+                onClick={handleExportSubscribers}
+                className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-full bg-black px-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-600"
+              >
+                <Download className="size-4" />
+                Export CSV
+              </LoadingButton>
+            </div>
           </div>
           {overview?.last_updated && (
             <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-black/35">
@@ -527,19 +548,29 @@ export default function AdminDashboard() {
 function StatCard({
   icon: Icon,
   label,
-  value
+  value,
+  plain = false
 }: {
   icon: typeof FileText;
   label: string;
   value: number;
+  plain?: boolean;
 }) {
-  return (
-    <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+  const content = (
+    <>
       <div className="flex items-center justify-between">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-black/38">{label}</p>
         <Icon className="size-5 text-red-600" />
       </div>
       <p className="mt-4 text-4xl font-black tracking-[-0.06em] text-[#111]">{value.toLocaleString()}</p>
+    </>
+  );
+
+  return plain ? (
+    content
+  ) : (
+    <div className="rounded-lg border border-black/10 bg-white p-5 editorial-shadow">
+      {content}
     </div>
   );
 }
