@@ -9,6 +9,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Solakuti | Premium Nigerian News and Media",
     template: "%s | Solakuti"
@@ -35,7 +36,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Solakuti",
-    description: "Premium Nigerian news, analysis and culture."
+    description: "Premium Nigerian news, analysis and culture.",
+    images: [
+      "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80"
+    ]
   },
   robots: "index, follow, max-image-preview:large",
   icons: {

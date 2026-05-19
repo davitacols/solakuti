@@ -17,6 +17,14 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 
+function absoluteUrl(value: string) {
+  try {
+    return new URL(value, SITE_URL).toString();
+  } catch {
+    return `${SITE_URL}/api/og/article/solakuti`;
+  }
+}
+
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
@@ -28,7 +36,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   }
 
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
-  const previewImage = article.ogImage || article.image;
+  const previewImage = absoluteUrl(`${SITE_URL}/api/og/article/${article.slug}`);
+  const sourceImage = absoluteUrl(article.ogImage || article.image);
 
   return {
     title: article.seoTitle || article.title,
@@ -39,7 +48,16 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       description: article.seoDescription || article.excerpt,
       url: articleUrl,
       siteName: "Solakuti",
-      images: [{ url: previewImage, width: 1200, height: 630, alt: article.title }],
+      images: [
+        {
+          url: previewImage,
+          secureUrl: previewImage,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+          type: "image/png"
+        }
+      ],
       type: "article",
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt ?? article.publishedAt,
@@ -52,6 +70,15 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       title: article.seoTitle || article.title,
       description: article.seoDescription || article.excerpt,
       images: [previewImage]
+    },
+    other: {
+      "og:image": previewImage,
+      "og:image:secure_url": previewImage,
+      "og:image:type": "image/png",
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "twitter:image": previewImage,
+      "solakuti:featured_image": sourceImage
     }
   };
 }
@@ -80,7 +107,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     "@type": "NewsArticle",
     headline: article.seoTitle || article.title,
     description: article.seoDescription || article.excerpt,
-    image: [article.ogImage || article.image],
+    image: [absoluteUrl(article.ogImage || article.image)],
     datePublished: article.publishedAt,
     dateModified: article.updatedAt ?? article.publishedAt,
     author: [
