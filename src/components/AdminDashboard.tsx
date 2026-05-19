@@ -143,32 +143,35 @@ export default function AdminDashboard() {
     setBusy(true);
     setMessage(null);
 
-    const response = await login(email.trim(), password);
-    if (!response?.success || !response.data?.access) {
+    try {
+      const response = await login(email.trim(), password);
+      if (!response?.success || !response.data?.access) {
+        setMessage(response?.message ?? "Could not sign in.");
+        return;
+      }
+
+      const role = response.data.user.role ?? "contributor";
+      if (!allowedRoles.has(role)) {
+        setMessage("This dashboard is restricted to admins and editors.");
+        return;
+      }
+
+      const nextSession = {
+        access: response.data.access,
+        refresh: response.data.refresh,
+        fullName: response.data.user.full_name,
+        email: response.data.user.email ?? email,
+        role,
+        expiresAt: Date.now() + sessionLengthMs
+      };
+
+      setSession(nextSession);
+      await loadDashboard(nextSession.access);
+    } catch {
+      setMessage("Could not sign in. Please check your connection and try again.");
+    } finally {
       setBusy(false);
-      setMessage(response?.message ?? "Could not sign in.");
-      return;
     }
-
-    const role = response.data.user.role ?? "contributor";
-    if (!allowedRoles.has(role)) {
-      setBusy(false);
-      setMessage("This dashboard is restricted to admins and editors.");
-      return;
-    }
-
-    const nextSession = {
-      access: response.data.access,
-      refresh: response.data.refresh,
-      fullName: response.data.user.full_name,
-      email: response.data.user.email ?? email,
-      role,
-      expiresAt: Date.now() + sessionLengthMs
-    };
-
-    setSession(nextSession);
-    await loadDashboard(nextSession.access);
-    setBusy(false);
   }
 
   async function handleSignOut() {

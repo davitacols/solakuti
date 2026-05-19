@@ -189,7 +189,9 @@ export type AdminArticleRevision = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === "phase-production-build";
-const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 1200);
+const configuredTimeoutMs = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 10000);
+const API_TIMEOUT_MS = Number.isFinite(configuredTimeoutMs) ? Math.max(configuredTimeoutMs, 20000) : 20000;
+const API_MUTATION_TIMEOUT_MS = Math.max(API_TIMEOUT_MS, 35000);
 
 function networkError<T>(message = "Could not reach Solakuti API. Please check your connection and try again."): ApiResponse<T> {
   return {
@@ -201,6 +203,37 @@ function networkError<T>(message = "Could not reach Solakuti API. Please check y
 
 function containsHtml(value: string) {
   return /<\/?[a-z][\s\S]*>/i.test(value);
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function parseApiResponse<T>(response: Response): Promise<ApiResponse<T>> {
+  if (response.status === 204) {
+    return {
+      success: true,
+      message: "Deleted successfully.",
+      data: null as T
+    };
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return networkError<T>("Solakuti API returned an unexpected response. Please try again.");
+  }
+
+  return (await response.json()) as ApiResponse<T>;
 }
 
 export function sanitizeArticleHtml(value: string) {
@@ -257,13 +290,9 @@ async function fetchApi<T>(path: string): Promise<T | null> {
     return null;
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
   try {
-    const response = await fetch(`${API_URL}${path}`, {
-      cache: "no-store",
-      signal: controller.signal
+    const response = await fetchWithTimeout(`${API_URL}${path}`, {
+      cache: "no-store"
     });
 
     if (!response.ok) {
@@ -274,8 +303,6 @@ async function fetchApi<T>(path: string): Promise<T | null> {
     return payload.data;
   } catch {
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -285,16 +312,16 @@ async function mutateApi<T>(
   token?: string
 ): Promise<ApiResponse<T> | null> {
   try {
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetchWithTimeout(`${API_URL}${path}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       body: JSON.stringify(body)
-    });
+    }, API_MUTATION_TIMEOUT_MS);
 
-    const payload = (await response.json()) as ApiResponse<T>;
+    const payload = await parseApiResponse<T>(response);
     if (!response.ok) {
       return payload;
     }
@@ -306,13 +333,13 @@ async function mutateApi<T>(
 
 async function authApi<T>(path: string, token: string): Promise<ApiResponse<T> | null> {
   try {
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetchWithTimeout(`${API_URL}${path}`, {
       headers: {
         Authorization: `Bearer ${token}`
       },
       cache: "no-store"
-    });
-    const payload = (await response.json()) as ApiResponse<T>;
+    }, API_MUTATION_TIMEOUT_MS);
+    const payload = await parseApiResponse<T>(response);
     if (!response.ok) {
       return payload;
     }
@@ -337,7 +364,7 @@ async function adminApi<T>(
         ? options.body as FormData
         : JSON.stringify(options.body)
       : undefined;
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetchWithTimeout(`${API_URL}${path}`, {
       method: options.method ?? "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -345,17 +372,9 @@ async function adminApi<T>(
       },
       body: requestBody,
       cache: "no-store"
-    });
+    }, API_MUTATION_TIMEOUT_MS);
 
-    if (response.status === 204) {
-      return {
-        success: true,
-        message: "Deleted successfully.",
-        data: null as T
-      };
-    }
-
-    const payload = (await response.json()) as ApiResponse<T>;
+    const payload = await parseApiResponse<T>(response);
     if (!response.ok && !payload.message && payload.data && typeof payload.data === "object") {
       return {
         ...payload,
