@@ -10,6 +10,7 @@ DEFAULT_CATEGORIES = [
     ("Health", "Public health, hospitals, medical policy and wellness reporting."),
     ("National Assembly", "Legislative affairs, bills, oversight and parliamentary politics."),
     ("Tech", "Technology, startups, digital policy and innovation across Africa."),
+    ("Sports", "Football, athletics, leagues, tournaments and Nigerian sports personalities."),
     ("World News", "Global affairs, diplomacy and international developments."),
     ("General News", "Major public-interest reports across Nigeria and everyday life."),
     ("Entertainment", "Nollywood, music, celebrity culture and creative business."),

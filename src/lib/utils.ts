@@ -9,6 +9,7 @@ export const categories: ArticleCategory[] = [
   "Health",
   "National Assembly",
   "Tech",
+  "Sports",
   "World News",
   "General News",
   "Entertainment",

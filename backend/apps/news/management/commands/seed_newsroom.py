@@ -17,6 +17,7 @@ CATEGORIES = [
     ("World News", "Global affairs, diplomacy and international developments."),
     ("General News", "Major public-interest reports across Nigeria and everyday life."),
     ("Entertainment", "Nollywood, music, celebrity culture and creative business."),
+    ("Sports", "Football, athletics, leagues, tournaments and Nigerian sports personalities."),
     ("Opinions", "Sharp essays, argument and civic analysis."),
     ("Nigeria", "National life, cities, communities and everyday public affairs."),
 ]

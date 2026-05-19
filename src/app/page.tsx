@@ -17,6 +17,7 @@ const categoryKickers: Record<string, string> = {
   Health: "Health desk",
   "National Assembly": "Assembly watch",
   Tech: "Tech desk",
+  Sports: "Sports desk",
   "World News": "Global brief",
   "General News": "Public square",
   Opinions: "Argument",
