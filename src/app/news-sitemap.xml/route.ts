@@ -13,6 +13,7 @@ export async function GET() {
   const urls = recentArticles
     .map((article) => {
       const keywords = [article.category, ...(article.tags ?? [])].filter(Boolean).join(", ");
+      const previewImage = `${SITE_URL}/api/og/article/${article.slug}`;
       return `
         <url>
           <loc>${escapeXml(`${SITE_URL}/article/${article.slug}`)}</loc>
@@ -26,7 +27,7 @@ export async function GET() {
             ${keywords ? `<news:keywords>${escapeXml(keywords)}</news:keywords>` : ""}
           </news:news>
           <image:image>
-            <image:loc>${escapeXml(article.image)}</image:loc>
+            <image:loc>${escapeXml(previewImage)}</image:loc>
             <image:title>${escapeXml(article.title)}</image:title>
           </image:image>
         </url>`;
