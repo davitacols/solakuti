@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Radio, Search, X } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
+import LoadingLink from "@/components/LoadingLink";
 import { categories, categoryToSlug } from "@/lib/utils";
 
 type MobileMenuProps = {
@@ -39,7 +39,7 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
           >
             <div className="border-b border-white/10 p-5">
               <div className="flex items-center justify-between">
-                <Link href="/" className="relative h-16 w-56 overflow-hidden" onClick={onClose} aria-label="Solakuti home">
+                <LoadingLink href="/" className="relative h-16 w-56 overflow-hidden rounded-md" onClick={onClose} aria-label="Solakuti home">
                   <Image
                     src="/solakuti-logo-nav.png"
                     alt="Solakuti"
@@ -47,7 +47,7 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
                     sizes="224px"
                     className="object-contain object-left"
                   />
-                </Link>
+                </LoadingLink>
                 <LoadingButton
                   type="button"
                   onClick={onClose}
@@ -59,22 +59,22 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
               </div>
 
               <div className="mt-5">
-                <Link
+                <LoadingLink
                   href="/search"
                   onClick={onClose}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white text-sm font-black text-black"
                 >
                   <Search className="size-4" />
                   Search
-                </Link>
-                <Link
+                </LoadingLink>
+                <LoadingLink
                   href="/livescores"
                   onClick={onClose}
                   className="ml-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-red-600 px-4 text-sm font-black text-white"
                 >
                   <Radio className="size-4" />
                   Live scores
-                </Link>
+                </LoadingLink>
               </div>
             </div>
 
@@ -85,7 +85,7 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
               </div>
               <div className="grid gap-2">
                 {categoryItems.map((category) => (
-                  <Link
+                  <LoadingLink
                     key={category.slug}
                     href={`/category/${category.slug}`}
                     onClick={onClose}
@@ -93,7 +93,7 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
                   >
                     {category.name}
                     <ArrowUpRight className="size-4 text-white/35 transition group-hover:text-white" />
-                  </Link>
+                  </LoadingLink>
                 ))}
               </div>
             </div>

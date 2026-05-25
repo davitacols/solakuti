@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { ChevronDown, Menu, Radio, Search } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
+import LoadingLink from "@/components/LoadingLink";
 import MobileMenu from "@/components/MobileMenu";
 import { categories, categoryToSlug } from "@/lib/utils";
 import { Category } from "@/types/article";
@@ -35,18 +35,18 @@ export default function Navbar({ navCategories }: NavbarProps) {
               <span>Premium Nigerian reporting</span>
             </div>
             <div className="flex items-center gap-4 text-white/62">
-              <Link href="/livescores" className="transition hover:text-white">Live scores</Link>
-              <Link href="/about" className="transition hover:text-white">About</Link>
-              <Link href="/rss.xml" className="transition hover:text-white">RSS</Link>
-              <Link href="/news-sitemap.xml" className="transition hover:text-white">News sitemap</Link>
-              <Link href="/search" className="transition hover:text-white">Archive search</Link>
+              <LoadingLink href="/livescores" className="rounded px-1 transition hover:text-white">Live scores</LoadingLink>
+              <LoadingLink href="/about" className="rounded px-1 transition hover:text-white">About</LoadingLink>
+              <LoadingLink href="/rss.xml" className="rounded px-1 transition hover:text-white">RSS</LoadingLink>
+              <LoadingLink href="/news-sitemap.xml" className="rounded px-1 transition hover:text-white">News sitemap</LoadingLink>
+              <LoadingLink href="/search" className="rounded px-1 transition hover:text-white">Archive search</LoadingLink>
             </div>
           </div>
         </div>
 
         <div className="container-page">
           <div className="flex h-17 items-center justify-between gap-4 lg:h-20">
-            <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label="Solakuti home">
+            <LoadingLink href="/" className="group flex min-w-0 items-center gap-3 overflow-hidden rounded-md" aria-label="Solakuti home">
               <span className="relative h-13 w-44 shrink-0 overflow-hidden sm:w-56 lg:h-16 lg:w-64">
                 <Image
                   src="/solakuti-logo-nav.png"
@@ -57,17 +57,17 @@ export default function Navbar({ navCategories }: NavbarProps) {
                   className="object-contain object-left transition duration-300 group-hover:scale-[1.02]"
                 />
               </span>
-            </Link>
+            </LoadingLink>
 
             <nav className="hidden items-center gap-1 xl:flex" aria-label="Main navigation">
               {primaryCategories.map((category) => (
-                <Link
+                <LoadingLink
                   key={category.slug}
                   href={`/category/${category.slug}`}
                   className="rounded-full px-3.5 py-2 text-sm font-black text-black/68 transition hover:bg-black hover:text-white"
                 >
                   {category.name}
-                </Link>
+                </LoadingLink>
               ))}
               {overflowCategories.length > 0 && (
                 <div className="group relative">
@@ -80,13 +80,13 @@ export default function Navbar({ navCategories }: NavbarProps) {
                   </button>
                   <div className="invisible absolute right-0 top-full w-56 translate-y-3 rounded-lg border border-black/10 bg-white p-2 opacity-0 shadow-2xl transition group-hover:visible group-hover:translate-y-2 group-hover:opacity-100">
                     {overflowCategories.map((category) => (
-                      <Link
+                      <LoadingLink
                         key={category.slug}
                         href={`/category/${category.slug}`}
                         className="block rounded-md px-3 py-2 text-sm font-black text-black/62 transition hover:bg-black hover:text-white"
                       >
                         {category.name}
-                      </Link>
+                      </LoadingLink>
                     ))}
                   </div>
                 </div>
@@ -94,13 +94,13 @@ export default function Navbar({ navCategories }: NavbarProps) {
             </nav>
 
             <div className="flex items-center gap-2">
-              <Link
+              <LoadingLink
                 href="/search"
                 className="grid size-10 place-items-center rounded-full border border-black/10 bg-white/70 text-black transition hover:border-black hover:bg-black hover:text-white"
                 aria-label="Search"
               >
                 <Search className="size-5" />
-              </Link>
+              </LoadingLink>
               <LoadingButton
                 type="button"
                 className="grid size-10 place-items-center rounded-full border border-black/10 bg-[#111] text-white transition hover:bg-red-600 xl:hidden"

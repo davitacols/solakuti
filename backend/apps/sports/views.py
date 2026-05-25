@@ -19,6 +19,7 @@ from apps.sports.models import (
     Team,
     Venue,
 )
+from apps.sports.provider_utils import active_provider_name, provider_queryset
 from apps.sports.providers import get_sports_provider_client, normalize_provider_error
 from apps.sports.serializers import (
     CompetitionSerializer,
@@ -51,7 +52,7 @@ class CompetitionViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Competitions fetched successfully."
 
     def get_queryset(self):
-        return Competition.objects.annotate(fixtures_count=Count("fixtures"))
+        return provider_queryset(Competition.objects).annotate(fixtures_count=Count("fixtures"))
 
     @decorators.action(detail=True, methods=["get"], permission_classes=[permissions.AllowAny])
     def standings(self, request, slug=None):
@@ -66,6 +67,7 @@ class CompetitionViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         queryset = (
             competition.fixtures.select_related("competition", "home_team", "away_team")
             .prefetch_related("events")
+            .filter(provider=active_provider_name(), provider_id__gt="")
             .order_by("kickoff_at")
         )
         page = self.paginate_queryset(queryset)
@@ -85,7 +87,7 @@ class TeamViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Teams fetched successfully."
 
     def get_queryset(self):
-        return Team.objects.all()
+        return provider_queryset(Team.objects.all())
 
     @decorators.action(detail=True, methods=["get"], permission_classes=[permissions.AllowAny])
     def fixtures(self, request, slug=None):
@@ -93,6 +95,7 @@ class TeamViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         queryset = (
             Fixture.objects.filter(Q(home_team=team) | Q(away_team=team))
             .select_related("competition", "home_team", "away_team")
+            .filter(provider=active_provider_name(), provider_id__gt="")
             .order_by("-kickoff_at")
         )
         page = self.paginate_queryset(queryset)
@@ -111,7 +114,7 @@ class SeasonViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Seasons fetched successfully."
 
     def get_queryset(self):
-        return Season.objects.select_related("competition").all()
+        return provider_queryset(Season.objects.select_related("competition").all())
 
 
 class VenueViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -124,7 +127,7 @@ class VenueViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Venues fetched successfully."
 
     def get_queryset(self):
-        return Venue.objects.all()
+        return provider_queryset(Venue.objects.all())
 
 
 class PlayerViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -137,7 +140,7 @@ class PlayerViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Players fetched successfully."
 
     def get_queryset(self):
-        return Player.objects.select_related("current_team").all()
+        return provider_queryset(Player.objects.select_related("current_team").all())
 
 
 class SquadMembershipViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -149,7 +152,11 @@ class SquadMembershipViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Squad memberships fetched successfully."
 
     def get_queryset(self):
-        return SquadMembership.objects.select_related("team", "season__competition", "player__current_team").all()
+        return SquadMembership.objects.select_related("team", "season__competition", "player__current_team").filter(
+            team__provider=active_provider_name(),
+            season__provider=active_provider_name(),
+            player__provider=active_provider_name(),
+        )
 
 
 class FixtureViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -163,7 +170,7 @@ class FixtureViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         queryset = (
             Fixture.objects.select_related("competition", "season", "home_team", "away_team", "venue_detail")
             .prefetch_related("events__team", "lineups__team", "lineups__player__current_team", "statistics", "momentum")
-            .all()
+            .filter(provider=active_provider_name(), provider_id__gt="")
         )
         competition = self.request.query_params.get("competition")
         status_value = self.request.query_params.get("status")
@@ -223,7 +230,7 @@ class FixtureEventViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Fixture events fetched successfully."
 
     def get_queryset(self):
-        return FixtureEvent.objects.select_related("fixture", "team").all()
+        return provider_queryset(FixtureEvent.objects.select_related("fixture", "team").all())
 
 
 class FixtureLineupViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -235,7 +242,7 @@ class FixtureLineupViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Fixture lineups fetched successfully."
 
     def get_queryset(self):
-        return FixtureLineup.objects.select_related("fixture", "team", "player__current_team").all()
+        return provider_queryset(FixtureLineup.objects.select_related("fixture", "team", "player__current_team").all())
 
 
 class FixtureStatisticViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -247,7 +254,7 @@ class FixtureStatisticViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Fixture statistics fetched successfully."
 
     def get_queryset(self):
-        return FixtureStatistic.objects.select_related("fixture").all()
+        return provider_queryset(FixtureStatistic.objects.select_related("fixture").all())
 
 
 class FixtureMomentumViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -259,7 +266,7 @@ class FixtureMomentumViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Fixture momentum fetched successfully."
 
     def get_queryset(self):
-        return FixtureMomentum.objects.select_related("fixture").all()
+        return FixtureMomentum.objects.select_related("fixture").filter(fixture__provider=active_provider_name())
 
 
 class StandingViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -271,7 +278,10 @@ class StandingViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     success_message = "Standings fetched successfully."
 
     def get_queryset(self):
-        return Standing.objects.select_related("competition", "season", "team").all()
+        return Standing.objects.select_related("competition", "season", "team").filter(
+            competition__provider=active_provider_name(),
+            team__provider=active_provider_name(),
+        )
 
 
 class SportsSyncLogViewSet(ApiResponseMixin, viewsets.ReadOnlyModelViewSet):

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import Image from "next/image";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import LoadingLink from "@/components/LoadingLink";
 import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 import { categories, categoryToSlug } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ export default function Footer() {
     <footer className="mt-12 bg-[#111] text-white">
       <div className="container-page grid gap-10 py-12 md:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
         <div>
-          <Link href="/" className="inline-flex items-center">
+          <LoadingLink href="/" className="inline-flex items-center overflow-hidden rounded-md">
             <span className="relative h-16 w-56 overflow-hidden">
               <Image
                 src="/solakuti-logo-transparent.png"
@@ -19,7 +19,7 @@ export default function Footer() {
                 className="object-contain object-left"
               />
             </span>
-          </Link>
+          </LoadingLink>
           <p className="mt-4 max-w-sm text-sm leading-6 text-white/60">
             A premium modern African digital newsroom covering the stories shaping Nigeria.
           </p>
@@ -41,9 +41,9 @@ export default function Footer() {
           <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/42">Sections</h3>
           <div className="mt-4 grid gap-3">
             {categories.slice(0, 4).map((category) => (
-              <Link key={category} href={`/category/${categoryToSlug(category)}`} className="text-sm font-bold text-white/70 transition hover:text-white">
+              <LoadingLink key={category} href={`/category/${categoryToSlug(category)}`} className="rounded py-1 text-sm font-bold text-white/70 transition hover:text-white">
                 {category}
-              </Link>
+              </LoadingLink>
             ))}
           </div>
         </div>
@@ -60,9 +60,9 @@ export default function Footer() {
               { label: "Terms of Use", href: "/terms-of-use" },
               { label: "Advertise", href: "/advertise" }
             ].map((item) => (
-              <Link key={item.href} href={item.href} className="text-sm font-bold text-white/70 transition hover:text-white">
+              <LoadingLink key={item.href} href={item.href} className="rounded py-1 text-sm font-bold text-white/70 transition hover:text-white">
                 {item.label}
-              </Link>
+              </LoadingLink>
             ))}
           </div>
         </div>

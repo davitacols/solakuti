@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ComponentProps, ReactNode, useState } from "react";
+import { ComponentProps, ReactNode, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type LoadingLinkProps = ComponentProps<typeof Link> & {
@@ -21,6 +21,11 @@ export default function LoadingLink({
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const hrefString = typeof href === "string" ? href : href.toString();
+  const isExternal = /^https?:\/\//i.test(hrefString) || hrefString.startsWith("mailto:");
+
+  useEffect(() => {
+    setLoading(false);
+  }, [pathname]);
 
   return (
     <Link
@@ -29,7 +34,7 @@ export default function LoadingLink({
       aria-busy={loading}
       onClick={(event) => {
         onClick?.(event);
-        if (!event.defaultPrevented && hrefString !== pathname) {
+        if (!event.defaultPrevented && !isExternal && hrefString !== pathname) {
           setLoading(true);
         }
       }}

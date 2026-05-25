@@ -155,7 +155,7 @@ CSRF_TRUSTED_ORIGINS = config(
 DATA_UPLOAD_MAX_MEMORY_SIZE = config("DATA_UPLOAD_MAX_MEMORY_SIZE", default=50 * 1024 * 1024, cast=int)
 FILE_UPLOAD_MAX_MEMORY_SIZE = config("FILE_UPLOAD_MAX_MEMORY_SIZE", default=50 * 1024 * 1024, cast=int)
 
-SPORTS_PROVIDER = config("SPORTS_PROVIDER", default="football_data")
+SPORTS_PROVIDER = config("SPORTS_PROVIDER", default="api_football")
 FOOTBALL_DATA_API_KEY = config("FOOTBALL_DATA_API_KEY", default="")
 FOOTBALL_DATA_BASE_URL = config("FOOTBALL_DATA_BASE_URL", default="https://api.football-data.org/v4")
 FOOTBALL_DATA_COMPETITIONS = config("FOOTBALL_DATA_COMPETITIONS", default="WC,CL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,PL", cast=Csv())
