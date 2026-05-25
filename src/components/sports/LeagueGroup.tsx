@@ -14,10 +14,10 @@ export default function LeagueGroup({ title, fixtures }: LeagueGroupProps) {
   const liveCount = fixtures.filter((fixture) => fixture.status === "live" || fixture.status === "halftime").length;
 
   return (
-    <section className="overflow-hidden border border-black/10 bg-[#f8f5ef]">
-      <div className="flex items-center justify-between gap-3 border-b border-black/10 bg-white px-4 py-3">
+    <section className="min-w-0 overflow-hidden border border-black/10 bg-[#f8f5ef]">
+      <div className="flex min-w-0 items-center justify-between gap-3 border-b border-black/10 bg-white px-3 py-3 sm:px-4">
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-black uppercase tracking-[0.18em] text-[#111]">{title}</h2>
+          <h2 className="truncate text-xs font-black uppercase tracking-[0.14em] text-[#111] sm:text-sm sm:tracking-[0.18em]">{title}</h2>
           <p className="mt-1 text-xs font-bold text-black/38">{fixtures.length} match{fixtures.length === 1 ? "" : "es"} loaded</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

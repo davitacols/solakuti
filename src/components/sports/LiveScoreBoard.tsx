@@ -111,26 +111,26 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
   }, []);
 
   return (
-    <section className="min-w-0">
+    <section className="min-w-0 overflow-hidden">
       <div className="mb-5 border-b-2 border-black pb-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-red-600">Match centre</p>
-            <h2 className="mt-2 text-3xl font-black leading-none tracking-[-0.055em] text-[#111] sm:text-5xl">
+            <h2 className="mt-2 text-3xl font-black leading-none tracking-[-0.045em] text-[#111] sm:text-5xl sm:tracking-[-0.055em]">
               Scores and fixtures
             </h2>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
             <p className="text-sm font-black text-black/42">{visibleFixtures.length} in view</p>
             {lastUpdated && (
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-black/35">
+              <p className="text-xs font-black uppercase tracking-[0.1em] text-black/35 sm:tracking-[0.14em]">
                 Updated {new Intl.DateTimeFormat("en-NG", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(lastUpdated)}
               </p>
             )}
             <button
               type="button"
               onClick={() => refreshFeeds()}
-              className="inline-flex h-10 items-center gap-2 border border-black/10 bg-white px-3 text-xs font-black uppercase tracking-[0.12em] transition hover:border-black hover:bg-black hover:text-white"
+              className="inline-flex h-10 items-center gap-2 border border-black/10 bg-white px-3 text-xs font-black uppercase tracking-[0.1em] transition hover:border-black hover:bg-black hover:text-white sm:tracking-[0.12em]"
             >
               <RefreshCw className={cn("size-4", isRefreshing && "animate-spin")} />
               Refresh
@@ -140,14 +140,14 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
       </div>
 
       <div className="sticky top-[72px] z-20 mb-5 overflow-x-auto border border-black/10 bg-white/94 p-2 shadow-[0_18px_60px_rgba(0,0,0,0.08)] backdrop-blur">
-        <div className="flex min-w-max gap-2">
+        <div className="grid min-w-full grid-cols-2 gap-2 sm:flex sm:min-w-max">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setActiveTab(id)}
               className={cn(
-                "inline-flex h-11 items-center gap-2 px-4 text-sm font-black transition",
+                "inline-flex h-11 min-w-0 items-center justify-center gap-2 px-3 text-sm font-black transition sm:px-4",
                 activeTab === id ? "bg-[#111] text-white" : "bg-[#f5f1ea] text-black/55 hover:bg-red-600 hover:text-white"
               )}
             >
@@ -161,7 +161,7 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
         </div>
       </div>
 
-      <div className="mb-5 grid gap-3 border border-black/10 bg-white p-3 lg:grid-cols-[minmax(0,1fr)_240px]">
+      <div className="mb-5 grid min-w-0 gap-3 border border-black/10 bg-white p-3 lg:grid-cols-[minmax(0,1fr)_240px]">
         <label className="relative min-w-0">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-black/35" />
           <input
@@ -185,12 +185,12 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
 
       {availableDates.length > 1 && (
         <div className="mb-5 overflow-x-auto">
-          <div className="flex min-w-max gap-2">
+          <div className="flex min-w-full gap-2 sm:min-w-max">
             <button
               type="button"
               onClick={() => setSelectedDate("all")}
               className={cn(
-                "h-10 px-4 text-xs font-black uppercase tracking-[0.12em] transition",
+                "h-10 shrink-0 px-4 text-xs font-black uppercase tracking-[0.1em] transition sm:tracking-[0.12em]",
                 selectedDate === "all" ? "bg-red-600 text-white" : "border border-black/10 bg-white text-black/55 hover:border-black"
               )}
             >
@@ -202,7 +202,7 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
                 type="button"
                 onClick={() => setSelectedDate(dateKey)}
                 className={cn(
-                  "h-10 px-4 text-xs font-black uppercase tracking-[0.12em] transition",
+                  "h-10 shrink-0 px-4 text-xs font-black uppercase tracking-[0.1em] transition sm:tracking-[0.12em]",
                   selectedDate === dateKey ? "bg-[#111] text-white" : "border border-black/10 bg-white text-black/55 hover:border-black"
                 )}
               >
@@ -220,7 +220,7 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
           ))}
         </div>
       ) : (
-        <div className="grid min-h-80 place-items-center border border-dashed border-black/20 bg-[#f8f5ef] p-8 text-center">
+        <div className="grid min-h-72 place-items-center border border-dashed border-black/20 bg-[#f8f5ef] p-5 text-center sm:min-h-80 sm:p-8">
           <div>
             <span className="mx-auto grid size-14 place-items-center border border-black/10 bg-white text-black/45">
               {activeTab === "live" ? <Radio className="size-5 text-red-600" /> : <ListFilter className="size-5" />}

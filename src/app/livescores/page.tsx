@@ -41,60 +41,60 @@ export default async function LiveScoresPage() {
   return (
     <main>
       <BreakingNewsBar articles={latestArticles} />
-      <section className="border-b border-black/10 bg-[#0d0d0d] text-white">
+      <section className="overflow-hidden border-b border-black/10 bg-[#0d0d0d] text-white">
         <div className="container-page py-8 sm:py-12">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px] xl:items-end">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_430px] xl:items-end">
             <div className="min-w-0">
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs font-black uppercase tracking-[0.18em]">
+              <p className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] sm:px-4 sm:text-xs sm:tracking-[0.18em]">
                 <Radio className="size-4 text-red-500" />
                 Solakuti Sports
               </p>
-              <h1 className="mt-6 max-w-5xl text-5xl font-black leading-[0.9] tracking-[-0.075em] sm:text-7xl xl:text-8xl">
+              <h1 className="mt-5 max-w-5xl text-[2.6rem] font-black leading-[0.92] tracking-[-0.055em] sm:mt-6 sm:text-7xl sm:tracking-[-0.075em] xl:text-8xl">
                 Live football command centre.
               </h1>
-              <div className="mt-7 grid gap-3 sm:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-7 sm:grid-cols-4 sm:gap-3">
                 {statusCards.map(({ label, value, icon: Icon, tone }) => (
-                  <div key={label} className="border border-white/10 bg-white/[0.06] p-4">
+                  <div key={label} className="min-w-0 border border-white/10 bg-white/[0.06] p-3 sm:p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">{label}</p>
+                      <p className="truncate text-[10px] font-black uppercase tracking-[0.13em] text-white/45 sm:text-[11px] sm:tracking-[0.18em]">{label}</p>
                       <Icon className={`size-4 ${tone}`} />
                     </div>
-                    <p className="mt-3 text-3xl font-black tracking-[-0.06em]">{value}</p>
+                    <p className="mt-3 text-2xl font-black tracking-[-0.05em] sm:text-3xl sm:tracking-[-0.06em]">{value}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="border border-white/12 bg-white text-[#111] shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
-              <div className="border-b border-black/10 bg-[#f5f1ea] px-5 py-4">
+            <div className="min-w-0 border border-white/12 bg-white text-[#111] shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+              <div className="border-b border-black/10 bg-[#f5f1ea] px-4 py-4 sm:px-5">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Main board</p>
-                  <span className="rounded-full bg-[#111] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-white">
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-red-600 sm:text-xs sm:tracking-[0.18em]">Main board</p>
+                  <span className="shrink-0 rounded-full bg-[#111] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-white sm:px-3 sm:text-[11px] sm:tracking-[0.14em]">
                     {totalMatches} matches
                   </span>
                 </div>
               </div>
               {headlineFixture ? (
-                <Link href={`/livescores/match/${headlineFixture.id}`} className="block p-5 transition hover:bg-black/[0.03]">
+                <Link href={`/livescores/match/${headlineFixture.id}`} className="block min-w-0 p-4 transition hover:bg-black/[0.03] sm:p-5">
                   <div className="flex items-center justify-between gap-4">
                     <p className="truncate text-xs font-black uppercase tracking-[0.16em] text-black/42">
                       {headlineFixture.competition.name}
                     </p>
-                    <span className="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-white">
+                    <span className="shrink-0 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-white sm:text-[11px]">
                       {headlineFixture.status === "live" ? "Live" : headlineFixture.status}
                     </span>
                   </div>
-                  <div className="mt-6 grid grid-cols-[minmax(0,1fr)_86px_minmax(0,1fr)] items-center gap-3">
+                  <div className="mt-5 grid min-w-0 grid-cols-[minmax(0,1fr)_58px_minmax(0,1fr)] items-center gap-2 sm:mt-6 sm:grid-cols-[minmax(0,1fr)_86px_minmax(0,1fr)] sm:gap-3">
                     <TeamBadge team={headlineFixture.home_team} compact />
                     <div className="text-center">
-                      <p className="text-3xl font-black tracking-[-0.06em]">
+                      <p className="text-xl font-black tracking-[-0.05em] sm:text-3xl sm:tracking-[-0.06em]">
                         {headlineFixture.status === "scheduled" ? "vs" : `${headlineFixture.home_score} - ${headlineFixture.away_score}`}
                       </p>
                     </div>
                     <TeamBadge team={headlineFixture.away_team} align="right" compact />
                   </div>
-                  <div className="mt-5 flex items-center justify-between border-t border-black/10 pt-4 text-xs font-black uppercase tracking-[0.14em] text-black/42">
-                    <span>{headlineFixture.round_name || "Fixture"}</span>
+                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-black/10 pt-4 text-[11px] font-black uppercase tracking-[0.1em] text-black/42 sm:text-xs sm:tracking-[0.14em]">
+                    <span className="min-w-0 truncate">{headlineFixture.round_name || "Fixture"}</span>
                     <ChevronRight className="size-4" />
                   </div>
                 </Link>
@@ -109,15 +109,15 @@ export default async function LiveScoresPage() {
         </div>
       </section>
 
-      <section className="container-page grid gap-8 py-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="container-page grid min-w-0 gap-6 py-6 sm:gap-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <LiveScoreBoard
           liveFixtures={liveFixtures}
           todayFixtures={todayFixtures}
           upcomingFixtures={upcomingFixtures}
           resultFixtures={resultFixtures}
         />
-        <aside className="space-y-5">
-          <div className="border border-black/10 bg-white">
+        <aside className="min-w-0 space-y-5">
+          <div className="min-w-0 border border-black/10 bg-white">
             <div className="border-b-2 border-black px-5 py-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Competitions</p>
             </div>
@@ -143,7 +143,7 @@ export default async function LiveScoresPage() {
             </div>
           </div>
 
-          <div className="border border-black/10 bg-white">
+          <div className="min-w-0 border border-black/10 bg-white">
             <div className="flex items-center justify-between gap-3 border-b-2 border-black px-5 py-4">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Table watch</p>
@@ -162,7 +162,7 @@ export default async function LiveScoresPage() {
             </div>
           </div>
 
-          <div className="border border-black/10 bg-[#111] p-5 text-white">
+          <div className="min-w-0 border border-black/10 bg-[#111] p-5 text-white">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">Sports wire</p>
             <div className="mt-4 divide-y divide-white/10">
               {latestArticles.slice(0, 4).map((article) => (
