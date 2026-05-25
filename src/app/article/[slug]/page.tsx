@@ -7,6 +7,15 @@ import ArticleCard from "@/components/ArticleCard";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import CommentsSection from "@/components/CommentsSection";
 import { getArticleBySlug, getArticleComments, getArticles, getLatestArticles } from "@/lib/api";
+import {
+  LOGO_URL,
+  SITE_NAME,
+  SITE_URL,
+  absoluteUrl,
+  breadcrumbJsonLd,
+  stripHtml,
+  truncateDescription
+} from "@/lib/seo";
 import { categoryToSlug, formatDate, getRelatedArticles } from "@/lib/utils";
 
 type ArticlePageProps = {
@@ -14,16 +23,6 @@ type ArticlePageProps = {
 };
 
 export const dynamic = "force-dynamic";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
-
-function absoluteUrl(value: string) {
-  try {
-    return new URL(value, SITE_URL).toString();
-  } catch {
-    return `${SITE_URL}/api/og/article/solakuti`;
-  }
-}
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -38,26 +37,39 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
   const previewImage = absoluteUrl(`${SITE_URL}/api/og/article/${article.slug}`);
   const sourceImage = absoluteUrl(article.ogImage || article.image);
+  const title = article.seoTitle || article.title;
+  const description = truncateDescription(article.seoDescription || article.excerpt);
+  const images = [
+    {
+      url: sourceImage,
+      secureUrl: sourceImage,
+      width: 1200,
+      height: 630,
+      alt: article.title
+    },
+    {
+      url: previewImage,
+      secureUrl: previewImage,
+      width: 1200,
+      height: 630,
+      alt: article.title,
+      type: "image/png"
+    }
+  ];
 
   return {
-    title: article.seoTitle || article.title,
-    description: article.seoDescription || article.excerpt,
-    alternates: article.canonicalUrl ? { canonical: article.canonicalUrl } : undefined,
+    title,
+    description,
+    alternates: {
+      canonical: article.canonicalUrl || articleUrl
+    },
+    keywords: [article.category, ...(article.tags ?? [])],
     openGraph: {
-      title: article.seoTitle || article.title,
-      description: article.seoDescription || article.excerpt,
+      title,
+      description,
       url: articleUrl,
-      siteName: "Solakuti",
-      images: [
-        {
-          url: previewImage,
-          secureUrl: previewImage,
-          width: 1200,
-          height: 630,
-          alt: article.title,
-          type: "image/png"
-        }
-      ],
+      siteName: SITE_NAME,
+      images,
       type: "article",
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt ?? article.publishedAt,
@@ -67,17 +79,16 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     },
     twitter: {
       card: "summary_large_image",
-      title: article.seoTitle || article.title,
-      description: article.seoDescription || article.excerpt,
-      images: [previewImage]
+      title,
+      description,
+      images: [sourceImage]
     },
     other: {
-      "og:image": previewImage,
-      "og:image:secure_url": previewImage,
-      "og:image:type": "image/png",
+      "og:image": sourceImage,
+      "og:image:secure_url": sourceImage,
       "og:image:width": "1200",
       "og:image:height": "630",
-      "twitter:image": previewImage,
+      "twitter:image": sourceImage,
       "solakuti:featured_image": sourceImage
     }
   };
@@ -100,14 +111,17 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
   const categoryUrl = `${SITE_URL}/category/${categoryToSlug(article.category)}`;
   const authorUrl = article.authorSlug ? `${SITE_URL}/author/${article.authorSlug}` : undefined;
+  const sourceImage = absoluteUrl(article.ogImage || article.image);
+  const previewImage = absoluteUrl(`${SITE_URL}/api/og/article/${article.slug}`);
+  const articleText = stripHtml(article.contentHtml || article.body.join(" "));
   const shareText = encodeURIComponent(article.title);
   const shareUrl = encodeURIComponent(articleUrl);
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: article.seoTitle || article.title,
-    description: article.seoDescription || article.excerpt,
-    image: [absoluteUrl(article.ogImage || article.image)],
+    description: truncateDescription(article.seoDescription || article.excerpt),
+    image: [sourceImage, previewImage],
     datePublished: article.publishedAt,
     dateModified: article.updatedAt ?? article.publishedAt,
     author: [
@@ -118,41 +132,31 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       }
     ],
     publisher: {
-      "@type": "Organization",
-      name: "Solakuti",
+      "@type": "NewsMediaOrganization",
+      name: SITE_NAME,
+      url: SITE_URL,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/solakuti-logo-transparent.png`
+        url: LOGO_URL,
+        width: 512,
+        height: 512
       }
     },
-    mainEntityOfPage: article.canonicalUrl || articleUrl,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": article.canonicalUrl || articleUrl
+    },
     articleSection: article.category,
-    keywords: article.tags?.join(", ")
+    keywords: article.tags?.join(", "),
+    wordCount: articleText ? articleText.split(/\s+/).length : undefined,
+    isAccessibleForFree: true,
+    inLanguage: "en-NG"
   };
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: SITE_URL
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: article.category,
-        item: categoryUrl
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: article.title,
-        item: articleUrl
-      }
-    ]
-  };
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: "Home", url: SITE_URL },
+    { name: article.category, url: categoryUrl },
+    { name: article.title, url: articleUrl }
+  ]);
   const shareLinks = [
     {
       label: "Share on X",
@@ -189,7 +193,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <BreakingNewsBar articles={latestArticles.length ? latestArticles : allArticles} />
       <article>

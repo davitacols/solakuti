@@ -1,6 +1,7 @@
 import { Article } from "@/types/article";
+import { SITE_URL, absoluteUrl, truncateDescription } from "@/lib/seo";
 
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
+export { SITE_URL };
 
 export function escapeXml(value: string) {
   return value
@@ -26,17 +27,18 @@ export function buildRssFeed({
     .slice(0, 50)
     .map((article) => {
       const url = `${SITE_URL}/article/${article.slug}`;
+      const image = absoluteUrl(article.ogImage || article.image);
       return `
         <item>
           <title>${escapeXml(article.title)}</title>
           <link>${escapeXml(url)}</link>
           <guid isPermaLink="true">${escapeXml(url)}</guid>
-          <description>${escapeXml(article.excerpt)}</description>
+          <description>${escapeXml(truncateDescription(article.seoDescription || article.excerpt))}</description>
           <category>${escapeXml(article.category)}</category>
           <author>${escapeXml(article.author)}</author>
           <pubDate>${new Date(article.publishedAt).toUTCString()}</pubDate>
-          <media:content url="${escapeXml(article.image)}" medium="image" />
-          <enclosure url="${escapeXml(article.image)}" type="image/jpeg" />
+          <media:content url="${escapeXml(image)}" medium="image" />
+          <enclosure url="${escapeXml(image)}" type="image/jpeg" />
         </item>`;
     })
     .join("");

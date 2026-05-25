@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.news",
     "apps.media",
     "apps.analytics",
+    "apps.sports",
 ]
 
 MIDDLEWARE = [
@@ -82,6 +83,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASE_URL = config("DATABASE_URL", default="")
+SPORTS_DATABASE_URL = config("SPORTS_DATABASE_URL", default="")
 if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, conn_health_checks=True)
@@ -93,6 +95,12 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+if SPORTS_DATABASE_URL:
+    DATABASES["sports"] = dj_database_url.parse(SPORTS_DATABASE_URL, conn_max_age=600, conn_health_checks=True)
+    DATABASE_ROUTERS = ["core.db_router.SportsDatabaseRouter"]
+else:
+    DATABASES["sports"] = DATABASES["default"]
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -146,6 +154,18 @@ CSRF_TRUSTED_ORIGINS = config(
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = config("DATA_UPLOAD_MAX_MEMORY_SIZE", default=50 * 1024 * 1024, cast=int)
 FILE_UPLOAD_MAX_MEMORY_SIZE = config("FILE_UPLOAD_MAX_MEMORY_SIZE", default=50 * 1024 * 1024, cast=int)
+
+SPORTS_PROVIDER = config("SPORTS_PROVIDER", default="football_data")
+FOOTBALL_DATA_API_KEY = config("FOOTBALL_DATA_API_KEY", default="")
+FOOTBALL_DATA_BASE_URL = config("FOOTBALL_DATA_BASE_URL", default="https://api.football-data.org/v4")
+FOOTBALL_DATA_COMPETITIONS = config("FOOTBALL_DATA_COMPETITIONS", default="WC,CL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,PL", cast=Csv())
+API_FOOTBALL_API_KEY = config("API_FOOTBALL_API_KEY", default="")
+API_FOOTBALL_BASE_URL = config("API_FOOTBALL_BASE_URL", default="https://v3.football.api-sports.io")
+API_FOOTBALL_COMPETITIONS = config("API_FOOTBALL_COMPETITIONS", default="PL,CL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,WC", cast=Csv())
+API_FOOTBALL_SEASON = config("API_FOOTBALL_SEASON", default="", cast=lambda value: int(value) if str(value).strip() else None)
+API_FOOTBALL_SYNC_DETAILS = config("API_FOOTBALL_SYNC_DETAILS", default=True, cast=bool)
+API_FOOTBALL_TIMEOUT_SECONDS = config("API_FOOTBALL_TIMEOUT_SECONDS", default=35, cast=int)
+API_FOOTBALL_MAX_ATTEMPTS = config("API_FOOTBALL_MAX_ATTEMPTS", default=3, cast=int)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

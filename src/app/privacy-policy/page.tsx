@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import PublisherPage from "@/components/PublisherPage";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Privacy Policy",
-  description: "Solakuti privacy policy covering reader data, analytics, advertising, comments, newsletters and data rights."
-};
+  description: "Solakuti privacy policy covering reader data, analytics, advertising, comments, newsletters and data rights.",
+  path: "/privacy-policy"
+});
 
 export default function PrivacyPolicyPage() {
   return (

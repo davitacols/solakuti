@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import PublisherPage from "@/components/PublisherPage";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Contact Solakuti",
-  description: "Contact Solakuti for news tips, corrections, partnerships, syndication and advertising."
-};
+  description: "Contact Solakuti for news tips, corrections, partnerships, syndication and advertising.",
+  path: "/contact"
+});
 
 export default function ContactPage() {
   return (

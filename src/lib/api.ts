@@ -1,5 +1,5 @@
-import { articles as fallbackArticles, featuredArticle as fallbackFeaturedArticle, trendingArticles as fallbackTrendingArticles } from "@/data/articles";
 import { Article, ArticleCategory, Category, Comment } from "@/types/article";
+import { SportsCompetition, SportsFixture, SportsStanding, SportsTeam } from "@/types/sports";
 import { categories as fallbackCategories, categoryToSlug, slugify } from "@/lib/utils";
 
 type ApiResponse<T> = {
@@ -172,6 +172,28 @@ export type NewsletterSubscriber = {
   created_at: string;
 };
 
+export type SportsSyncLog = {
+  id: number;
+  provider: string;
+  task: string;
+  status: "success" | "failed";
+  message: string;
+  started_at: string;
+  finished_at: string | null;
+};
+
+export type SportsAdminOverview = {
+  competitions: number;
+  teams: number;
+  fixtures: number;
+  live_fixtures: number;
+  today_fixtures: number;
+  upcoming_fixtures: number;
+  result_fixtures: number;
+  last_sync: SportsSyncLog | null;
+  recent_failures: SportsSyncLog[];
+};
+
 export type AdminArticleRevision = {
   id: number;
   created_by?: BackendUser;
@@ -192,6 +214,8 @@ const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === "phase-production-build";
 const configuredTimeoutMs = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 10000);
 const API_TIMEOUT_MS = Number.isFinite(configuredTimeoutMs) ? Math.max(configuredTimeoutMs, 20000) : 20000;
 const API_MUTATION_TIMEOUT_MS = Math.max(API_TIMEOUT_MS, 35000);
+const fallbackArticles: Article[] = [];
+const fallbackTrendingArticles: Article[] = [];
 
 function networkError<T>(message = "Could not reach Solakuti API. Please check your connection and try again."): ApiResponse<T> {
   return {
@@ -491,9 +515,9 @@ export async function getArticles(): Promise<Article[]> {
   return data ? data.map(mapArticle) : fallbackArticles;
 }
 
-export async function getFeaturedArticle(): Promise<Article> {
+export async function getFeaturedArticle(): Promise<Article | null> {
   const data = await fetchApi<BackendArticle[]>("/articles/featured/?page_size=1");
-  return data?.[0] ? mapArticle(data[0]) : fallbackFeaturedArticle;
+  return data?.[0] ? mapArticle(data[0]) : null;
 }
 
 export async function getLatestArticles(): Promise<Article[]> {
@@ -735,10 +759,137 @@ export async function adminDeleteMedia(token: string, mediaId: number) {
   });
 }
 
+export async function getAdminSportsOverview(token: string) {
+  return adminApi<SportsAdminOverview>("/sports/sync-logs/overview/", token);
+}
+
+export async function getAdminSportsSyncLogs(token: string) {
+  return adminApi<SportsSyncLog[]>("/sports/sync-logs/?page_size=10&ordering=-started_at", token);
+}
+
+export async function triggerSportsSync(token: string, competitions?: string) {
+  return adminApi<{
+    competitions: number;
+    teams: number;
+    fixtures: number;
+    standings: number;
+    failed: Array<{ competition: string; error: string }>;
+  }>("/sports/sync-logs/sync/", token, {
+    method: "POST",
+    body: competitions ? { competitions } : {}
+  });
+}
+
+export async function adminUpdateSportsCompetition(token: string, slug: string, payload: Record<string, unknown>) {
+  return adminApi<SportsCompetition>(`/sports/competitions/${slug}/`, token, {
+    method: "PATCH",
+    body: payload
+  });
+}
+
+export async function adminCreateSportsCompetition(token: string, payload: Record<string, unknown>) {
+  return adminApi<SportsCompetition>("/sports/competitions/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminCreateSportsTeam(token: string, payload: Record<string, unknown>) {
+  return adminApi<SportsTeam>("/sports/teams/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminCreateSportsFixture(token: string, payload: Record<string, unknown>) {
+  return adminApi<SportsFixture>("/sports/fixtures/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminUpdateSportsFixture(token: string, fixtureId: number, payload: Record<string, unknown>) {
+  return adminApi<SportsFixture>(`/sports/fixtures/${fixtureId}/`, token, {
+    method: "PATCH",
+    body: payload
+  });
+}
+
+export async function adminCreateSportsEvent(token: string, payload: Record<string, unknown>) {
+  return adminApi<unknown>("/sports/events/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminCreateSportsStatistic(token: string, payload: Record<string, unknown>) {
+  return adminApi<unknown>("/sports/statistics/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminCreateSportsStanding(token: string, payload: Record<string, unknown>) {
+  return adminApi<SportsStanding>("/sports/standings/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
 export async function subscribeToNewsletter(email: string, source = "website", website = "") {
   return mutateApi<{ id: number; email: string }>("/newsletter/subscribe/", {
     email,
     source,
     website
   });
+}
+
+async function fetchSportsApi<T>(path: string): Promise<T[]> {
+  const data = await fetchApi<T[]>(path);
+  return data ?? [];
+}
+
+export async function getSportsCompetitions() {
+  return fetchSportsApi<SportsCompetition>("/sports/competitions/?page_size=100&ordering=name");
+}
+
+export async function getSportsTeams() {
+  return fetchSportsApi<SportsTeam>("/sports/teams/?page_size=100&ordering=name");
+}
+
+export async function getSportsFixtures() {
+  return fetchSportsApi<SportsFixture>("/sports/fixtures/?page_size=100&ordering=kickoff_at");
+}
+
+export async function getLiveFixtures() {
+  return fetchSportsApi<SportsFixture>("/sports/fixtures/live/");
+}
+
+export async function getTodayFixtures() {
+  return fetchSportsApi<SportsFixture>("/sports/fixtures/today/");
+}
+
+export async function getUpcomingFixtures() {
+  return fetchSportsApi<SportsFixture>("/sports/fixtures/upcoming/");
+}
+
+export async function getResultFixtures() {
+  return fetchSportsApi<SportsFixture>("/sports/fixtures/results/");
+}
+
+export async function getSportsFixture(id: string) {
+  const data = await fetchApi<SportsFixture>(`/sports/fixtures/${id}/`);
+  return data ?? null;
+}
+
+export async function getCompetitionFixtures(slug: string) {
+  return fetchSportsApi<SportsFixture>(`/sports/competitions/${slug}/fixtures/`);
+}
+
+export async function getCompetitionStandings(slug: string) {
+  return fetchSportsApi<SportsStanding>(`/sports/competitions/${slug}/standings/`);
+}
+
+export async function getTeamFixtures(slug: string) {
+  return fetchSportsApi<SportsFixture>(`/sports/teams/${slug}/fixtures/`);
 }

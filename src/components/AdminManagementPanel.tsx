@@ -15,6 +15,7 @@ import {
   Send,
   Shield,
   Trash2,
+  Trophy,
   Users
 } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
@@ -24,7 +25,17 @@ import {
   AdminComment,
   AdminArticleRevision,
   AdminMediaAsset,
+  SportsAdminOverview,
+  SportsSyncLog,
   AdminUser,
+  adminCreateSportsCompetition,
+  adminCreateSportsEvent,
+  adminCreateSportsFixture,
+  adminCreateSportsStanding,
+  adminCreateSportsStatistic,
+  adminCreateSportsTeam,
+  adminUpdateSportsFixture,
+  adminUpdateSportsCompetition,
   adminCreateArticle,
   adminCreateCategory,
   adminCreateUser,
@@ -39,13 +50,20 @@ import {
   getAdminCategories,
   getAdminComments,
   getAdminMedia,
+  getAdminSportsOverview,
+  getAdminSportsSyncLogs,
   getAdminUsers,
+  getSportsCompetitions,
+  getSportsFixtures,
+  getSportsTeams,
   getArticleRevisions,
   restoreArticleRevision,
-  sanitizeArticleHtml
+  sanitizeArticleHtml,
+  triggerSportsSync
 } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
 import { Article } from "@/types/article";
+import { SportsCompetition, SportsFixture, SportsTeam } from "@/types/sports";
 
 type AdminManagementPanelProps = {
   token: string;
@@ -54,10 +72,11 @@ type AdminManagementPanelProps = {
   onRefresh: () => Promise<void>;
 };
 
-type Tab = "articles" | "categories" | "comments" | "users" | "media";
+type Tab = "articles" | "sports" | "categories" | "comments" | "users" | "media";
 
 const tabs: Array<{ id: Tab; label: string; icon: typeof FilePlus2 }> = [
   { id: "articles", label: "Articles", icon: FilePlus2 },
+  { id: "sports", label: "Sports", icon: Trophy },
   { id: "categories", label: "Categories", icon: Layers3 },
   { id: "comments", label: "Comments", icon: MessageSquareText },
   { id: "users", label: "Users", icon: Users },
@@ -87,12 +106,270 @@ function isArticlePublic(article: Article) {
   return Boolean(article.published && (!Number.isFinite(publishedTime) || publishedTime <= Date.now()));
 }
 
+function SportsDeskPanel({
+  overview,
+  logs,
+  competitions,
+  teams,
+  fixtures,
+  competitionCodes,
+  busy,
+  onCompetitionCodesChange,
+  onSync,
+  onToggleCompetition,
+  onCreateCompetition,
+  onCreateTeam,
+  onCreateFixture,
+  onUpdateFixture,
+  onCreateEvent,
+  onCreateStatistic,
+  onCreateStanding
+}: {
+  overview: SportsAdminOverview | null;
+  logs: SportsSyncLog[];
+  competitions: SportsCompetition[];
+  teams: SportsTeam[];
+  fixtures: SportsFixture[];
+  competitionCodes: string;
+  busy: string | null;
+  onCompetitionCodesChange: (value: string) => void;
+  onSync: () => void;
+  onToggleCompetition: (competition: SportsCompetition) => void;
+  onCreateCompetition: (event: FormEvent<HTMLFormElement>) => void;
+  onCreateTeam: (event: FormEvent<HTMLFormElement>) => void;
+  onCreateFixture: (event: FormEvent<HTMLFormElement>) => void;
+  onUpdateFixture: (event: FormEvent<HTMLFormElement>) => void;
+  onCreateEvent: (event: FormEvent<HTMLFormElement>) => void;
+  onCreateStatistic: (event: FormEvent<HTMLFormElement>) => void;
+  onCreateStanding: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const stats = [
+    ["Competitions", overview?.competitions ?? competitions.length],
+    ["Teams", overview?.teams ?? 0],
+    ["Fixtures", overview?.fixtures ?? 0],
+    ["Live now", overview?.live_fixtures ?? 0],
+    ["Today", overview?.today_fixtures ?? 0],
+    ["Upcoming", overview?.upcoming_fixtures ?? 0],
+    ["Results", overview?.result_fixtures ?? 0]
+  ];
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="min-w-0 space-y-6">
+        <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white">
+        <div className="border-b-2 border-black p-4">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-red-600">Sports desk</p>
+          <h4 className="mt-2 text-2xl font-black tracking-[-0.05em] text-[#111]">LiveScore control room</h4>
+        </div>
+        <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map(([label, value]) => (
+            <div key={label} className="border border-black/10 bg-[#f7f4ef] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-black/42">{label}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.06em] text-[#111]">{Number(value).toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-4 border-t border-black/10 p-4 md:grid-cols-[minmax(0,1fr)_180px]">
+          <TextInput
+            value={competitionCodes}
+            onChange={(event) => onCompetitionCodesChange(event.target.value)}
+            placeholder="Optional competition codes: PL,CL,SA"
+          />
+          <LoadingButton
+            type="button"
+            loading={busy === "sports-sync"}
+            onClick={onSync}
+            className="h-11 rounded-md bg-red-600 px-4 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#111]"
+          >
+            <RefreshCw className="size-4" />
+            Sync now
+          </LoadingButton>
+        </div>
+        <div className="border-t border-black/10 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-black/42">Sync history</p>
+          <div className="mt-3 divide-y divide-black/10">
+            {logs.map((log) => (
+              <div key={log.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-[#111]">{log.message || log.task}</p>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-black/38">
+                    {log.provider} - {formatDate(log.started_at)}
+                  </p>
+                </div>
+                <span className={cn(
+                  "w-fit rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+                  log.status === "success" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                )}>
+                  {log.status}
+                </span>
+              </div>
+            ))}
+            {!logs.length && <p className="py-4 text-sm font-bold text-black/45">No sync logs yet.</p>}
+          </div>
+        </div>
+      </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <AdminForm title="Create competition" onSubmit={onCreateCompetition} busy={busy === "sports-create-competition"}>
+            <TextInput name="name" placeholder="Competition name" required />
+            <TextInput name="country" placeholder="Country or region" />
+            <TextInput name="logo_url" placeholder="Logo URL" />
+            <CheckboxRow labels={["is_featured"]} />
+          </AdminForm>
+          <AdminForm title="Create team" onSubmit={onCreateTeam} busy={busy === "sports-create-team"}>
+            <TextInput name="name" placeholder="Team name" required />
+            <TextInput name="short_name" placeholder="Short name e.g. ARS" />
+            <TextInput name="country" placeholder="Country" />
+            <TextInput name="crest_url" placeholder="Crest URL" />
+          </AdminForm>
+        </div>
+
+        <AdminForm title="Create fixture" onSubmit={onCreateFixture} busy={busy === "sports-create-fixture"}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SelectInput name="competition" required>
+              <option value="">Competition</option>
+              {competitions.map((competition) => <option key={competition.id} value={competition.id}>{competition.name}</option>)}
+            </SelectInput>
+            <TextInput name="kickoff_at" type="datetime-local" required />
+            <SelectInput name="home_team" required>
+              <option value="">Home team</option>
+              {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+            </SelectInput>
+            <SelectInput name="away_team" required>
+              <option value="">Away team</option>
+              {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+            </SelectInput>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <SelectInput name="status" defaultValue="scheduled">
+              <option value="scheduled">Scheduled</option>
+              <option value="live">Live</option>
+              <option value="halftime">Half-time</option>
+              <option value="finished">Finished</option>
+              <option value="postponed">Postponed</option>
+              <option value="cancelled">Cancelled</option>
+            </SelectInput>
+            <TextInput name="round_name" placeholder="Round" />
+            <TextInput name="venue" placeholder="Venue" />
+          </div>
+        </AdminForm>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <AdminForm title="Update live score" onSubmit={onUpdateFixture} busy={busy === "sports-update-fixture"}>
+            <FixtureSelect fixtures={fixtures} />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <TextInput name="home_score" type="number" min="0" placeholder="Home" required />
+              <TextInput name="away_score" type="number" min="0" placeholder="Away" required />
+              <TextInput name="minute" type="number" min="0" placeholder="Minute" />
+            </div>
+            <SelectInput name="status" defaultValue="live">
+              <option value="scheduled">Scheduled</option>
+              <option value="live">Live</option>
+              <option value="halftime">Half-time</option>
+              <option value="finished">Finished</option>
+              <option value="postponed">Postponed</option>
+              <option value="cancelled">Cancelled</option>
+            </SelectInput>
+          </AdminForm>
+          <AdminForm title="Add match event" onSubmit={onCreateEvent} busy={busy === "sports-create-event"}>
+            <FixtureSelect fixtures={fixtures} />
+            <SelectInput name="event_type" defaultValue="goal">
+              <option value="goal">Goal</option>
+              <option value="yellow_card">Yellow card</option>
+              <option value="red_card">Red card</option>
+              <option value="substitution">Substitution</option>
+              <option value="var">VAR</option>
+              <option value="info">Info</option>
+            </SelectInput>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <SelectInput name="team_id">
+                <option value="">Team</option>
+                {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+              </SelectInput>
+              <TextInput name="minute" type="number" min="0" placeholder="Minute" />
+            </div>
+            <TextInput name="player_name" placeholder="Player" />
+            <TextInput name="detail" placeholder="Details" />
+          </AdminForm>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <AdminForm title="Add match statistic" onSubmit={onCreateStatistic} busy={busy === "sports-create-statistic"}>
+            <FixtureSelect fixtures={fixtures} />
+            <TextInput name="group" placeholder="Group e.g. Attack" />
+            <TextInput name="name" placeholder="Stat name e.g. Possession" required />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextInput name="home_value" placeholder="Home value" />
+              <TextInput name="away_value" placeholder="Away value" />
+            </div>
+          </AdminForm>
+          <AdminForm title="Add table row" onSubmit={onCreateStanding} busy={busy === "sports-create-standing"}>
+            <SelectInput name="competition_id" required>
+              <option value="">Competition</option>
+              {competitions.map((competition) => <option key={competition.id} value={competition.id}>{competition.name}</option>)}
+            </SelectInput>
+            <SelectInput name="team_id" required>
+              <option value="">Team</option>
+              {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+            </SelectInput>
+            <div className="grid gap-3 sm:grid-cols-4">
+              <TextInput name="position" type="number" min="1" placeholder="#" required />
+              <TextInput name="played" type="number" min="0" placeholder="P" />
+              <TextInput name="won" type="number" min="0" placeholder="W" />
+              <TextInput name="drawn" type="number" min="0" placeholder="D" />
+              <TextInput name="lost" type="number" min="0" placeholder="L" />
+              <TextInput name="goals_for" type="number" min="0" placeholder="GF" />
+              <TextInput name="goals_against" type="number" min="0" placeholder="GA" />
+              <TextInput name="points" type="number" min="0" placeholder="Pts" />
+            </div>
+          </AdminForm>
+        </div>
+      </div>
+
+      <aside className="rounded-lg border border-black/10 bg-white">
+        <div className="border-b border-black/10 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Pinned leagues</p>
+          <p className="mt-2 text-sm font-bold leading-6 text-black/52">Featured competitions appear in the public sports centre rail.</p>
+        </div>
+        <div className="divide-y divide-black/10">
+          {competitions.map((competition) => (
+            <div key={competition.id} className="flex items-center justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-[#111]">{competition.name}</p>
+                <p className="mt-1 text-xs font-bold text-black/42">{competition.country || "Football"}</p>
+              </div>
+              <LoadingButton
+                type="button"
+                loading={busy === `sports-competition-${competition.slug}`}
+                onClick={() => onToggleCompetition(competition)}
+                className={cn(
+                  "h-9 rounded-full px-3 text-xs font-black transition",
+                  competition.is_featured ? "bg-[#111] text-white hover:bg-red-600" : "border border-black/10 text-black/55 hover:border-black hover:bg-black hover:text-white"
+                )}
+              >
+                {competition.is_featured ? "Pinned" : "Pin"}
+              </LoadingButton>
+            </div>
+          ))}
+          {!competitions.length && <p className="p-4 text-sm font-bold text-black/45">No competitions synced yet.</p>}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 export default function AdminManagementPanel({ token, role, articles, onRefresh }: AdminManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("articles");
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [comments, setComments] = useState<AdminComment[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [media, setMedia] = useState<AdminMediaAsset[]>([]);
+  const [sportsOverview, setSportsOverview] = useState<SportsAdminOverview | null>(null);
+  const [sportsLogs, setSportsLogs] = useState<SportsSyncLog[]>([]);
+  const [sportsCompetitions, setSportsCompetitions] = useState<SportsCompetition[]>([]);
+  const [sportsTeams, setSportsTeams] = useState<SportsTeam[]>([]);
+  const [sportsFixtures, setSportsFixtures] = useState<SportsFixture[]>([]);
+  const [sportsCompetitionCodes, setSportsCompetitionCodes] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
@@ -126,6 +403,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     () =>
       tabs.filter((tab) => {
         if (tab.id === "users") return isAdmin;
+        if (tab.id === "sports") return canManageStructure;
         if (tab.id === "categories" || tab.id === "comments") return canManageStructure;
         if (tab.id === "media") return canManageMedia;
         return true;
@@ -159,16 +437,36 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
   }, [token]);
 
   async function loadCollections() {
-    const [categoryResponse, commentResponse, mediaResponse, userResponse] = await Promise.all([
+    const [
+      categoryResponse,
+      commentResponse,
+      mediaResponse,
+      userResponse,
+      sportsOverviewResponse,
+      sportsLogsResponse,
+      sportsCompetitionsResponse,
+      sportsTeamsResponse,
+      sportsFixturesResponse
+    ] = await Promise.all([
       getAdminCategories(token),
       getAdminComments(token),
       getAdminMedia(token),
-      isAdmin ? getAdminUsers(token) : Promise.resolve(null)
+      isAdmin ? getAdminUsers(token) : Promise.resolve(null),
+      canManageStructure ? getAdminSportsOverview(token) : Promise.resolve(null),
+      canManageStructure ? getAdminSportsSyncLogs(token) : Promise.resolve(null),
+      canManageStructure ? getSportsCompetitions() : Promise.resolve([]),
+      canManageStructure ? getSportsTeams() : Promise.resolve([]),
+      canManageStructure ? getSportsFixtures() : Promise.resolve([])
     ]);
     setCategories(categoryResponse?.data ?? []);
     setComments(commentResponse?.data ?? []);
     setMedia(mediaResponse?.data ?? []);
     setUsers(userResponse?.data ?? []);
+    setSportsOverview(sportsOverviewResponse?.data ?? null);
+    setSportsLogs(sportsLogsResponse?.data ?? []);
+    setSportsCompetitions(sportsCompetitionsResponse ?? []);
+    setSportsTeams(sportsTeamsResponse ?? []);
+    setSportsFixtures(sportsFixturesResponse ?? []);
   }
 
   async function runAction(label: string, action: () => Promise<{ success: boolean; message: string } | null>) {
@@ -388,6 +686,124 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       setEditImageFile(null);
       setArticleRevisions([]);
     }
+  }
+
+  function optionalNumber(value: FormDataEntryValue | null) {
+    const normalized = String(value ?? "").trim();
+    return normalized ? Number(normalized) : null;
+  }
+
+  async function handleCreateSportsCompetition(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await runAction("sports-create-competition", () =>
+      adminCreateSportsCompetition(token, {
+        name: String(form.get("name") ?? ""),
+        country: String(form.get("country") ?? ""),
+        logo_url: String(form.get("logo_url") ?? ""),
+        is_featured: form.get("is_featured") === "on"
+      })
+    );
+    event.currentTarget.reset();
+  }
+
+  async function handleCreateSportsTeam(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await runAction("sports-create-team", () =>
+      adminCreateSportsTeam(token, {
+        name: String(form.get("name") ?? ""),
+        short_name: String(form.get("short_name") ?? ""),
+        country: String(form.get("country") ?? ""),
+        crest_url: String(form.get("crest_url") ?? "")
+      })
+    );
+    event.currentTarget.reset();
+  }
+
+  async function handleCreateSportsFixture(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await runAction("sports-create-fixture", () =>
+      adminCreateSportsFixture(token, {
+        competition: Number(form.get("competition")),
+        home_team: Number(form.get("home_team")),
+        away_team: Number(form.get("away_team")),
+        kickoff_at: new Date(String(form.get("kickoff_at"))).toISOString(),
+        status: String(form.get("status") ?? "scheduled"),
+        round_name: String(form.get("round_name") ?? ""),
+        venue: String(form.get("venue") ?? "")
+      })
+    );
+    event.currentTarget.reset();
+  }
+
+  async function handleUpdateSportsFixture(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const fixtureId = Number(form.get("fixture"));
+    await runAction("sports-update-fixture", () =>
+      adminUpdateSportsFixture(token, fixtureId, {
+        home_score: Number(form.get("home_score") ?? 0),
+        away_score: Number(form.get("away_score") ?? 0),
+        minute: optionalNumber(form.get("minute")),
+        status: String(form.get("status") ?? "live")
+      })
+    );
+  }
+
+  async function handleCreateSportsEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await runAction("sports-create-event", () =>
+      adminCreateSportsEvent(token, {
+        fixture: Number(form.get("fixture")),
+        team_id: optionalNumber(form.get("team_id")),
+        event_type: String(form.get("event_type") ?? "info"),
+        minute: optionalNumber(form.get("minute")),
+        player_name: String(form.get("player_name") ?? ""),
+        detail: String(form.get("detail") ?? "")
+      })
+    );
+    event.currentTarget.reset();
+  }
+
+  async function handleCreateSportsStatistic(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await runAction("sports-create-statistic", () =>
+      adminCreateSportsStatistic(token, {
+        fixture: Number(form.get("fixture")),
+        group: String(form.get("group") ?? ""),
+        name: String(form.get("name") ?? ""),
+        home_value: String(form.get("home_value") ?? ""),
+        away_value: String(form.get("away_value") ?? "")
+      })
+    );
+    event.currentTarget.reset();
+  }
+
+  async function handleCreateSportsStanding(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const goalsFor = Number(form.get("goals_for") ?? 0);
+    const goalsAgainst = Number(form.get("goals_against") ?? 0);
+    await runAction("sports-create-standing", () =>
+      adminCreateSportsStanding(token, {
+        competition_id: Number(form.get("competition_id")),
+        team_id: Number(form.get("team_id")),
+        position: Number(form.get("position")),
+        played: Number(form.get("played") ?? 0),
+        won: Number(form.get("won") ?? 0),
+        drawn: Number(form.get("drawn") ?? 0),
+        lost: Number(form.get("lost") ?? 0),
+        goals_for: goalsFor,
+        goals_against: goalsAgainst,
+        goal_difference: goalsFor - goalsAgainst,
+        points: Number(form.get("points") ?? 0)
+      })
+    );
+    event.currentTarget.reset();
   }
 
   async function handleRestoreRevision(revisionId: number) {
@@ -686,6 +1102,34 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
           </div>
         )}
 
+        {activeTab === "sports" && canManageStructure && (
+          <SportsDeskPanel
+            overview={sportsOverview}
+            logs={sportsLogs}
+            competitions={sportsCompetitions}
+            teams={sportsTeams}
+            fixtures={sportsFixtures}
+            competitionCodes={sportsCompetitionCodes}
+            busy={busy}
+            onCompetitionCodesChange={setSportsCompetitionCodes}
+            onSync={() =>
+              runAction("sports-sync", () => triggerSportsSync(token, sportsCompetitionCodes))
+            }
+            onToggleCompetition={(competition) =>
+              runAction(`sports-competition-${competition.slug}`, () =>
+                adminUpdateSportsCompetition(token, competition.slug, { is_featured: !competition.is_featured })
+              )
+            }
+            onCreateCompetition={handleCreateSportsCompetition}
+            onCreateTeam={handleCreateSportsTeam}
+            onCreateFixture={handleCreateSportsFixture}
+            onUpdateFixture={handleUpdateSportsFixture}
+            onCreateEvent={handleCreateSportsEvent}
+            onCreateStatistic={handleCreateSportsStatistic}
+            onCreateStanding={handleCreateSportsStanding}
+          />
+        )}
+
         {activeTab === "categories" && (
           <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
             <AdminForm title="Create category" onSubmit={handleCreateCategory} busy={busy === "create-category"}>
@@ -880,6 +1324,19 @@ function AdminForm({
         </LoadingButton>
       )}
     </form>
+  );
+}
+
+function FixtureSelect({ fixtures }: { fixtures: SportsFixture[] }) {
+  return (
+    <SelectInput name="fixture" required>
+      <option value="">Choose fixture</option>
+      {fixtures.map((fixture) => (
+        <option key={fixture.id} value={fixture.id}>
+          {(fixture.home_team.short_name || fixture.home_team.name)} vs {(fixture.away_team.short_name || fixture.away_team.name)} - {formatDate(fixture.kickoff_at)}
+        </option>
+      ))}
+    </SelectInput>
   );
 }
 

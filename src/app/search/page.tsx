@@ -4,15 +4,17 @@ import ArticleCard from "@/components/ArticleCard";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import LoadingButton from "@/components/LoadingButton";
 import { getLatestArticles, searchArticles } from "@/lib/api";
+import { buildPageMetadata } from "@/lib/seo";
 
 type SearchPageProps = {
   searchParams: Promise<{ q?: string }>;
 };
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Search",
-  description: "Search Solakuti reporting across politics, economy, security, entertainment and opinion."
-};
+  description: "Search Solakuti reporting across politics, economy, security, entertainment, sports, technology and opinion.",
+  path: "/search"
+});
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q = "" } = await searchParams;

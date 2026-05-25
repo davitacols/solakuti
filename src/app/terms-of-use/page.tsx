@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import PublisherPage from "@/components/PublisherPage";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Terms of Use",
-  description: "Solakuti terms of use for readers, commenters, contributors, advertisers and platform users."
-};
+  description: "Solakuti terms of use for readers, commenters, contributors, advertisers and platform users.",
+  path: "/terms-of-use"
+});
 
 export default function TermsOfUsePage() {
   return (

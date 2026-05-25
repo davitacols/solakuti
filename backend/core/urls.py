@@ -16,6 +16,21 @@ from apps.analytics.views import (
 from apps.categories.views import CategoryViewSet
 from apps.media.views import MediaAssetViewSet
 from apps.news.views import ArticleViewSet, CommentViewSet, SearchView
+from apps.sports.views import (
+    CompetitionViewSet,
+    FixtureEventViewSet,
+    FixtureLineupViewSet,
+    FixtureMomentumViewSet,
+    FixtureStatisticViewSet,
+    FixtureViewSet,
+    PlayerViewSet,
+    SeasonViewSet,
+    SportsSyncLogViewSet,
+    SquadMembershipViewSet,
+    StandingViewSet,
+    TeamViewSet,
+    VenueViewSet,
+)
 
 admin.site.site_header = "Solakuti Newsroom Admin"
 admin.site.site_title = "Solakuti Admin"
@@ -27,6 +42,19 @@ router.register("categories", CategoryViewSet, basename="category")
 router.register("comments", CommentViewSet, basename="comment")
 router.register("media", MediaAssetViewSet, basename="media")
 router.register("users", UserAdminViewSet, basename="user")
+router.register("sports/competitions", CompetitionViewSet, basename="sports-competition")
+router.register("sports/seasons", SeasonViewSet, basename="sports-season")
+router.register("sports/teams", TeamViewSet, basename="sports-team")
+router.register("sports/venues", VenueViewSet, basename="sports-venue")
+router.register("sports/players", PlayerViewSet, basename="sports-player")
+router.register("sports/squads", SquadMembershipViewSet, basename="sports-squad")
+router.register("sports/fixtures", FixtureViewSet, basename="sports-fixture")
+router.register("sports/events", FixtureEventViewSet, basename="sports-event")
+router.register("sports/lineups", FixtureLineupViewSet, basename="sports-lineup")
+router.register("sports/statistics", FixtureStatisticViewSet, basename="sports-statistic")
+router.register("sports/momentum", FixtureMomentumViewSet, basename="sports-momentum")
+router.register("sports/standings", StandingViewSet, basename="sports-standing")
+router.register("sports/sync-logs", SportsSyncLogViewSet, basename="sports-sync-log")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

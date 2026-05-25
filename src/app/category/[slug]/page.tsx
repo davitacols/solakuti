@@ -6,13 +6,13 @@ import BreakingNewsBar from "@/components/BreakingNewsBar";
 import LoadingButton from "@/components/LoadingButton";
 import TrendingSidebar from "@/components/TrendingSidebar";
 import { getArticles, getCategories, getCategoryArticles, getLatestArticles, getTrendingArticles } from "@/lib/api";
+import { SITE_URL, buildPageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
 };
 
 export const dynamic = "force-dynamic";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     };
   }
 
-  return {
+  return buildPageMetadata({
     title: `${category.name} News`,
     description: category.description || `Latest ${category.name.toLowerCase()} coverage from Solakuti.`,
-    alternates: {
-      canonical: `${SITE_URL}/category/${category.slug}`
-    }
-  };
+    path: `/category/${category.slug}`,
+    image: category.featuredImage,
+    imageAlt: `${category.name} news on Solakuti`
+  });
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
@@ -50,30 +50,32 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
   const categoryName = category?.name ?? categoryArticles[0]?.category ?? "News";
-  const breadcrumbJsonLd = {
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: "Home", url: SITE_URL },
+    { name: categoryName, url: `${SITE_URL}/category/${slug}` }
+  ]);
+  const collectionSchema = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: SITE_URL
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: categoryName,
-        item: `${SITE_URL}/category/${slug}`
-      }
-    ]
+    "@type": "CollectionPage",
+    name: `${categoryName} News`,
+    description: category?.description || `Latest ${categoryName.toLowerCase()} coverage from Solakuti.`,
+    url: `${SITE_URL}/category/${slug}`,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Solakuti",
+      url: SITE_URL
+    }
   };
 
   return (
     <main>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
       />
       <BreakingNewsBar articles={latestArticles.length ? latestArticles : allArticles} />
       <section className="bg-[#111] text-white">

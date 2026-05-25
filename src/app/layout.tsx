@@ -5,45 +5,82 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import { getCategories } from "@/lib/api";
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL,
+  newsOrganizationJsonLd,
+  websiteJsonLd
+} from "@/lib/seo";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 const GTM_ID = "GTM-PLZ5DFVX";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
+  publisher: "Solakuti Media",
+  category: "news",
   title: {
-    default: "Solakuti | Premium Nigerian News and Media",
+    default: SITE_TITLE,
     template: "%s | Solakuti"
   },
-  description:
-    "Solakuti is a modern Nigerian digital newsroom covering politics, economy, security, entertainment, opinions and breaking news.",
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "Solakuti",
+    "Nigerian news",
+    "Nigeria politics",
+    "African media",
+    "breaking news",
+    "sports news",
+    "technology news",
+    "entertainment news"
+  ],
+  authors: [{ name: "Solakuti Editorial Team", url: SITE_URL }],
+  creator: "Solakuti",
+  referrer: "origin-when-cross-origin",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false
+  },
   openGraph: {
-    title: "Solakuti | Premium Nigerian News and Media",
-    description:
-      "A premium modern African digital newsroom for sharp reporting, analysis and culture.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     url: SITE_URL,
-    siteName: "Solakuti",
+    siteName: SITE_NAME,
     images: [
       {
-        url: "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+        url: DEFAULT_OG_IMAGE,
+        secureUrl: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Solakuti newsroom placeholder"
+        alt: "Solakuti premium Nigerian newsroom"
       }
     ],
-    locale: "en_NG",
+    locale: SITE_LOCALE,
     type: "website"
   },
   twitter: {
     card: "summary_large_image",
-    title: "Solakuti",
-    description: "Premium Nigerian news, analysis and culture.",
-    images: [
-      "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80"
-    ]
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE]
   },
-  robots: "index, follow, max-image-preview:large",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1
+    }
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },
@@ -90,6 +127,14 @@ export default async function RootLayout({
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
           crossOrigin="anonymous"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(newsOrganizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
       <body>

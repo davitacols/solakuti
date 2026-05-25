@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getArticleBySlug } from "@/lib/api";
+import { SITE_URL, absoluteUrl } from "@/lib/seo";
 
 export const runtime = "edge";
 const size = {
@@ -7,31 +8,18 @@ const size = {
   height: 630
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 const fallbackImage = "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80";
 
 type OgArticleProps = {
   params: Promise<{ slug: string }>;
 };
 
-function absoluteUrl(value?: string | null) {
-  if (!value) {
-    return fallbackImage;
-  }
-
-  try {
-    return new URL(value, SITE_URL).toString();
-  } catch {
-    return fallbackImage;
-  }
-}
-
 export async function GET(_request: Request, { params }: OgArticleProps) {
   const { slug } = await params;
   const article = slug === "solakuti" ? null : await getArticleBySlug(slug);
   const title = article?.seoTitle || article?.title || "Solakuti";
   const category = article?.category || "Premium Nigerian News";
-  const image = absoluteUrl(article?.ogImage || article?.image);
+  const image = absoluteUrl(article?.ogImage || article?.image, fallbackImage);
 
   return new ImageResponse(
     (

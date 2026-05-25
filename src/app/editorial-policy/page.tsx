@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import PublisherPage from "@/components/PublisherPage";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Editorial Policy",
-  description: "Solakuti editorial standards, corrections policy, sourcing and publishing principles."
-};
+  description: "Solakuti editorial standards, corrections policy, sourcing and publishing principles.",
+  path: "/editorial-policy"
+});
 
 export default function EditorialPolicyPage() {
   return (

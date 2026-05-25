@@ -1,5 +1,6 @@
 import { getLatestArticles } from "@/lib/api";
 import { escapeXml, SITE_URL, xmlResponse } from "@/lib/feed";
+import { absoluteUrl } from "@/lib/seo";
 
 export async function GET() {
   const articles = await getLatestArticles();
@@ -13,7 +14,7 @@ export async function GET() {
   const urls = recentArticles
     .map((article) => {
       const keywords = [article.category, ...(article.tags ?? [])].filter(Boolean).join(", ");
-      const previewImage = `${SITE_URL}/api/og/article/${article.slug}`;
+      const previewImage = absoluteUrl(article.ogImage || article.image);
       return `
         <url>
           <loc>${escapeXml(`${SITE_URL}/article/${article.slug}`)}</loc>

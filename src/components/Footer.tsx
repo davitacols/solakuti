@@ -53,6 +53,7 @@ export default function Footer() {
           <div className="mt-4 grid gap-3">
             {[
               { label: "About", href: "/about" },
+              { label: "Live Scores", href: "/livescores" },
               { label: "Contact", href: "/contact" },
               { label: "Editorial Policy", href: "/editorial-policy" },
               { label: "Privacy Policy", href: "/privacy-policy" },

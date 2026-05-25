@@ -4,13 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ArticleCard from "@/components/ArticleCard";
 import { getArticles } from "@/lib/api";
+import { SITE_NAME, SITE_URL, absoluteUrl, buildPageMetadata } from "@/lib/seo";
 import { formatDate, slugify } from "@/lib/utils";
 
 type AuthorPageProps = {
   params: Promise<{ slug: string }>;
 };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
 
 function roleLabel(role?: string) {
   if (!role) {
@@ -31,21 +30,14 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
     };
   }
 
-  return {
-    title: `${author.author} | Solakuti`,
+  return buildPageMetadata({
+    title: `${author.author} | ${SITE_NAME}`,
     description: author.authorBio || `Read the latest Solakuti reports by ${author.author}.`,
-    alternates: {
-      canonical: `${SITE_URL}/author/${slug}`
-    },
-    openGraph: {
-      title: `${author.author} | Solakuti`,
-      description: author.authorBio || `Read the latest Solakuti reports by ${author.author}.`,
-      url: `${SITE_URL}/author/${slug}`,
-      siteName: "Solakuti",
-      type: "profile",
-      images: author.authorImage ? [{ url: author.authorImage, width: 400, height: 400, alt: author.author }] : undefined
-    }
-  };
+    path: `/author/${slug}`,
+    image: author.authorImage,
+    imageAlt: author.author,
+    type: "profile"
+  });
 }
 
 export default async function AuthorPage({ params }: AuthorPageProps) {
@@ -65,7 +57,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
     "@type": "Person",
     name: author.author,
     url: `${SITE_URL}/author/${slug}`,
-    image: author.authorImage || undefined,
+    image: author.authorImage ? absoluteUrl(author.authorImage) : undefined,
     jobTitle: roleLabel(author.authorRole),
     description: author.authorBio || undefined,
     worksFor: {

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import PublisherPage from "@/components/PublisherPage";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "About Solakuti",
-  description: "About Solakuti, a premium Nigerian digital newsroom for public-interest reporting and analysis."
-};
+  description: "About Solakuti, a premium Nigerian digital newsroom for public-interest reporting and analysis.",
+  path: "/about"
+});
 
 export default function AboutPage() {
   return (

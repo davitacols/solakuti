@@ -67,6 +67,14 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
                   <Search className="size-4" />
                   Search
                 </Link>
+                <Link
+                  href="/livescores"
+                  onClick={onClose}
+                  className="ml-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-red-600 px-4 text-sm font-black text-white"
+                >
+                  <Radio className="size-4" />
+                  Live scores
+                </Link>
               </div>
             </div>
 

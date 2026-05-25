@@ -39,8 +39,8 @@ export default async function Home() {
   ]);
   const liveArticles = latestArticles.length ? latestArticles : articles;
   const liveFeatured = liveArticles.find((article) => article.featured) ?? featuredArticle ?? liveArticles[0];
-  const latest = liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 8);
-  const feed = liveArticles.filter((article) => article.id !== liveFeatured.id);
+  const latest = liveFeatured ? liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 8) : [];
+  const feed = liveFeatured ? liveArticles.filter((article) => article.id !== liveFeatured.id) : liveArticles;
   const activeCategories = categories
     .map((category) => ({
       ...category,
@@ -52,7 +52,21 @@ export default async function Home() {
   return (
     <main>
       <BreakingNewsBar articles={liveArticles} />
-      <HeroSection featured={liveFeatured} secondary={latest} />
+      {liveFeatured ? (
+        <HeroSection featured={liveFeatured} secondary={latest} />
+      ) : (
+        <section className="container-page py-14">
+          <div className="border-y-2 border-black py-12">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-red-600">Newsroom</p>
+            <h1 className="mt-3 max-w-4xl text-4xl font-black leading-none tracking-[-0.06em] text-[#111] sm:text-6xl">
+              No published stories yet.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-black/58">
+              Publish articles from the admin desk and they will appear here automatically.
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className="container-page grid gap-8 py-8 xl:grid-cols-[1fr_380px]">
         <div>
@@ -70,6 +84,11 @@ export default async function Home() {
             {feed.slice(0, 9).map((article) => (
               <ArticleCard key={article.id} article={article} />
             ))}
+            {feed.length === 0 && (
+              <div className="border border-dashed border-black/20 bg-white p-6 text-sm font-bold text-black/45">
+                No latest articles are available yet.
+              </div>
+            )}
           </div>
         </div>
         <TrendingSidebar articles={trendingArticles.concat(liveArticles)} />

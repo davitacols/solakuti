@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import PublisherPage from "@/components/PublisherPage";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Advertise With Solakuti",
-  description: "Advertise and partner with Solakuti across Nigerian news, politics, business, culture and public affairs."
-};
+  description: "Advertise and partner with Solakuti across Nigerian news, politics, business, culture and public affairs.",
+  path: "/advertise"
+});
 
 export default function AdvertisePage() {
   return (
