@@ -53,11 +53,11 @@ export default function MatchCard({ fixture }: MatchCardProps) {
         </div>
 
         {/* Teams and score */}
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] items-center gap-1.5 sm:mt-4 sm:grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] sm:gap-2">
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_42px_minmax(0,1fr)] items-center gap-1 sm:mt-4 sm:grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] sm:gap-2">
           <TeamBadge team={fixture.home_team} compact />
           <div className="text-center">
             <p className={cn(
-              "text-xl font-black tracking-[-0.05em] sm:text-2xl",
+              "text-lg font-black tracking-[-0.04em] sm:text-2xl",
               isLive ? "text-red-600" : "text-[#111]"
             )}>
               {isLive || isDone ? `${fixture.home_score}-${fixture.away_score}` : "vs"}
@@ -72,7 +72,7 @@ export default function MatchCard({ fixture }: MatchCardProps) {
             )}
             {lastGoal && (
               <p className="mt-1 truncate text-[9px] font-bold text-black/40 sm:text-[10px]">
-                ⚽ {lastGoal.player_name} {lastGoal.minute ? `${lastGoal.minute}'` : ""}
+                Goal {lastGoal.player_name} {lastGoal.minute ? `${lastGoal.minute}'` : ""}
               </p>
             )}
           </div>
@@ -88,3 +88,4 @@ export default function MatchCard({ fixture }: MatchCardProps) {
     </article>
   );
 }
+

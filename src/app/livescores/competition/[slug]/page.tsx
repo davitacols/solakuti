@@ -99,15 +99,15 @@ export default async function CompetitionPage({ params, searchParams }: Competit
   ];
 
   return (
-    <main className="bg-[#f8f5ef]">
+    <main className="min-w-0 overflow-x-hidden bg-[#f8f5ef]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="border-b border-black/10 bg-[#0d0d0d] text-white">
-        <div className="container-page py-10">
+        <div className="container-page min-w-0 py-8 sm:py-10">
           <p className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-red-400">
             <Trophy className="size-4" />
             Competition
           </p>
-          <h1 className="mt-5 max-w-5xl text-5xl font-black leading-[0.92] tracking-[-0.07em] sm:text-7xl">
+          <h1 className="mt-5 max-w-5xl text-4xl font-black leading-[0.96] tracking-[-0.045em] sm:text-7xl sm:leading-[0.92] sm:tracking-[-0.07em]">
             {competition.name}
           </h1>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -128,7 +128,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
       </section>
 
       <section className="sticky top-[72px] z-20 border-b border-black/10 bg-white/95 backdrop-blur">
-        <div className="container-page overflow-x-auto py-3">
+        <div className="container-page overflow-x-auto py-3 scrollbar-hide">
           <div className="flex min-w-max gap-2">
             {tabs.map(({ id, label, icon: Icon }) => (
               <LoadingLink
@@ -148,8 +148,8 @@ export default async function CompetitionPage({ params, searchParams }: Competit
         </div>
       </section>
 
-      <section className="container-page grid gap-8 py-8 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-8">
+      <section className="container-page grid min-w-0 gap-6 py-6 sm:gap-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="min-w-0 space-y-6 sm:space-y-8">
           {activeView === "overview" && (
             <>
               <div className="grid gap-4 lg:grid-cols-3">
@@ -158,11 +158,11 @@ export default async function CompetitionPage({ params, searchParams }: Competit
                 <OverviewCard label="Table rows" value={standings.length} icon={BarChart3} />
               </div>
               {nextFixture && (
-                <LoadingLink href={`/livescores/match/${nextFixture.id}`} className="block border border-black/10 bg-white p-5 transition hover:-translate-y-1 hover:border-red-600">
+                <LoadingLink href={`/livescores/match/${nextFixture.id}`} className="block min-w-0 border border-black/10 bg-white p-4 transition hover:-translate-y-1 hover:border-red-600 sm:p-5">
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Next match</p>
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-2xl font-black tracking-[-0.05em] text-[#111]">
+                      <h2 className="text-xl font-black tracking-[-0.04em] text-[#111] sm:text-2xl sm:tracking-[-0.05em]">
                         {nextFixture.home_team.name} vs {nextFixture.away_team.name}
                       </h2>
                       <p className="mt-2 text-sm font-bold text-black/45">{fixtureDateLabel(nextFixture.kickoff_at)} - {nextFixture.venue || "Venue TBC"}</p>
@@ -221,7 +221,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
             <CompetitionNews articles={relatedArticles} />
           )}
         </div>
-        <aside className="space-y-6">
+        <aside className="min-w-0 space-y-6">
           {activeView !== "standings" && (
             <div>
               <div className="mb-4 flex items-center justify-between gap-3">

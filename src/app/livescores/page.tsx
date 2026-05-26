@@ -46,7 +46,7 @@ export default async function LiveScoresPage() {
   ];
 
   return (
-    <main>
+    <main className="min-w-0 overflow-x-hidden">
       <BreakingNewsBar articles={latestArticles} fixtures={breakingFixtures} />
 
       {/* Hero */}
@@ -56,9 +56,9 @@ export default async function LiveScoresPage() {
           <div className="pointer-events-none absolute -right-32 -top-32 size-96 rounded-full bg-red-600/10 blur-[120px]" />
         )}
 
-        <div className="container-page relative py-8 sm:py-12 lg:py-16">
-          <div className="grid gap-6 lg:gap-8 xl:grid-cols-[1fr_420px] xl:items-center">
-            <div>
+        <div className="container-page relative min-w-0 py-8 sm:py-12 lg:py-16">
+          <div className="grid min-w-0 gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-center">
+            <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em]">
                 <Radio className={`size-3.5 text-red-500 ${liveFixtures.length > 0 ? "animate-pulse" : ""}`} />
                 <span className="text-white/70">Solakuti Sports</span>
@@ -67,7 +67,7 @@ export default async function LiveScoresPage() {
                 )}
               </div>
 
-              <h1 className="mt-5 max-w-3xl text-3xl font-black leading-[0.92] tracking-[-0.05em] sm:mt-6 sm:text-5xl lg:text-7xl">
+              <h1 className="mt-5 max-w-3xl text-3xl font-black leading-[0.96] tracking-[-0.04em] sm:mt-6 sm:text-5xl sm:leading-[0.92] lg:text-7xl">
                 Live football<br />
                 <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">command centre.</span>
               </h1>
@@ -88,7 +88,7 @@ export default async function LiveScoresPage() {
             </div>
 
             {/* Headline fixture card */}
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-1 backdrop-blur-sm sm:rounded-2xl">
+            <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.04] p-1 backdrop-blur-sm sm:rounded-2xl">
               <div className="overflow-hidden rounded-lg bg-white text-[#111] shadow-2xl sm:rounded-xl">
                 <div className="border-b border-black/8 bg-gradient-to-r from-[#f8f5ef] to-white px-4 py-3 sm:px-5 sm:py-4">
                   <div className="flex items-center justify-between">
@@ -104,18 +104,18 @@ export default async function LiveScoresPage() {
                     <p className="truncate text-[11px] font-black uppercase tracking-[0.12em] text-black/40 sm:text-xs sm:tracking-[0.14em]">
                       {headlineFixture.competition.name}
                     </p>
-                    <div className="mt-4 grid grid-cols-[minmax(0,1fr)_56px_minmax(0,1fr)] items-center gap-2 sm:mt-5 sm:grid-cols-[minmax(0,1fr)_70px_minmax(0,1fr)] sm:gap-3">
+                    <div className="mt-4 grid grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] items-center gap-1.5 sm:mt-5 sm:grid-cols-[minmax(0,1fr)_70px_minmax(0,1fr)] sm:gap-3">
                       <TeamBadge team={headlineFixture.home_team} compact />
                       <div className="text-center">
                         {headlineFixture.status === "scheduled" ? (
                           <p className="text-base font-black text-black/30 sm:text-lg">vs</p>
                         ) : (
-                          <p className={`text-2xl font-black tracking-[-0.06em] sm:text-3xl ${headlineFixture.status === "live" || headlineFixture.status === "halftime" ? "text-red-600" : ""}`}>
+                          <p className={`text-xl font-black tracking-[-0.04em] sm:text-3xl ${headlineFixture.status === "live" || headlineFixture.status === "halftime" ? "text-red-600" : ""}`}>
                             {headlineFixture.home_score} - {headlineFixture.away_score}
                           </p>
                         )}
                         <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-black uppercase sm:text-[10px] ${headlineFixture.status === "live" || headlineFixture.status === "halftime" ? "bg-red-600 text-white" : "bg-black/5 text-black/40"}`}>
-                          {headlineFixture.status === "live" ? `${headlineFixture.minute ?? ""}′` : headlineFixture.status === "halftime" ? "HT" : headlineFixture.status === "finished" ? "FT" : "Scheduled"}
+                          {headlineFixture.status === "live" ? `${headlineFixture.minute ?? ""}'` : headlineFixture.status === "halftime" ? "HT" : headlineFixture.status === "finished" ? "FT" : "Scheduled"}
                         </span>
                       </div>
                       <TeamBadge team={headlineFixture.away_team} align="right" compact />
@@ -151,7 +151,7 @@ export default async function LiveScoresPage() {
                           {fixture.away_team.short_name || fixture.away_team.name}
                         </span>
                         <span className="hidden shrink-0 text-[10px] font-black uppercase text-black/35 sm:inline">
-                          {fixture.status === "live" ? `${fixture.minute ?? ""}′` : fixture.status === "halftime" ? "HT" : fixture.competition.name}
+                          {fixture.status === "live" ? `${fixture.minute ?? ""}'` : fixture.status === "halftime" ? "HT" : fixture.competition.name}
                         </span>
                       </LoadingLink>
                     ))}
@@ -201,7 +201,7 @@ export default async function LiveScoresPage() {
       </section>
 
       {/* Main content */}
-      <section className="container-page grid gap-6 py-6 sm:gap-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section className="container-page grid min-w-0 gap-6 py-6 sm:gap-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_380px]">
         <LiveScoreBoard
           liveFixtures={liveFixtures}
           todayFixtures={todayFixtures}
@@ -282,3 +282,4 @@ export default async function LiveScoresPage() {
     </main>
   );
 }
+

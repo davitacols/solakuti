@@ -85,12 +85,12 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relate
 
   return (
     <>
-      <section className="border-b border-black/10 bg-[#0d0d0d] text-white">
-        <div className="container-page py-8">
+      <section className="min-w-0 overflow-x-hidden border-b border-black/10 bg-[#0d0d0d] text-white">
+        <div className="container-page min-w-0 py-6 sm:py-8">
           <LoadingLink href="/livescores" className="text-xs font-black uppercase tracking-[0.18em] text-white/55 transition hover:text-white">
             Live scores
           </LoadingLink>
-          <div className="mt-8 overflow-hidden border border-white/12 bg-white text-[#111] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+          <div className="mt-6 min-w-0 overflow-hidden border border-white/12 bg-white text-[#111] shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:mt-8">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-[#f5f1ea] px-5 py-4">
               <LoadingLink href={`/livescores/competition/${fixture.competition.slug}`} className="text-xs font-black uppercase tracking-[0.18em] text-red-600">
                 {fixture.competition.name}
@@ -118,10 +118,10 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relate
                 </span>
               </div>
             </div>
-            <div className="p-5 sm:p-8">
-              <div className="grid grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)] items-center gap-3">
+            <div className="p-4 sm:p-8">
+              <div className="grid grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)] sm:gap-3">
                 <TeamBadge team={fixture.home_team} />
-                <div className={cn("text-center text-4xl font-black tracking-[-0.06em] sm:text-5xl", isLive && "text-red-600")}>
+                <div className={cn("text-center text-2xl font-black tracking-[-0.04em] sm:text-5xl sm:tracking-[-0.06em]", isLive && "text-red-600")}>
                   {showScore(fixture) ? `${fixture.home_score} - ${fixture.away_score}` : "vs"}
                 </div>
                 <TeamBadge team={fixture.away_team} align="right" />
@@ -153,8 +153,8 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relate
         </div>
       </section>
 
-      <section className="container-page grid gap-8 py-8 xl:grid-cols-[minmax(0,760px)_1fr]">
-        <div className="space-y-6">
+      <section className="container-page grid min-w-0 gap-6 py-6 sm:gap-8 sm:py-8 xl:grid-cols-[minmax(0,760px)_1fr]">
+        <div className="min-w-0 space-y-6">
           <div className="sticky top-[72px] z-20 overflow-x-auto border border-black/10 bg-white/95 p-2 shadow-[0_18px_60px_rgba(0,0,0,0.08)] backdrop-blur">
             <div className="flex min-w-max gap-2">
               {tabs.map(({ id, label, icon: Icon }) => (
@@ -202,7 +202,7 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relate
             </div>
           )}
         </div>
-        <aside className="space-y-5 self-start">
+        <aside className="min-w-0 space-y-5 self-start">
           <div className="border border-black/10 bg-white p-5">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Match facts</p>
             <div className="mt-4 space-y-3 text-sm font-bold text-black/55">
