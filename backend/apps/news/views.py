@@ -30,7 +30,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = (
             Article.objects.select_related("category", "author")
-            .prefetch_related("tags")
+            .prefetch_related("tags", "sports_links")
             .annotate(
                 comments_count=Count("comments", filter=Q(comments__is_approved=True), distinct=True),
                 real_views_count=Count("view_events", distinct=True),
@@ -274,7 +274,7 @@ class SearchView(ApiResponseMixin, generics.ListAPIView):
         queryset = (
             Article.objects.filter(public_article_q())
             .select_related("category", "author")
-            .prefetch_related("tags")
+            .prefetch_related("tags", "sports_links")
             .annotate(real_views_count=Count("view_events", distinct=True))
         )
         if not query:

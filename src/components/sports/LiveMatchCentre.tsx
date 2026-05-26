@@ -48,13 +48,6 @@ function minutesSince(value?: string | null) {
   return Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
 }
 
-function freshnessLabel(minutes: number | null) {
-  if (minutes === null) return "Provider sync pending";
-  if (minutes < 1) return "Synced just now";
-  if (minutes === 1) return "Synced 1 min ago";
-  return `Synced ${minutes} mins ago`;
-}
-
 export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relatedArticles = [] }: LiveMatchCentreProps) {
   const [fixture, setFixture] = useState(initialFixture);
   const [activeTab, setActiveTab] = useState<MatchTab>("overview");
@@ -138,9 +131,8 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relate
                 {(fixture.venue_detail?.name || fixture.venue) && <span className="inline-flex items-center gap-2"><MapPin className="size-4" />{fixture.venue_detail?.name || fixture.venue}</span>}
                 <span className="inline-flex items-center gap-2"><Trophy className="size-4" />{fixture.round_name || "Fixture"}</span>
               </div>
-              <div className="mt-5 grid gap-2 sm:grid-cols-4">
+              <div className="mt-5 grid gap-2 sm:grid-cols-3">
                 {[
-                  ["Provider", freshnessLabel(syncedMinutesAgo)],
                   ["Events", `${eventCount}`],
                   ["Stats", `${statCount}`],
                   ["Lineups", `${lineupCount}`]
@@ -153,7 +145,7 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relate
               </div>
               {isStale && (
                 <div className="mt-4 border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-                  The provider sync is older than expected. Scores may catch up on the next cron run.
+                  Live data is taking longer than expected to update. Scores may refresh shortly.
                 </div>
               )}
             </div>

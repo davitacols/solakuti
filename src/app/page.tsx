@@ -4,7 +4,7 @@ import CategorySection from "@/components/CategorySection";
 import HeroSection from "@/components/HeroSection";
 import NewsletterSection from "@/components/NewsletterSection";
 import TrendingSidebar from "@/components/TrendingSidebar";
-import { getArticles, getCategories, getFeaturedArticle, getLatestArticles, getTrendingArticles } from "@/lib/api";
+import { getArticles, getCategories, getFeaturedArticle, getLatestArticles, getLiveFixtures, getResultFixtures, getTodayFixtures, getTrendingArticles, getUpcomingFixtures } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -30,13 +30,20 @@ function getKicker(category: string) {
 }
 
 export default async function Home() {
-  const [articles, featuredArticle, latestArticles, trendingArticles, categories] = await Promise.all([
+  const [articles, featuredArticle, latestArticles, trendingArticles, categories, liveFixtures, todayFixtures, upcomingFixtures, resultFixtures] = await Promise.all([
     getArticles(),
     getFeaturedArticle(),
     getLatestArticles(),
     getTrendingArticles(),
-    getCategories()
+    getCategories(),
+    getLiveFixtures(),
+    getTodayFixtures(),
+    getUpcomingFixtures(),
+    getResultFixtures()
   ]);
+  const breakingFixtures = [...liveFixtures, ...todayFixtures, ...upcomingFixtures.slice(0, 4), ...resultFixtures.slice(0, 4)]
+    .filter((fixture, index, items) => items.findIndex((item) => item.id === fixture.id) === index)
+    .slice(0, 8);
   const liveArticles = latestArticles.length ? latestArticles : articles;
   const liveFeatured = liveArticles.find((article) => article.featured) ?? featuredArticle ?? liveArticles[0];
   const latest = liveFeatured ? liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 8) : [];
@@ -51,7 +58,7 @@ export default async function Home() {
 
   return (
     <main>
-      <BreakingNewsBar articles={liveArticles} />
+      <BreakingNewsBar articles={liveArticles} fixtures={breakingFixtures} />
       {liveFeatured ? (
         <HeroSection featured={liveFeatured} secondary={latest} />
       ) : (

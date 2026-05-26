@@ -38,6 +38,14 @@ type BackendUser = {
   date_joined?: string;
 };
 
+type BackendArticleSportsLink = {
+  id: number;
+  target_type: "competition" | "team" | "fixture";
+  target_id: string;
+  target_slug?: string;
+  target_name?: string;
+};
+
 type BackendArticle = {
   id: number;
   title: string;
@@ -51,6 +59,7 @@ type BackendArticle = {
   category: BackendCategory;
   author: BackendUser;
   tags?: Array<{ id: number; name: string; slug: string }>;
+  sports_links?: BackendArticleSportsLink[];
   is_featured: boolean;
   is_breaking: boolean;
   is_published?: boolean;
@@ -469,6 +478,13 @@ function mapArticle(article: BackendArticle): Article {
     featuredMediaType: article.featured_media_type ?? "image",
     viewsCount: article.views_count,
     tags: article.tags?.map((tag) => tag.name) ?? [],
+    sportsLinks: article.sports_links?.map((link) => ({
+      id: String(link.id),
+      targetType: link.target_type,
+      targetId: link.target_id,
+      targetSlug: link.target_slug,
+      targetName: link.target_name
+    })) ?? [],
     editorialStatus: article.editorial_status ?? (article.is_published ? "published" : "draft"),
     seoTitle: article.seo_title,
     seoDescription: article.seo_description,

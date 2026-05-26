@@ -26,7 +26,7 @@ export default function MatchStatsPanel({ fixture, compact = false }: MatchStats
   if (!rows.length) {
     return (
       <div className="border border-dashed border-black/15 bg-white p-5 text-sm font-bold text-black/45">
-        Match statistics will appear here when the sports provider supplies them.
+        Match statistics will appear here when they are available.
       </div>
     );
   }

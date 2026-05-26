@@ -1,5 +1,13 @@
 export type ArticleCategory = string;
 
+export type ArticleSportsLink = {
+  id: string;
+  targetType: "competition" | "team" | "fixture";
+  targetId: string;
+  targetSlug?: string;
+  targetName?: string;
+};
+
 export type Article = {
   id: string;
   slug: string;
@@ -19,6 +27,7 @@ export type Article = {
   featuredMediaType?: "image" | "video";
   viewsCount?: number;
   tags?: string[];
+  sportsLinks?: ArticleSportsLink[];
   editorialStatus?: "draft" | "review" | "published";
   seoTitle?: string;
   seoDescription?: string;

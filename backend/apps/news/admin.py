@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from apps.news.models import Article, ArticleRevision, Comment, Tag
+from apps.news.models import Article, ArticleRevision, ArticleSportsLink, Comment, Tag
 
 
 @admin.register(Tag)
@@ -16,6 +16,12 @@ class CommentInline(admin.TabularInline):
     extra = 0
     fields = ["user", "content", "is_approved", "created_at"]
     readonly_fields = ["created_at"]
+
+
+class ArticleSportsLinkInline(admin.TabularInline):
+    model = ArticleSportsLink
+    extra = 0
+    fields = ["target_type", "target_id", "target_slug", "target_name"]
 
 
 @admin.register(Article)
@@ -40,7 +46,7 @@ class ArticleAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     readonly_fields = ["views_count", "reading_time", "created_at", "updated_at", "image_preview"]
     date_hierarchy = "published_at"
-    inlines = [CommentInline]
+    inlines = [ArticleSportsLinkInline, CommentInline]
     fieldsets = (
         ("Story", {"fields": ("title", "slug", "excerpt", "content", "featured_media_type", "featured_image", "featured_video", "image_preview")}),
         ("Editorial", {"fields": ("category", "author", "tags", "editorial_status", "is_featured", "is_breaking", "is_published")}),

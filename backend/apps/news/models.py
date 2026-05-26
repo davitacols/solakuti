@@ -111,6 +111,33 @@ class Article(models.Model):
         return self.title
 
 
+class ArticleSportsLink(models.Model):
+    class TargetType(models.TextChoices):
+        COMPETITION = "competition", "Competition"
+        TEAM = "team", "Team"
+        FIXTURE = "fixture", "Fixture"
+
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="sports_links")
+    target_type = models.CharField(max_length=20, choices=TargetType.choices)
+    target_id = models.CharField(max_length=120)
+    target_slug = models.SlugField(max_length=180, blank=True)
+    target_name = models.CharField(max_length=180, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["target_type", "target_name"]
+        constraints = [
+            models.UniqueConstraint(fields=["article", "target_type", "target_id"], name="unique_article_sports_link"),
+        ]
+        indexes = [
+            models.Index(fields=["target_type", "target_id"]),
+            models.Index(fields=["target_type", "target_slug"]),
+        ]
+
+    def __str__(self):
+        return f"{self.article} -> {self.target_type}:{self.target_name or self.target_id}"
+
+
 class ArticleRevision(models.Model):
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="revisions")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="article_revisions")

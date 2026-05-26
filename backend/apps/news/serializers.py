@@ -1,3 +1,4 @@
+import json
 import re
 
 from rest_framework import serializers
@@ -5,7 +6,7 @@ from drf_spectacular.utils import OpenApiTypes, extend_schema_field
 
 from apps.accounts.serializers import UserSerializer
 from apps.categories.serializers import CategorySerializer
-from apps.news.models import Article, ArticleRevision, Comment, Tag
+from apps.news.models import Article, ArticleRevision, ArticleSportsLink, Comment, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -13,6 +14,13 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ["id", "name", "slug"]
         read_only_fields = ["id", "slug"]
+
+
+class ArticleSportsLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArticleSportsLink
+        fields = ["id", "target_type", "target_id", "target_slug", "target_name"]
+        read_only_fields = ["id"]
 
 
 class ArticleListSerializer(serializers.ModelSerializer):
@@ -23,6 +31,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
     featured_video_url = serializers.SerializerMethodField()
     og_image_url = serializers.SerializerMethodField()
     views_count = serializers.SerializerMethodField()
+    sports_links = ArticleSportsLinkSerializer(many=True, read_only=True)
 
     class Meta:
         model = Article
@@ -37,6 +46,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "category",
             "author",
             "tags",
+            "sports_links",
             "is_featured",
             "is_breaking",
             "is_published",
@@ -111,6 +121,7 @@ class ArticleRevisionSerializer(serializers.ModelSerializer):
 
 class ArticleWriteSerializer(serializers.ModelSerializer):
     tag_names = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    sports_links = serializers.JSONField(required=False, write_only=True)
 
     tag_ids = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
@@ -135,6 +146,7 @@ class ArticleWriteSerializer(serializers.ModelSerializer):
             "category",
             "tag_ids",
             "tag_names",
+            "sports_links",
             "is_featured",
             "is_breaking",
             "is_published",
@@ -156,6 +168,51 @@ class ArticleWriteSerializer(serializers.ModelSerializer):
             tags.append(tag)
         return tags
 
+    def _normalize_sports_links(self, sports_links):
+        if sports_links in (None, "", []):
+            return []
+        if isinstance(sports_links, str):
+            try:
+                sports_links = json.loads(sports_links)
+            except json.JSONDecodeError as exc:
+                raise serializers.ValidationError({"sports_links": "Sports links must be valid JSON."}) from exc
+        if not isinstance(sports_links, list):
+            raise serializers.ValidationError({"sports_links": "Sports links must be a list."})
+
+        normalized = []
+        allowed_types = {choice[0] for choice in ArticleSportsLink.TargetType.choices}
+        seen = set()
+        for link in sports_links:
+            if not isinstance(link, dict):
+                continue
+            target_type = str(link.get("target_type") or link.get("targetType") or "").strip()
+            target_id = str(link.get("target_id") or link.get("targetId") or "").strip()
+            if target_type not in allowed_types or not target_id:
+                continue
+            dedupe_key = (target_type, target_id)
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            normalized.append(
+                {
+                    "target_type": target_type,
+                    "target_id": target_id[:120],
+                    "target_slug": str(link.get("target_slug") or link.get("targetSlug") or "").strip()[:180],
+                    "target_name": str(link.get("target_name") or link.get("targetName") or "").strip()[:180],
+                }
+            )
+        return normalized
+
+    def _replace_sports_links(self, article, sports_links):
+        article.sports_links.all().delete()
+        links = self._normalize_sports_links(sports_links)
+        if not links:
+            return
+        ArticleSportsLink.objects.bulk_create(
+            ArticleSportsLink(article=article, **link)
+            for link in links
+        )
+
     def validate(self, attrs):
         if attrs.get("is_published"):
             attrs["editorial_status"] = Article.EditorialStatus.PUBLISHED
@@ -164,21 +221,26 @@ class ArticleWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         tags = validated_data.pop("tags", [])
         tag_names = validated_data.pop("tag_names", "")
+        sports_links = validated_data.pop("sports_links", [])
         if tag_names:
             tags = self._resolve_tags(tag_names)
         validated_data["author"] = self.context["request"].user
         article = Article.objects.create(**validated_data)
         article.tags.set(tags)
+        self._replace_sports_links(article, sports_links)
         return article
 
     def update(self, instance, validated_data):
         tags = validated_data.pop("tags", None)
         tag_names = validated_data.pop("tag_names", None)
+        sports_links = validated_data.pop("sports_links", None)
         if tag_names is not None:
             tags = self._resolve_tags(tag_names)
         article = super().update(instance, validated_data)
         if tags is not None:
             article.tags.set(tags)
+        if sports_links is not None:
+            self._replace_sports_links(article, sports_links)
         return article
 
 

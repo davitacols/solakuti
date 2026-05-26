@@ -106,6 +106,16 @@ function isArticlePublic(article: Article) {
   return Boolean(article.published && (!Number.isFinite(publishedTime) || publishedTime <= Date.now()));
 }
 
+function fixtureOptionLabel(fixture: SportsFixture) {
+  const home = fixture.home_team.short_name || fixture.home_team.name;
+  const away = fixture.away_team.short_name || fixture.away_team.name;
+  return `${home} vs ${away} - ${fixture.competition.name} - ${formatDate(fixture.kickoff_at)}`;
+}
+
+function articleSportsLinkValue(article: Article | null, targetType: "competition" | "team" | "fixture") {
+  return article?.sportsLinks?.find((link) => link.targetType === targetType)?.targetId ?? "";
+}
+
 function SportsDeskPanel({
   overview,
   logs,
@@ -507,6 +517,52 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     return { isPublished: true, editorialStatus: "published" };
   }
 
+  function buildArticleSportsLinks(form: FormData) {
+    const links = new Map<string, {
+      target_type: "competition" | "team" | "fixture";
+      target_id: string;
+      target_slug: string;
+      target_name: string;
+    }>();
+
+    function addLink(
+      targetType: "competition" | "team" | "fixture",
+      targetId: string | number | null | undefined,
+      targetSlug: string | null | undefined,
+      targetName: string | null | undefined
+    ) {
+      const id = String(targetId ?? "").trim();
+      if (!id) {
+        return;
+      }
+      links.set(`${targetType}:${id}`, {
+        target_type: targetType,
+        target_id: id,
+        target_slug: String(targetSlug ?? ""),
+        target_name: String(targetName ?? "")
+      });
+    }
+
+    const competition = sportsCompetitions.find((item) => String(item.id) === String(form.get("related_competition")));
+    const team = sportsTeams.find((item) => String(item.id) === String(form.get("related_team")));
+    const fixture = sportsFixtures.find((item) => String(item.id) === String(form.get("related_fixture")));
+
+    if (competition) {
+      addLink("competition", competition.id, competition.slug, competition.name);
+    }
+    if (team) {
+      addLink("team", team.id, team.slug, team.name);
+    }
+    if (fixture) {
+      addLink("fixture", fixture.id, "", `${fixture.home_team.name} vs ${fixture.away_team.name}`);
+      addLink("competition", fixture.competition.id, fixture.competition.slug, fixture.competition.name);
+      addLink("team", fixture.home_team.id, fixture.home_team.slug, fixture.home_team.name);
+      addLink("team", fixture.away_team.id, fixture.away_team.slug, fixture.away_team.name);
+    }
+
+    return Array.from(links.values());
+  }
+
   function articleFormPayload(form: FormData, category: number, content: string, mediaFile?: File | null, action = "publish") {
     const editorial = getEditorialState(action);
     const scheduledAt = String(form.get("scheduled_at") ?? "").trim();
@@ -519,6 +575,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
     payload.set("seo_title", String(form.get("seo_title") ?? ""));
     payload.set("seo_description", String(form.get("seo_description") ?? ""));
     payload.set("canonical_url", String(form.get("canonical_url") ?? ""));
+    payload.set("sports_links", JSON.stringify(buildArticleSportsLinks(form)));
     payload.set("is_featured", String(form.get("is_featured") === "on"));
     payload.set("is_breaking", String(form.get("is_breaking") === "on"));
     payload.set("is_published", String(editorial.isPublished));
@@ -1001,6 +1058,16 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                 ))}
               </SelectInput>
               <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={articleDraft.tag_names ?? ""} />
+              <ArticleSportsLinkFields
+                competitions={sportsCompetitions}
+                teams={sportsTeams}
+                fixtures={sportsFixtures}
+                defaults={{
+                  competition: articleDraft.related_competition ?? "",
+                  team: articleDraft.related_team ?? "",
+                  fixture: articleDraft.related_fixture ?? ""
+                }}
+              />
               <TextInput
                 name="scheduled_at"
                 type="datetime-local"
@@ -1044,6 +1111,16 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
                       onClear={() => setEditImageFile(null)}
                     />
                     <TextInput name="tag_names" placeholder="Optional tags, separated by commas" defaultValue={(editingArticle.tags ?? []).join(", ")} />
+                    <ArticleSportsLinkFields
+                      competitions={sportsCompetitions}
+                      teams={sportsTeams}
+                      fixtures={sportsFixtures}
+                      defaults={{
+                        competition: articleSportsLinkValue(editingArticle, "competition"),
+                        team: articleSportsLinkValue(editingArticle, "team"),
+                        fixture: articleSportsLinkValue(editingArticle, "fixture")
+                      }}
+                    />
                     <TextInput
                       name="scheduled_at"
                       type="datetime-local"
@@ -1713,6 +1790,57 @@ function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
       {...props}
       className="h-11 min-w-0 w-full rounded-md border border-black/10 bg-white px-3 text-sm font-black outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/10"
     />
+  );
+}
+
+function ArticleSportsLinkFields({
+  competitions,
+  teams,
+  fixtures,
+  defaults
+}: {
+  competitions: SportsCompetition[];
+  teams: SportsTeam[];
+  fixtures: SportsFixture[];
+  defaults?: {
+    competition?: string;
+    team?: string;
+    fixture?: string;
+  };
+}) {
+  return (
+    <div className="rounded-md border border-black/10 bg-[#f7f4ef] p-3">
+      <div className="flex items-center gap-2">
+        <Trophy className="h-4 w-4 text-red-600" aria-hidden />
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-black/50">Livescore news link</p>
+      </div>
+      <div className="mt-3 grid gap-3">
+        <SelectInput name="related_competition" defaultValue={defaults?.competition ?? ""}>
+          <option value="">Attach to competition</option>
+          {competitions.map((competition) => (
+            <option key={competition.id} value={competition.id}>
+              {competition.name}
+            </option>
+          ))}
+        </SelectInput>
+        <SelectInput name="related_team" defaultValue={defaults?.team ?? ""}>
+          <option value="">Attach to team</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {team.name}
+            </option>
+          ))}
+        </SelectInput>
+        <SelectInput name="related_fixture" defaultValue={defaults?.fixture ?? ""}>
+          <option value="">Attach to match</option>
+          {fixtures.map((fixture) => (
+            <option key={fixture.id} value={fixture.id}>
+              {fixtureOptionLabel(fixture)}
+            </option>
+          ))}
+        </SelectInput>
+      </div>
+    </div>
   );
 }
 

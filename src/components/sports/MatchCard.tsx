@@ -1,4 +1,4 @@
-import { BarChart3, Clock, Goal, Radio, Shirt, Sparkles } from "lucide-react";
+import { BarChart3, Clock, Goal, Radio, Shirt } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import TeamBadge from "@/components/sports/TeamBadge";
 import { SportsFixture } from "@/types/sports";
@@ -86,12 +86,6 @@ export default function MatchCard({ fixture }: MatchCardProps) {
         )}
         <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-black/8 pt-3 text-xs font-bold text-black/45">
           <span className="min-w-0 truncate">{fixture.venue || fixture.venue_detail?.name || "Venue TBC"}</span>
-          {fixture.last_synced_at && (
-            <span className="inline-flex items-center gap-1 text-black/35">
-              <Sparkles className="size-3.5" />
-              synced {new Intl.DateTimeFormat("en-NG", { hour: "2-digit", minute: "2-digit" }).format(new Date(fixture.last_synced_at))}
-            </span>
-          )}
         </div>
       </LoadingLink>
     </article>

@@ -45,6 +45,9 @@ class ApiFootballClient:
         "SA": 135,
         "PD": 140,
         "BSA": 71,
+        "NPFL": 399,
+        "NGA1": 399,
+        "NIGERIA": 399,
     }
 
     STATUS_MAP = {

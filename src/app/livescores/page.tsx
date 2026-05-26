@@ -32,6 +32,9 @@ export default async function LiveScoresPage() {
   const tableCompetition = headlineFixture?.competition ?? featuredCompetitions[0] ?? competitions[0] ?? null;
   const tablePreview = tableCompetition ? await getCompetitionStandings(tableCompetition.slug) : [];
   const sportsArticles = getSportsArticles(latestArticles, 6);
+  const breakingFixtures = [...liveFixtures, ...todayFixtures, ...upcomingFixtures.slice(0, 4), ...resultFixtures.slice(0, 4)]
+    .filter((fixture, index, items) => items.findIndex((item) => item.id === fixture.id) === index)
+    .slice(0, 8);
   const totalMatches = liveFixtures.length + todayFixtures.length + upcomingFixtures.length + resultFixtures.length;
   const statusCards = [
     { label: "Live", value: liveFixtures.length, icon: Radio, tone: "text-red-600" },
@@ -42,7 +45,7 @@ export default async function LiveScoresPage() {
 
   return (
     <main>
-      <BreakingNewsBar articles={latestArticles} />
+      <BreakingNewsBar articles={latestArticles} fixtures={breakingFixtures} />
       <section className="overflow-hidden border-b border-black/10 bg-[#0d0d0d] text-white">
         <div className="container-page py-8 sm:py-12">
           <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_430px] xl:items-end">
@@ -102,8 +105,8 @@ export default async function LiveScoresPage() {
                 </LoadingLink>
               ) : (
                 <div className="p-5">
-                  <p className="text-lg font-black tracking-[-0.04em]">No matches synced yet.</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-black/52">Run the sports provider sync to populate the board.</p>
+                  <p className="text-lg font-black tracking-[-0.04em]">No matches available yet.</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-black/52">Matches will appear here as soon as fresh football data is available.</p>
                 </div>
               )}
             </div>
@@ -176,7 +179,7 @@ export default async function LiveScoresPage() {
                 </LoadingLink>
               ))}
               {!featuredCompetitions.length && (
-                <div className="px-5 py-6 text-sm font-bold text-black/45">No competitions synced yet.</div>
+                <div className="px-5 py-6 text-sm font-bold text-black/45">No competitions available yet.</div>
               )}
             </div>
           </div>

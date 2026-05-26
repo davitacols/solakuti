@@ -136,7 +136,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
           <LeagueGroup title="Recent results" fixtures={resultFixtures.slice(-10).reverse()} />
           {!fixtures.length && (
             <div className="border border-dashed border-black/15 bg-white p-6 text-sm font-bold text-black/45">
-              No fixtures are available for this team yet. They will appear after the next sports sync.
+              No fixtures are available for this team yet. They will appear as soon as fresh football data is available.
             </div>
           )}
         </div>

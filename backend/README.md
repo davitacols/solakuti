@@ -75,7 +75,7 @@ For real football data with API-Football/API-SPORTS, add these environment varia
 SPORTS_PROVIDER=api_football
 API_FOOTBALL_API_KEY=your-api-football-key
 API_FOOTBALL_BASE_URL=https://v3.football.api-sports.io
-API_FOOTBALL_COMPETITIONS=PL,CL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,WC
+API_FOOTBALL_COMPETITIONS=PL,CL,UEL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,WC,NPFL
 API_FOOTBALL_SEASON=2025
 API_FOOTBALL_SYNC_DETAILS=True
 API_FOOTBALL_TIMEOUT_SECONDS=35
@@ -93,6 +93,12 @@ Run the command without `--competition` to sync every league in `API_FOOTBALL_CO
 
 ```bash
 python manage.py sync_sports_provider --competition PL --competition CL --days-back 2 --days-ahead 14
+```
+
+`NPFL` is the Nigerian Professional Football League alias. You can also sync it directly:
+
+```bash
+python manage.py sync_sports_provider --competition NPFL --days-back 2 --days-ahead 14
 ```
 
 For frequent LiveScore updates, use the lightweight command below. It updates today/live-window fixtures, scores, match minutes, events, lineups and statistics, but skips heavy standings and full team imports:

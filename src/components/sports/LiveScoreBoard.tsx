@@ -227,7 +227,7 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
             </span>
             <h2 className="mt-4 text-2xl font-black tracking-[-0.05em] text-[#111]">No fixtures here yet</h2>
             <p className="mt-2 max-w-sm text-sm leading-6 text-black/55">
-              Matches will appear here after the next successful sports provider sync.
+              Matches will appear here as soon as fresh football data is available.
             </p>
           </div>
         </div>

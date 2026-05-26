@@ -158,7 +158,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = config("FILE_UPLOAD_MAX_MEMORY_SIZE", default=50 *
 SPORTS_PROVIDER = config("SPORTS_PROVIDER", default="api_football")
 API_FOOTBALL_API_KEY = config("API_FOOTBALL_API_KEY", default="")
 API_FOOTBALL_BASE_URL = config("API_FOOTBALL_BASE_URL", default="https://v3.football.api-sports.io")
-API_FOOTBALL_COMPETITIONS = config("API_FOOTBALL_COMPETITIONS", default="PL,CL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,WC", cast=Csv())
+API_FOOTBALL_COMPETITIONS = config("API_FOOTBALL_COMPETITIONS", default="PL,CL,UEL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,WC,NPFL", cast=Csv())
 API_FOOTBALL_SEASON = config("API_FOOTBALL_SEASON", default="", cast=lambda value: int(value) if str(value).strip() else None)
 API_FOOTBALL_SYNC_DETAILS = config("API_FOOTBALL_SYNC_DETAILS", default=True, cast=bool)
 API_FOOTBALL_TIMEOUT_SECONDS = config("API_FOOTBALL_TIMEOUT_SECONDS", default=35, cast=int)

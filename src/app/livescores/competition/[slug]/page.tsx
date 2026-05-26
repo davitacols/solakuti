@@ -212,7 +212,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
                     </span>
                   </LoadingLink>
                 ))}
-                {!teams.length && <p className="text-sm font-bold text-black/45">Teams will appear after the next sports sync.</p>}
+                {!teams.length && <p className="text-sm font-bold text-black/45">Teams will appear as soon as fresh football data is available.</p>}
               </div>
             </SectionBlock>
           )}
