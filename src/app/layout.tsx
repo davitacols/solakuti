@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
+import { Sora } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import BackToTop from "@/components/BackToTop";
+
+const sora = Sora({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sora",
+});
 
 import {
   DEFAULT_OG_IMAGE,
@@ -111,7 +118,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={sora.variable}>
       <head>
         <Script id="solakuti-theme" strategy="beforeInteractive">
           {`
