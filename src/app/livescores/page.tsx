@@ -109,6 +109,42 @@ export default async function LiveScoresPage() {
         </div>
       </section>
 
+      <section className="border-b border-black/10 bg-white">
+        <div className="container-page py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-red-600">Choose competition</p>
+              <h2 className="mt-1 text-xl font-black tracking-[-0.04em] text-[#111]">League centres</h2>
+            </div>
+            <Link href="/livescores" className="hidden shrink-0 rounded-full bg-black px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-600 sm:inline-flex">
+              All matches
+            </Link>
+          </div>
+          <div className="mt-4 overflow-x-auto pb-1">
+            <div className="flex min-w-max gap-2">
+              {competitions.slice(0, 14).map((competition) => (
+                <Link
+                  key={competition.id}
+                  href={`/livescores/competition/${competition.slug}`}
+                  className="group inline-flex h-12 items-center gap-3 border border-black/10 bg-[#f8f5ef] px-3 text-sm font-black text-[#111] transition hover:-translate-y-0.5 hover:border-red-600 hover:bg-white hover:text-red-600"
+                >
+                  <span className="grid size-7 place-items-center overflow-hidden rounded-full bg-white text-[10px] ring-1 ring-black/10">
+                    {competition.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={competition.logo_url} alt="" className="size-full object-contain" />
+                    ) : (
+                      <Trophy className="size-3.5 text-black/35" />
+                    )}
+                  </span>
+                  <span className="max-w-36 truncate">{competition.name}</span>
+                  <ChevronRight className="size-3.5 text-black/25 transition group-hover:text-red-600" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="container-page grid min-w-0 gap-6 py-6 sm:gap-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <LiveScoreBoard
           liveFixtures={liveFixtures}

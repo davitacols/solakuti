@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { CalendarDays, ListOrdered, Trophy } from "lucide-react";
+import { Activity, BarChart3, CalendarDays, CheckCircle2, ChevronRight, ListOrdered, Newspaper, Shield, Trophy, Users } from "lucide-react";
 import { notFound } from "next/navigation";
 import LeagueGroup from "@/components/sports/LeagueGroup";
 import StandingsTable from "@/components/sports/StandingsTable";
@@ -9,9 +10,29 @@ import { buildPageMetadata } from "@/lib/seo";
 
 type CompetitionPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ view?: string }>;
 };
 
 export const dynamic = "force-dynamic";
+
+const tabs = [
+  { id: "overview", label: "Overview", icon: Activity },
+  { id: "fixtures", label: "Fixtures", icon: CalendarDays },
+  { id: "results", label: "Results", icon: CheckCircle2 },
+  { id: "standings", label: "Standings", icon: ListOrdered },
+  { id: "teams", label: "Teams", icon: Users },
+  { id: "news", label: "News", icon: Newspaper }
+] as const;
+
+function fixtureDateLabel(value: string) {
+  return new Intl.DateTimeFormat("en-NG", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
 
 export async function generateMetadata({ params }: CompetitionPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -28,8 +49,9 @@ export async function generateMetadata({ params }: CompetitionPageProps): Promis
     : { title: "Competition not found" };
 }
 
-export default async function CompetitionPage({ params }: CompetitionPageProps) {
+export default async function CompetitionPage({ params, searchParams }: CompetitionPageProps) {
   const { slug } = await params;
+  const view = ((await searchParams)?.view ?? "overview").toLowerCase();
   const [competitions, fixtures, standings, latestArticles] = await Promise.all([
     getSportsCompetitions(),
     getCompetitionFixtures(slug),
@@ -42,14 +64,28 @@ export default async function CompetitionPage({ params }: CompetitionPageProps) 
     notFound();
   }
 
-  const finished = fixtures.filter((fixture) => fixture.status === "finished").length;
-  const upcoming = fixtures.filter((fixture) => fixture.status !== "finished").length;
+  const liveFixtures = fixtures.filter((fixture) => fixture.status === "live" || fixture.status === "halftime");
+  const resultFixtures = fixtures.filter((fixture) => fixture.status === "finished");
+  const upcomingFixtures = fixtures.filter((fixture) => fixture.status !== "finished");
+  const finished = resultFixtures.length;
+  const upcoming = upcomingFixtures.length;
+  const teams = Array.from(
+    new Map(
+      [
+        ...standings.map((standing) => standing.team),
+        ...fixtures.flatMap((fixture) => [fixture.home_team, fixture.away_team])
+      ].map((team) => [team.id, team])
+    ).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
   const relatedArticles = latestArticles
     .filter((article) => {
       const haystack = [article.title, article.excerpt, article.category, ...(article.tags ?? [])].join(" ").toLowerCase();
       return haystack.includes("sports") || haystack.includes(competition.name.toLowerCase());
     })
     .slice(0, 4);
+  const topTable = standings.slice(0, 4);
+  const nextFixture = upcomingFixtures[0] ?? null;
+  const activeView = tabs.some((tab) => tab.id === view) ? view : "overview";
 
   return (
     <main className="bg-[#f8f5ef]">
@@ -68,8 +104,8 @@ export default async function CompetitionPage({ params }: CompetitionPageProps) 
               <p className="mt-2 text-2xl font-black tracking-[-0.05em]">{competition.country || "Football"}</p>
             </div>
             <div className="border border-white/10 bg-white/[0.06] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/42">Upcoming</p>
-              <p className="mt-2 text-2xl font-black tracking-[-0.05em]">{upcoming}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/42">Live / Upcoming</p>
+              <p className="mt-2 text-2xl font-black tracking-[-0.05em]">{liveFixtures.length} / {upcoming}</p>
             </div>
             <div className="border border-white/10 bg-white/[0.06] p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/42">Results</p>
@@ -79,36 +115,152 @@ export default async function CompetitionPage({ params }: CompetitionPageProps) 
         </div>
       </section>
 
-      <section className="container-page grid gap-8 py-8 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-8">
-          <div>
-            <p className="mb-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
-              <CalendarDays className="size-4" />
-              Fixtures and results
-            </p>
-            <LeagueGroup title={competition.name} fixtures={fixtures} />
+      <section className="sticky top-[72px] z-20 border-b border-black/10 bg-white/95 backdrop-blur">
+        <div className="container-page overflow-x-auto py-3">
+          <div className="flex min-w-max gap-2">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <Link
+                key={id}
+                href={`/livescores/competition/${competition.slug}${id === "overview" ? "" : `?view=${id}`}`}
+                className={`inline-flex h-11 items-center gap-2 border px-4 text-sm font-black transition ${
+                  activeView === id
+                    ? "border-[#111] bg-[#111] text-white"
+                    : "border-black/10 bg-[#f8f5ef] text-black/55 hover:border-red-600 hover:bg-white hover:text-red-600"
+                }`}
+              >
+                <Icon className="size-4" />
+                {label}
+              </Link>
+            ))}
           </div>
-          <div className="border border-black/10 bg-white p-5">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Competition news</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {relatedArticles.map((article) => (
-                <Link key={article.id} href={`/article/${article.slug}`} className="border border-black/10 p-4 transition hover:-translate-y-1 hover:border-red-600">
-                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-black/35">{article.category}</p>
-                  <p className="mt-2 text-sm font-black leading-5 tracking-[-0.02em]">{article.title}</p>
-                </Link>
-              ))}
-              {!relatedArticles.length && <p className="text-sm font-bold text-black/45">Related articles will appear here.</p>}
-            </div>
-          </div>
-        </div>
-        <div>
-          <p className="mb-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
-            <ListOrdered className="size-4" />
-            Table
-          </p>
-          <StandingsTable standings={standings} />
         </div>
       </section>
+
+      <section className="container-page grid gap-8 py-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="space-y-8">
+          {activeView === "overview" && (
+            <>
+              <div className="grid gap-4 lg:grid-cols-3">
+                <OverviewCard label="Live matches" value={liveFixtures.length} icon={Activity} />
+                <OverviewCard label="Teams tracked" value={teams.length} icon={Shield} />
+                <OverviewCard label="Table rows" value={standings.length} icon={BarChart3} />
+              </div>
+              {nextFixture && (
+                <Link href={`/livescores/match/${nextFixture.id}`} className="block border border-black/10 bg-white p-5 transition hover:-translate-y-1 hover:border-red-600">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Next match</p>
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-2xl font-black tracking-[-0.05em] text-[#111]">
+                        {nextFixture.home_team.name} vs {nextFixture.away_team.name}
+                      </h2>
+                      <p className="mt-2 text-sm font-bold text-black/45">{fixtureDateLabel(nextFixture.kickoff_at)} - {nextFixture.venue || "Venue TBC"}</p>
+                    </div>
+                    <ChevronRight className="size-5 text-black/25" />
+                  </div>
+                </Link>
+              )}
+              <LeagueGroup title="Live and upcoming" fixtures={[...liveFixtures, ...upcomingFixtures].slice(0, 8)} />
+            </>
+          )}
+
+          {activeView === "fixtures" && (
+            <SectionBlock eyebrow="Fixtures" icon={CalendarDays}>
+              <LeagueGroup title={`${competition.name} fixtures`} fixtures={upcomingFixtures} />
+            </SectionBlock>
+          )}
+
+          {activeView === "results" && (
+            <SectionBlock eyebrow="Results" icon={CheckCircle2}>
+              <LeagueGroup title={`${competition.name} results`} fixtures={resultFixtures} />
+            </SectionBlock>
+          )}
+
+          {activeView === "standings" && (
+            <SectionBlock eyebrow="Standings" icon={ListOrdered}>
+              <StandingsTable standings={standings} />
+            </SectionBlock>
+          )}
+
+          {activeView === "teams" && (
+            <SectionBlock eyebrow="Teams" icon={Users}>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {teams.map((team) => (
+                  <Link key={team.id} href={`/livescores/team/${team.slug}`} className="flex min-w-0 items-center gap-3 border border-black/10 bg-white p-4 transition hover:-translate-y-1 hover:border-red-600">
+                    <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f8f5ef] ring-1 ring-black/10">
+                      {team.crest_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={team.crest_url} alt="" className="size-full object-contain p-1" />
+                      ) : (
+                        <Shield className="size-5 text-black/30" />
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-black text-[#111]">{team.name}</span>
+                      <span className="mt-1 block truncate text-xs font-bold text-black/40">{team.country || competition.country || "Football"}</span>
+                    </span>
+                  </Link>
+                ))}
+                {!teams.length && <p className="text-sm font-bold text-black/45">Teams will appear after the next sports sync.</p>}
+              </div>
+            </SectionBlock>
+          )}
+
+          {activeView === "news" && (
+            <CompetitionNews articles={relatedArticles} />
+          )}
+        </div>
+        <aside className="space-y-6">
+          <div>
+            <p className="mb-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
+              <ListOrdered className="size-4" />
+              Table watch
+            </p>
+            <StandingsTable standings={activeView === "standings" ? standings : topTable} compact={activeView !== "standings"} />
+          </div>
+          <CompetitionNews articles={relatedArticles.slice(0, 3)} compact />
+        </aside>
+      </section>
     </main>
+  );
+}
+
+function OverviewCard({ label, value, icon: Icon }: { label: string; value: number; icon: typeof Activity }) {
+  return (
+    <div className="border border-black/10 bg-white p-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-black/42">{label}</p>
+        <Icon className="size-5 text-red-600" />
+      </div>
+      <p className="mt-4 text-4xl font-black tracking-[-0.06em] text-[#111]">{value}</p>
+    </div>
+  );
+}
+
+function SectionBlock({ eyebrow, icon: Icon, children }: { eyebrow: string; icon: typeof Activity; children: ReactNode }) {
+  return (
+    <div>
+      <p className="mb-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
+        <Icon className="size-4" />
+        {eyebrow}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function CompetitionNews({ articles, compact = false }: { articles: Awaited<ReturnType<typeof getLatestArticles>>; compact?: boolean }) {
+  return (
+    <div className="border border-black/10 bg-white p-5">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Competition news</p>
+      <div className={`mt-4 grid gap-3 ${compact ? "" : "sm:grid-cols-2"}`}>
+        {articles.map((article) => (
+          <Link key={article.id} href={`/article/${article.slug}`} className="border border-black/10 p-4 transition hover:-translate-y-1 hover:border-red-600">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-black/35">{article.category}</p>
+            <p className="mt-2 text-sm font-black leading-5 tracking-[-0.02em]">{article.title}</p>
+          </Link>
+        ))}
+        {!articles.length && <p className="text-sm font-bold text-black/45">Related articles will appear here.</p>}
+      </div>
+    </div>
   );
 }
