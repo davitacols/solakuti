@@ -9,17 +9,18 @@ type TeamBadgeProps = {
 };
 
 export default function TeamBadge({ team, align = "left", compact = false }: TeamBadgeProps) {
+  const name = compact ? team.short_name || team.name : team.name;
+
   return (
-    <div className={`flex min-w-0 items-center gap-1.5 sm:gap-2 ${align === "right" ? "justify-end text-right" : ""}`}>
-      {align === "right" && <span className="min-w-0 truncate text-xs font-black text-[#111] sm:text-sm">{compact ? team.short_name || team.name : team.name}</span>}
-      <span className="grid size-7 shrink-0 place-items-center overflow-hidden border border-black/10 bg-white sm:size-9">
+    <div className={`flex min-w-0 items-center gap-1.5 sm:gap-2 ${align === "right" ? "flex-row-reverse text-right" : ""}`}>
+      <span className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-full border border-black/8 bg-white sm:size-8">
         {team.crest_url ? (
-          <Image src={team.crest_url} alt="" width={28} height={28} className="h-5 w-5 object-contain sm:h-7 sm:w-7" />
+          <Image src={team.crest_url} alt="" width={28} height={28} className="size-4 object-contain sm:size-5" />
         ) : (
-          <Trophy className="size-4 text-black/38" />
+          <Trophy className="size-3 text-black/30 sm:size-3.5" />
         )}
       </span>
-      {align === "left" && <span className="min-w-0 truncate text-xs font-black text-[#111] sm:text-sm">{compact ? team.short_name || team.name : team.name}</span>}
+      <span className="min-w-0 truncate text-[11px] font-black text-[#111] sm:text-xs">{name}</span>
     </div>
   );
 }

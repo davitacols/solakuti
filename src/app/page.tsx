@@ -1,7 +1,11 @@
 import ArticleCard from "@/components/ArticleCard";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
+import CategoryPills from "@/components/CategoryPills";
 import CategorySection from "@/components/CategorySection";
+import EditorsPick from "@/components/EditorsPick";
 import HeroSection from "@/components/HeroSection";
+import JustInTimeline from "@/components/JustInTimeline";
+import LiveScoresStrip from "@/components/LiveScoresStrip";
 import NewsletterSection from "@/components/NewsletterSection";
 import TrendingSidebar from "@/components/TrendingSidebar";
 import { getArticles, getCategories, getFeaturedArticle, getLatestArticles, getLiveFixtures, getResultFixtures, getTodayFixtures, getTrendingArticles, getUpcomingFixtures } from "@/lib/api";
@@ -41,13 +45,21 @@ export default async function Home() {
     getUpcomingFixtures(),
     getResultFixtures()
   ]);
+
   const breakingFixtures = [...liveFixtures, ...todayFixtures, ...upcomingFixtures.slice(0, 4), ...resultFixtures.slice(0, 4)]
     .filter((fixture, index, items) => items.findIndex((item) => item.id === fixture.id) === index)
     .slice(0, 8);
+
   const liveArticles = latestArticles.length ? latestArticles : articles;
   const liveFeatured = liveArticles.find((article) => article.featured) ?? featuredArticle ?? liveArticles[0];
   const latest = liveFeatured ? liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 8) : [];
   const feed = liveFeatured ? liveArticles.filter((article) => article.id !== liveFeatured.id) : liveArticles;
+
+  // Editor's pick: highest view count article that isn't the featured one
+  const editorsPick = liveArticles
+    .filter((a) => a.id !== liveFeatured?.id)
+    .sort((a, b) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0))[0] ?? null;
+
   const activeCategories = categories
     .map((category) => ({
       ...category,
@@ -59,6 +71,8 @@ export default async function Home() {
   return (
     <main>
       <BreakingNewsBar articles={liveArticles} fixtures={breakingFixtures} />
+      <LiveScoresStrip fixtures={breakingFixtures} />
+
       {liveFeatured ? (
         <HeroSection featured={liveFeatured} secondary={latest} />
       ) : (
@@ -74,6 +88,10 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      <CategoryPills categories={categories} />
+
+      {editorsPick && <EditorsPick article={editorsPick} />}
 
       <section className="container-page grid gap-8 py-8 xl:grid-cols-[1fr_380px]">
         <div>
@@ -98,7 +116,10 @@ export default async function Home() {
             )}
           </div>
         </div>
-        <TrendingSidebar articles={trendingArticles.concat(liveArticles)} />
+        <div className="flex flex-col gap-6">
+          <TrendingSidebar articles={trendingArticles.concat(liveArticles)} />
+          <JustInTimeline articles={liveArticles} />
+        </div>
       </section>
 
       <section className="container-page">

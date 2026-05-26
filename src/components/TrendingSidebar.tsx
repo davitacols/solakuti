@@ -1,7 +1,13 @@
-import { Flame } from "lucide-react";
+import { Eye, Flame } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import { Article } from "@/types/article";
 import { formatDate } from "@/lib/utils";
+
+function formatViews(count?: number) {
+  if (!count) return null;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  return String(count);
+}
 
 type TrendingSidebarProps = {
   articles: Article[];
@@ -28,9 +34,15 @@ export default function TrendingSidebar({ articles }: TrendingSidebarProps) {
                 >
                   {article.title}
                 </LoadingLink>
-                <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-white/38">
-                  {formatDate(article.publishedAt)}
-                </p>
+                <div className="mt-2 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-white/38">
+                  <span>{formatDate(article.publishedAt)}</span>
+                  {formatViews(article.viewsCount) && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-600/20 px-2 py-0.5 text-[10px] font-black text-red-400">
+                      <Eye className="size-3" />
+                      {formatViews(article.viewsCount)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </article>
