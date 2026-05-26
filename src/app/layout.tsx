@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import BackToTop from "@/components/BackToTop";
-import SiteNotice from "@/components/SiteNotice";
+
 import {
   DEFAULT_OG_IMAGE,
   SITE_DESCRIPTION,
@@ -160,7 +160,7 @@ export default async function RootLayout({
         </noscript>
         <Analytics />
         <Navbar />
-        <SiteNotice />
+
         {children}
         <Footer />
         <BackToTop />
