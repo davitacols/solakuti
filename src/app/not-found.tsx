@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Home, Search } from "lucide-react";
+import { Home, Search } from "lucide-react";
 import ArticleCard from "@/components/ArticleCard";
 import { getLatestArticles } from "@/lib/api";
 
@@ -46,14 +46,6 @@ export default async function NotFound() {
               <Search className="size-4" />
               Search
             </Link>
-            <button
-              type="button"
-              onClick={() => typeof window !== "undefined" && window.history.back()}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-white/15 px-5 text-sm font-black text-white/70 transition hover:border-white hover:text-white"
-            >
-              <ArrowLeft className="size-4" />
-              Go back
-            </button>
           </div>
         </div>
       </section>

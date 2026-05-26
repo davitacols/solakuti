@@ -10,7 +10,7 @@ import CommentsSection from "@/components/CommentsSection";
 import ReadingProgress from "@/components/ReadingProgress";
 import CategoryTracker from "@/components/CategoryTracker";
 import RelativeTime from "@/components/RelativeTime";
-import { getArticleBySlug, getArticleComments, getArticles, getLatestArticles } from "@/lib/api";
+import { ApiUnavailableError, getArticleBySlug, getArticleComments, getArticles, getLatestArticles } from "@/lib/api";
 import {
   LOGO_URL,
   SITE_NAME,
@@ -30,7 +30,21 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  let article: Awaited<ReturnType<typeof getArticleBySlug>> = null;
+  try {
+    article = await getArticleBySlug(slug);
+  } catch (error) {
+    if (error instanceof ApiUnavailableError) {
+      return {
+        title: "Story temporarily unavailable",
+        robots: {
+          index: false,
+          follow: true
+        }
+      };
+    }
+    throw error;
+  }
 
   if (!article) {
     return {
@@ -39,7 +53,6 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   }
 
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
-  const previewImage = absoluteUrl(`${SITE_URL}/api/og/article/${article.slug}`);
   const sourceImage = absoluteUrl(article.ogImage || article.image);
   const title = article.seoTitle || article.title;
   const description = truncateDescription(article.seoDescription || article.excerpt);
@@ -50,14 +63,6 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       width: 1200,
       height: 630,
       alt: article.title
-    },
-    {
-      url: previewImage,
-      secureUrl: previewImage,
-      width: 1200,
-      height: 630,
-      alt: article.title,
-      type: "image/png"
     }
   ];
 
@@ -100,11 +105,21 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const [article, allArticles, latestArticles] = await Promise.all([
-    getArticleBySlug(slug),
-    getArticles(),
-    getLatestArticles()
-  ]);
+  let article: Awaited<ReturnType<typeof getArticleBySlug>> = null;
+  let allArticles: Awaited<ReturnType<typeof getArticles>> = [];
+  let latestArticles: Awaited<ReturnType<typeof getLatestArticles>> = [];
+  try {
+    [article, allArticles, latestArticles] = await Promise.all([
+      getArticleBySlug(slug),
+      getArticles(),
+      getLatestArticles()
+    ]);
+  } catch (error) {
+    if (error instanceof ApiUnavailableError) {
+      return <ArticleTemporarilyUnavailable />;
+    }
+    throw error;
+  }
 
   if (!article) {
     notFound();
@@ -116,7 +131,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const categoryUrl = `${SITE_URL}/category/${categoryToSlug(article.category)}`;
   const authorUrl = article.authorSlug ? `${SITE_URL}/author/${article.authorSlug}` : undefined;
   const sourceImage = absoluteUrl(article.ogImage || article.image);
-  const previewImage = absoluteUrl(`${SITE_URL}/api/og/article/${article.slug}`);
   const articleText = stripHtml(article.contentHtml || article.body.join(" "));
   const shareText = encodeURIComponent(article.title);
   const shareUrl = encodeURIComponent(articleUrl);
@@ -125,7 +139,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     "@type": "NewsArticle",
     headline: article.seoTitle || article.title,
     description: truncateDescription(article.seoDescription || article.excerpt),
-    image: [sourceImage, previewImage],
+    image: [sourceImage],
     datePublished: article.publishedAt,
     dateModified: article.updatedAt ?? article.publishedAt,
     author: [
@@ -349,6 +363,36 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           {related.map((item) => (
             <ArticleCard key={item.id} article={item} compact />
           ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function ArticleTemporarilyUnavailable() {
+  return (
+    <main className="min-h-[70vh] bg-[#111] text-white">
+      <section className="container-page py-16 sm:py-20">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-red-500">Connection delay</p>
+        <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.06em] sm:text-6xl">
+          This story is taking longer than expected to load.
+        </h1>
+        <p className="mt-5 max-w-xl text-base leading-7 text-white/60">
+          The article link is valid, but the newsroom API did not respond in time. Please refresh the page in a moment.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/"
+            className="inline-flex h-11 items-center rounded-full bg-red-600 px-5 text-sm font-black text-white transition hover:bg-white hover:text-black"
+          >
+            Go home
+          </Link>
+          <Link
+            href="/search"
+            className="inline-flex h-11 items-center rounded-full border border-white/15 px-5 text-sm font-black text-white/70 transition hover:border-white hover:text-white"
+          >
+            Search stories
+          </Link>
         </div>
       </section>
     </main>

@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getArticleBySlug } from "@/lib/api";
+import { ApiUnavailableError, getArticleBySlug } from "@/lib/api";
 import { SITE_URL, absoluteUrl } from "@/lib/seo";
 
 export const runtime = "edge";
@@ -16,7 +16,14 @@ type OgArticleProps = {
 
 export async function GET(_request: Request, { params }: OgArticleProps) {
   const { slug } = await params;
-  const article = slug === "solakuti" ? null : await getArticleBySlug(slug);
+  let article: Awaited<ReturnType<typeof getArticleBySlug>> = null;
+  try {
+    article = slug === "solakuti" ? null : await getArticleBySlug(slug);
+  } catch (error) {
+    if (!(error instanceof ApiUnavailableError)) {
+      throw error;
+    }
+  }
   const title = article?.seoTitle || article?.title || "Solakuti";
   const category = article?.category || "Premium Nigerian News";
   const image = absoluteUrl(article?.ogImage || article?.image, fallbackImage);

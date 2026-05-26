@@ -226,6 +226,13 @@ const API_MUTATION_TIMEOUT_MS = Math.max(API_TIMEOUT_MS, 35000);
 const fallbackArticles: Article[] = [];
 const fallbackTrendingArticles: Article[] = [];
 
+export class ApiUnavailableError extends Error {
+  constructor(message = "Solakuti API is temporarily unavailable.") {
+    super(message);
+    this.name = "ApiUnavailableError";
+  }
+}
+
 function networkError<T>(message = "Could not reach Solakuti API. Please check your connection and try again."): ApiResponse<T> {
   return {
     success: false,
@@ -250,6 +257,10 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function shouldRetryStatus(status: number) {
+  return status === 408 || status === 429 || status >= 500;
 }
 
 async function parseApiResponse<T>(response: Response): Promise<ApiResponse<T>> {
@@ -338,6 +349,45 @@ async function fetchApi<T>(path: string): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+async function fetchApiWithStatus<T>(path: string, attempts = 3): Promise<{ data: T | null; status: number | null }> {
+  if (IS_PRODUCTION_BUILD) {
+    return { data: null, status: null };
+  }
+
+  let lastStatus: number | null = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(`${API_URL}${path}`, {
+        cache: "no-store"
+      }, Math.max(API_TIMEOUT_MS, 30000));
+      lastStatus = response.status;
+
+      if (response.status === 404) {
+        return { data: null, status: 404 };
+      }
+      if (!response.ok) {
+        if (attempt < attempts - 1 && shouldRetryStatus(response.status)) {
+          continue;
+        }
+        throw new ApiUnavailableError(`Solakuti API returned ${response.status}.`);
+      }
+
+      const payload = (await response.json()) as ApiResponse<T>;
+      return { data: payload.data, status: response.status };
+    } catch (error) {
+      if (attempt < attempts - 1) {
+        continue;
+      }
+      if (error instanceof ApiUnavailableError) {
+        throw error;
+      }
+      throw new ApiUnavailableError();
+    }
+  }
+
+  return { data: null, status: lastStatus };
 }
 
 async function mutateApi<T>(
@@ -548,7 +598,7 @@ export async function getTrendingArticles(): Promise<Article[]> {
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
   const normalizedSlug = decodeURIComponent(slug).trim();
-  const data = await fetchApi<BackendArticle>(`/articles/${encodeURIComponent(normalizedSlug)}/`);
+  const { data } = await fetchApiWithStatus<BackendArticle>(`/articles/${encodeURIComponent(normalizedSlug)}/`);
   if (data) {
     return mapArticle(data);
   }

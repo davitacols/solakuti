@@ -7,8 +7,8 @@ export const SITE_DESCRIPTION =
   "Solakuti is a modern Nigerian digital newsroom covering politics, economy, security, entertainment, sports, technology, opinions and breaking news.";
 export const SITE_LOCALE = "en_NG";
 export const SITE_LANGUAGE = "en-NG";
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og/article/solakuti`;
 export const LOGO_URL = `${SITE_URL}/solakuti-logo-transparent.png`;
+export const DEFAULT_OG_IMAGE = LOGO_URL;
 
 export function absoluteUrl(value?: string | null, fallback = DEFAULT_OG_IMAGE) {
   if (!value) {
