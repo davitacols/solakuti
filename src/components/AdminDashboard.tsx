@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   BarChart3,
   Download,
+  Dot,
   ExternalLink,
   Eye,
   FileText,
@@ -388,8 +389,12 @@ export default function AdminDashboard() {
                 {recentActivity.slice(0, 8).map((item) => (
                   <div key={item.id} className="py-3">
                     <p className="text-sm font-black text-[#111]">{item.description}</p>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-black/38">
-                      {item.action} · {item.object_type} · {formatDate(item.created_at)}
+                    <p className="mt-1 flex flex-wrap items-center gap-1 text-xs font-bold uppercase tracking-[0.12em] text-black/38">
+                      <span>{item.action}</span>
+                      <Dot className="size-4" aria-hidden="true" />
+                      <span>{item.object_type}</span>
+                      <Dot className="size-4" aria-hidden="true" />
+                      <span>{formatDate(item.created_at)}</span>
                     </p>
                   </div>
                 ))}
@@ -488,8 +493,10 @@ export default function AdminDashboard() {
                           {article.published ? "Published" : "Draft"}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-black/38">
-                        {article.category} · {formatDate(article.publishedAt)}
+                      <p className="mt-1 flex flex-wrap items-center gap-1 text-xs font-bold uppercase tracking-[0.14em] text-black/38">
+                        <span>{article.category}</span>
+                        <Dot className="size-4" aria-hidden="true" />
+                        <span>{formatDate(article.publishedAt)}</span>
                       </p>
                     </div>
                     {article.published ? (

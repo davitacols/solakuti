@@ -6,6 +6,7 @@ import time
 import requests
 from django.conf import settings
 from django.db import DatabaseError
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.sports.models import (
@@ -107,6 +108,37 @@ class ApiFootballClient:
             days_ahead=days_ahead,
         )
 
+    def sync_live_scores(self, competition_codes=None, days_back=0, days_ahead=1):
+        return self.sync_live_competitions(
+            competition_codes or settings.API_FOOTBALL_COMPETITIONS,
+            days_back=days_back,
+            days_ahead=days_ahead,
+        )
+
+    def sync_live_competitions(self, competition_codes, days_back=0, days_ahead=1):
+        summary = {
+            "competitions": 0,
+            "teams": 0,
+            "fixtures": 0,
+            "events": 0,
+            "lineups": 0,
+            "statistics": 0,
+            "standings": 0,
+            "failed": [],
+        }
+        for raw_code in competition_codes:
+            code = str(raw_code).strip()
+            if not code:
+                continue
+            try:
+                result = self.sync_live_competition(code, days_back=days_back, days_ahead=days_ahead)
+                for key in ("competitions", "teams", "fixtures", "events", "lineups", "statistics", "standings"):
+                    summary[key] += result[key]
+            except Exception as exc:
+                summary["failed"].append({"competition": code, "error": str(exc)})
+                self._log("sync_live_competition", SportsSyncLog.Status.FAILED, f"{code}: {exc}")
+        return summary
+
     def sync_competitions(self, competition_codes, days_back=2, days_ahead=7):
         summary = {
             "competitions": 0,
@@ -145,6 +177,7 @@ class ApiFootballClient:
             "fixtures",
             params={"league": league_id, "season": self.season, "from": date_from, "to": date_to},
         ).get("response", [])
+        fixture_rows = self._merge_fixture_rows(fixture_rows, self._get_live_fixture_rows(league_id))
 
         fixtures_count = 0
         events_count = 0
@@ -163,6 +196,7 @@ class ApiFootballClient:
             lineups_count += self._sync_lineups(fixture, detail_row.get("lineups") or [])
             statistics_count += self._sync_statistics(fixture, detail_row.get("statistics") or [])
 
+        self._clear_stale_live_fixtures(competition)
         standings_count = self._sync_standings(competition, season, league_id)
         self._log(
             "sync_competition",
@@ -178,6 +212,86 @@ class ApiFootballClient:
             "statistics": statistics_count,
             "standings": standings_count,
         }
+
+    def sync_live_competition(self, code, days_back=0, days_ahead=1):
+        league_id = self._resolve_league_id(code)
+        league_payload = self._get("leagues", params={"id": league_id, "season": self.season})
+        league_item = (league_payload.get("response") or [{}])[0]
+        competition = self._upsert_competition(league_item, fallback_code=code)
+        season = self._upsert_season(competition, league_item)
+
+        date_from = (timezone.now().date() - timedelta(days=days_back)).isoformat()
+        date_to = (timezone.now().date() + timedelta(days=days_ahead)).isoformat()
+        fixture_rows = self._get(
+            "fixtures",
+            params={"league": league_id, "season": self.season, "from": date_from, "to": date_to},
+        ).get("response", [])
+        fixture_rows = self._merge_fixture_rows(fixture_rows, self._get_live_fixture_rows(league_id))
+
+        fixtures_count = 0
+        events_count = 0
+        lineups_count = 0
+        statistics_count = 0
+        for row in fixture_rows:
+            fixture = self._upsert_fixture(competition, season, row)
+            fixtures_count += 1
+            detail_row = row
+            if fixture.is_live or fixture.status == Fixture.Status.FINISHED:
+                detail_rows = self._get("fixtures", params={"id": fixture.provider_id}).get("response", [])
+                if detail_rows:
+                    detail_row = detail_rows[0]
+                    fixture = self._upsert_fixture(competition, season, detail_row)
+            events_count += self._sync_events(fixture, detail_row.get("events") or [])
+            lineups_count += self._sync_lineups(fixture, detail_row.get("lineups") or [])
+            statistics_count += self._sync_statistics(fixture, detail_row.get("statistics") or [])
+
+        self._clear_stale_live_fixtures(competition)
+        self._log(
+            "sync_live_competition",
+            SportsSyncLog.Status.SUCCESS,
+            f"{code}: {fixtures_count} live-window fixtures, {events_count} events, {lineups_count} lineup rows, {statistics_count} stats.",
+        )
+        return {
+            "competitions": 1,
+            "teams": 0,
+            "fixtures": fixtures_count,
+            "events": events_count,
+            "lineups": lineups_count,
+            "statistics": statistics_count,
+            "standings": 0,
+        }
+
+    def _get_live_fixture_rows(self, league_id):
+        try:
+            return self._get(
+                "fixtures",
+                params={"live": "all", "league": league_id, "season": self.season},
+            ).get("response", [])
+        except ApiFootballError as exc:
+            self._log(
+                "sync_live_fixtures",
+                SportsSyncLog.Status.FAILED,
+                f"{league_id}: {exc}",
+            )
+            return []
+
+    def _merge_fixture_rows(self, fixture_rows, live_rows):
+        rows_by_id = {}
+        for row in fixture_rows + live_rows:
+            fixture_id = str(((row.get("fixture") or {}).get("id")) or "")
+            if fixture_id:
+                rows_by_id[fixture_id] = row
+        return list(rows_by_id.values())
+
+    def _clear_stale_live_fixtures(self, competition):
+        stale_before = timezone.now() - timedelta(minutes=20)
+        Fixture.objects.filter(
+            competition=competition,
+            provider=self.provider,
+            status__in=[Fixture.Status.LIVE, Fixture.Status.HALFTIME],
+        ).filter(
+            Q(last_synced_at__lt=stale_before) | Q(last_synced_at__isnull=True),
+        ).update(status=Fixture.Status.SCHEDULED, period="", minute=None)
 
     def _get(self, path, params=None):
         url = f"{self.base_url}/{path.lstrip('/')}"

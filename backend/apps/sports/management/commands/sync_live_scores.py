@@ -1,13 +1,13 @@
-from django.core.management.base import BaseCommand, CommandError
-from django.core.management import call_command
 from django.conf import settings
+from django.core.management import call_command
+from django.core.management.base import BaseCommand, CommandError
 from django.db import ProgrammingError, connections
 
 from apps.sports.providers import get_sports_provider_client, normalize_provider_error
 
 
 class Command(BaseCommand):
-    help = "Sync Solakuti LiveScore fixtures, teams and standings from the configured sports API provider."
+    help = "Fast sync for live/today football fixtures without heavy teams or standings imports."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -16,27 +16,22 @@ class Command(BaseCommand):
             dest="competitions",
             help="Competition code to sync, for example PL or CL. Can be passed more than once.",
         )
-        parser.add_argument("--days-back", type=int, default=2, help="How many past days of fixtures to sync.")
-        parser.add_argument("--days-ahead", type=int, default=7, help="How many future days of fixtures to sync.")
+        parser.add_argument("--days-back", type=int, default=0, help="How many past days of fixtures to sync.")
+        parser.add_argument("--days-ahead", type=int, default=1, help="How many future days of fixtures to sync.")
 
     def handle(self, *args, **options):
         self._ensure_sports_database_ready()
+        competitions = options["competitions"] or list(settings.API_FOOTBALL_COMPETITIONS)
+        self.stdout.write(f"Fast live sync competitions: {', '.join(competitions)}")
         try:
             client = get_sports_provider_client()
-            if options["competitions"]:
-                self.stdout.write(f"Syncing selected competitions: {', '.join(options['competitions'])}")
-                summary = client.sync_competitions(
-                    options["competitions"],
-                    days_back=options["days_back"],
-                    days_ahead=options["days_ahead"],
-                )
-            else:
-                configured = ", ".join(settings.API_FOOTBALL_COMPETITIONS)
-                self.stdout.write(f"Syncing all configured competitions: {configured}")
-                summary = client.sync_configured_competitions(
-                    days_back=options["days_back"],
-                    days_ahead=options["days_ahead"],
-                )
+            if not hasattr(client, "sync_live_scores"):
+                raise CommandError("The configured sports provider does not support fast live score sync.")
+            summary = client.sync_live_scores(
+                competition_codes=competitions,
+                days_back=options["days_back"],
+                days_ahead=options["days_ahead"],
+            )
         except ProgrammingError as exc:
             if "sports_" in str(exc):
                 raise CommandError(
@@ -51,11 +46,12 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                "Sports sync complete: "
+                "Fast live sync complete: "
                 f"{summary['competitions']} competitions, "
-                f"{summary['teams']} new teams, "
                 f"{summary['fixtures']} fixtures, "
-                f"{summary['standings']} standing rows."
+                f"{summary['events']} events, "
+                f"{summary['lineups']} lineup rows, "
+                f"{summary['statistics']} statistic rows."
             )
         )
         if summary["failed"]:

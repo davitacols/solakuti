@@ -195,7 +195,15 @@ class FixtureViewSet(ApiResponseMixin, viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def live(self, request):
-        queryset = self.get_queryset().filter(status__in=[Fixture.Status.LIVE, Fixture.Status.HALFTIME]).order_by("competition__name", "kickoff_at")
+        fresh_after = timezone.now() - timedelta(minutes=20)
+        queryset = (
+            self.get_queryset()
+            .filter(
+                status__in=[Fixture.Status.LIVE, Fixture.Status.HALFTIME],
+                last_synced_at__gte=fresh_after,
+            )
+            .order_by("competition__name", "kickoff_at")
+        )
         serializer = FixtureListSerializer(queryset, many=True)
         return api_response(serializer.data, message="Live fixtures fetched successfully.")
 
@@ -204,7 +212,16 @@ class FixtureViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         now = timezone.localtime()
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
-        queryset = self.get_queryset().filter(kickoff_at__gte=start, kickoff_at__lt=end).order_by("competition__name", "kickoff_at")
+        stale_before = timezone.now() - timedelta(minutes=20)
+        queryset = (
+            self.get_queryset()
+            .filter(kickoff_at__gte=start, kickoff_at__lt=end)
+            .exclude(
+                Q(status__in=[Fixture.Status.LIVE, Fixture.Status.HALFTIME])
+                & (Q(last_synced_at__lt=stale_before) | Q(last_synced_at__isnull=True))
+            )
+            .order_by("competition__name", "kickoff_at")
+        )
         serializer = FixtureListSerializer(queryset, many=True)
         return api_response(serializer.data, message="Today's fixtures fetched successfully.")
 
@@ -304,7 +321,10 @@ class SportsSyncLogViewSet(ApiResponseMixin, viewsets.ReadOnlyModelViewSet):
             "competitions": Competition.objects.count(),
             "teams": Team.objects.count(),
             "fixtures": Fixture.objects.count(),
-            "live_fixtures": Fixture.objects.filter(status__in=[Fixture.Status.LIVE, Fixture.Status.HALFTIME]).count(),
+            "live_fixtures": Fixture.objects.filter(
+                status__in=[Fixture.Status.LIVE, Fixture.Status.HALFTIME],
+                last_synced_at__gte=now - timedelta(minutes=20),
+            ).count(),
             "today_fixtures": Fixture.objects.filter(kickoff_at__gte=today_start, kickoff_at__lt=today_start + timedelta(days=1)).count(),
             "upcoming_fixtures": Fixture.objects.filter(kickoff_at__gte=now).exclude(status=Fixture.Status.FINISHED).count(),
             "result_fixtures": Fixture.objects.filter(status=Fixture.Status.FINISHED).count(),
@@ -316,11 +336,14 @@ class SportsSyncLogViewSet(ApiResponseMixin, viewsets.ReadOnlyModelViewSet):
     @decorators.action(detail=False, methods=["post"], permission_classes=[permissions.IsAdminUser])
     def sync(self, request):
         competitions = request.data.get("competitions") or request.data.get("competition")
+        sync_mode = str(request.data.get("mode") or "full").strip().lower()
         if isinstance(competitions, str):
             competitions = [item.strip() for item in competitions.split(",") if item.strip()]
         try:
             client = get_sports_provider_client()
-            if competitions:
+            if sync_mode in {"live", "fast", "live_scores"}:
+                summary = client.sync_live_scores(competition_codes=competitions)
+            elif competitions:
                 summary = client.sync_competitions(competitions)
             else:
                 summary = client.sync_configured_competitions()

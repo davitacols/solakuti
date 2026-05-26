@@ -86,8 +86,29 @@ Then sync fixtures, teams, standings, events, lineups and match statistics:
 
 ```bash
 python manage.py migrate
-python manage.py sync_sports_provider
-python manage.py sync_sports_provider --competition PL --days-back 2 --days-ahead 14
+python manage.py sync_sports_provider --days-back 0 --days-ahead 1
+```
+
+Run the command without `--competition` to sync every league in `API_FOOTBALL_COMPETITIONS`. Use `--competition` only when you intentionally want to limit the sync to one or more leagues:
+
+```bash
+python manage.py sync_sports_provider --competition PL --competition CL --days-back 2 --days-ahead 14
+```
+
+For frequent LiveScore updates, use the lightweight command below. It updates today/live-window fixtures, scores, match minutes, events, lineups and statistics, but skips heavy standings and full team imports:
+
+```bash
+python manage.py sync_live_scores --days-back 0 --days-ahead 1
+```
+
+Recommended Render cron setup:
+
+```text
+Every 2-5 minutes during match windows:
+python manage.py sync_live_scores --days-back 0 --days-ahead 1
+
+Every 6-12 hours:
+python manage.py sync_sports_provider --days-back 1 --days-ahead 14
 ```
 
 For production, use a separate sports database so LiveScore sync does not consume the main newsroom database quota:
@@ -100,7 +121,7 @@ SPORTS_DATABASE_URL=postgresql://sports-livescore-db
 When `SPORTS_DATABASE_URL` is set, Django routes only the `sports` app to that database. The sync command automatically applies sports migrations to the sports database before importing provider data:
 
 ```bash
-python manage.py sync_sports_provider --competition PL --days-back 2 --days-ahead 14
+python manage.py sync_sports_provider --days-back 0 --days-ahead 1
 ```
 
 After confirming `SPORTS_DATABASE_URL` is working, remove old LiveScore tables from the main/default database:
@@ -111,22 +132,6 @@ python manage.py drop_legacy_sports_tables --confirm
 ```
 
 The first command is a dry run and lists the exact `sports_*` tables that would be dropped. The confirmed command permanently deletes only the old sports tables from the main database.
-
-To keep using football-data.org instead, set:
-
-```env
-SPORTS_PROVIDER=football_data
-FOOTBALL_DATA_API_KEY=your-football-data-api-key
-FOOTBALL_DATA_COMPETITIONS=WC,CL,BL1,DED,BSA,PD,FL1,ELC,PPL,EC,SA,PL
-```
-
-Then sync fixtures, teams and standings:
-
-```bash
-python manage.py migrate
-python manage.py sync_sports_provider
-python manage.py sync_sports_provider --competition PL --days-back 2 --days-ahead 14
-```
 
 If old demo content exists from a previous development seed, remove it with:
 
@@ -163,7 +168,7 @@ SA  - Serie A
 
 Render can run the sync command manually from the shell. For automated updates, add a cron job or scheduled worker that runs `python manage.py sync_sports_provider` every few minutes during match windows and less often outside match windows.
 
-The football-data sync client inspects provider response headers such as `X-Requests-Available-Minute`, `X-RequestCounter-Reset` and `Retry-After` so it can back off automatically before hitting the rate limiter.
+The API-Football sync client inspects provider response headers such as `Retry-After` and `x-ratelimit-requests-remaining` so it can back off automatically before hitting the rate limiter.
 
 ## Deployment Notes
 

@@ -767,16 +767,19 @@ export async function getAdminSportsSyncLogs(token: string) {
   return adminApi<SportsSyncLog[]>("/sports/sync-logs/?page_size=10&ordering=-started_at", token);
 }
 
-export async function triggerSportsSync(token: string, competitions?: string) {
+export async function triggerSportsSync(token: string, competitions?: string, mode: "full" | "live" = "full") {
   return adminApi<{
     competitions: number;
     teams: number;
     fixtures: number;
+    events?: number;
+    lineups?: number;
+    statistics?: number;
     standings: number;
     failed: Array<{ competition: string; error: string }>;
   }>("/sports/sync-logs/sync/", token, {
     method: "POST",
-    body: competitions ? { competitions } : {}
+    body: { ...(competitions ? { competitions } : {}), mode }
   });
 }
 

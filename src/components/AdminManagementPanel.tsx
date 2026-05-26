@@ -115,7 +115,8 @@ function SportsDeskPanel({
   competitionCodes,
   busy,
   onCompetitionCodesChange,
-  onSync,
+  onFullSync,
+  onLiveSync,
   onToggleCompetition,
   onCreateCompetition,
   onCreateTeam,
@@ -133,7 +134,8 @@ function SportsDeskPanel({
   competitionCodes: string;
   busy: string | null;
   onCompetitionCodesChange: (value: string) => void;
-  onSync: () => void;
+  onFullSync: () => void;
+  onLiveSync: () => void;
   onToggleCompetition: (competition: SportsCompetition) => void;
   onCreateCompetition: (event: FormEvent<HTMLFormElement>) => void;
   onCreateTeam: (event: FormEvent<HTMLFormElement>) => void;
@@ -169,7 +171,7 @@ function SportsDeskPanel({
             </div>
           ))}
         </div>
-        <div className="grid gap-4 border-t border-black/10 p-4 md:grid-cols-[minmax(0,1fr)_180px]">
+        <div className="grid gap-4 border-t border-black/10 p-4 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
           <TextInput
             value={competitionCodes}
             onChange={(event) => onCompetitionCodesChange(event.target.value)}
@@ -177,12 +179,21 @@ function SportsDeskPanel({
           />
           <LoadingButton
             type="button"
-            loading={busy === "sports-sync"}
-            onClick={onSync}
+            loading={busy === "sports-live-sync"}
+            onClick={onLiveSync}
             className="h-11 rounded-md bg-red-600 px-4 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#111]"
           >
             <RefreshCw className="size-4" />
-            Sync now
+            Live sync
+          </LoadingButton>
+          <LoadingButton
+            type="button"
+            loading={busy === "sports-sync"}
+            onClick={onFullSync}
+            className="h-11 rounded-md border border-black/10 bg-white px-4 text-sm font-black uppercase tracking-[0.12em] text-[#111] transition hover:border-black hover:bg-[#111] hover:text-white"
+          >
+            <RefreshCw className="size-4" />
+            Full sync
           </LoadingButton>
         </div>
         <div className="border-t border-black/10 p-4">
@@ -1112,7 +1123,10 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
             competitionCodes={sportsCompetitionCodes}
             busy={busy}
             onCompetitionCodesChange={setSportsCompetitionCodes}
-            onSync={() =>
+            onLiveSync={() =>
+              runAction("sports-live-sync", () => triggerSportsSync(token, sportsCompetitionCodes, "live"))
+            }
+            onFullSync={() =>
               runAction("sports-sync", () => triggerSportsSync(token, sportsCompetitionCodes))
             }
             onToggleCompetition={(competition) =>

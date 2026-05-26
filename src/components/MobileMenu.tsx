@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Radio, Search, X } from "lucide-react";
+import { ArrowUpRight, Radio, Search, Sparkles, X } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
 import LoadingLink from "@/components/LoadingLink";
 import { categories, categoryToSlug } from "@/lib/utils";
@@ -25,7 +25,7 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm xl:hidden"
           onClick={onClose}
         >
           <motion.nav
@@ -33,13 +33,13 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 260, damping: 28 }}
-            className="ml-auto flex h-full w-[88%] max-w-md flex-col overflow-y-auto bg-[#111] text-white shadow-2xl"
+            className="ml-auto flex h-full w-[90%] max-w-md flex-col overflow-y-auto bg-[#111] text-white shadow-2xl"
             aria-label="Mobile navigation"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="border-b border-white/10 p-5">
+            <div className="border-b border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0))] p-5">
               <div className="flex items-center justify-between">
-                <LoadingLink href="/" className="relative h-16 w-56 overflow-hidden rounded-md" onClick={onClose} aria-label="Solakuti home">
+                <LoadingLink href="/" className="relative h-16 w-52 overflow-hidden rounded-md" onClick={onClose} aria-label="Solakuti home">
                   <Image
                     src="/solakuti-logo-nav.png"
                     alt="Solakuti"
@@ -58,11 +58,21 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
                 </LoadingButton>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+                <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-red-300">
+                  <Sparkles className="size-3.5" />
+                  Solakuti edition
+                </p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-white/62">
+                  Politics, culture, economy, security and live sport in one Nigerian newsroom.
+                </p>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-2">
                 <LoadingLink
                   href="/search"
                   onClick={onClose}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white text-sm font-black text-black"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-black text-black"
                 >
                   <Search className="size-4" />
                   Search
@@ -70,7 +80,7 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
                 <LoadingLink
                   href="/livescores"
                   onClick={onClose}
-                  className="ml-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-red-600 px-4 text-sm font-black text-white"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-red-600 px-4 text-sm font-black text-white"
                 >
                   <Radio className="size-4" />
                   Live scores
@@ -89,7 +99,7 @@ export default function MobileMenu({ open, onClose, navCategories }: MobileMenuP
                     key={category.slug}
                     href={`/category/${category.slug}`}
                     onClick={onClose}
-                    className="group flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.035] px-4 py-4 text-lg font-black text-white/88 transition hover:border-red-400/50 hover:bg-red-600 hover:text-white"
+                    className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3.5 text-base font-black text-white/88 transition hover:border-red-400/50 hover:bg-red-600 hover:text-white"
                   >
                     {category.name}
                     <ArrowUpRight className="size-4 text-white/35 transition group-hover:text-white" />

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { Copyright, Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 import { categories, categoryToSlug } from "@/lib/utils";
@@ -79,7 +79,10 @@ export default function Footer() {
       </div>
       <div className="border-t border-white/10 py-5">
         <div className="container-page flex flex-col justify-between gap-2 text-xs font-bold uppercase tracking-[0.16em] text-white/38 sm:flex-row">
-          <span>© 2026 Solakuti Media</span>
+          <span className="inline-flex items-center gap-2">
+            <Copyright className="size-3.5" aria-hidden="true" />
+            2026 Solakuti Media
+          </span>
           <span>Built for the next Nigerian news cycle</span>
         </div>
       </div>
