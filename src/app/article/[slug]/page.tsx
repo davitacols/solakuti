@@ -10,7 +10,7 @@ import CommentsSection from "@/components/CommentsSection";
 import ReadingProgress from "@/components/ReadingProgress";
 import CategoryTracker from "@/components/CategoryTracker";
 import RelativeTime from "@/components/RelativeTime";
-import { ApiUnavailableError, getArticleBySlug, getArticleComments, getArticles, getLatestArticles } from "@/lib/api";
+import { ApiUnavailableError, getArticleBySlug, getArticleComments, getLatestArticles } from "@/lib/api";
 import {
   LOGO_URL,
   SITE_NAME,
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   const { slug } = await params;
   let article: Awaited<ReturnType<typeof getArticleBySlug>> = null;
   try {
-    article = await getArticleBySlug(slug);
+    article = await getArticleBySlug(slug, { trackView: false });
   } catch (error) {
     if (error instanceof ApiUnavailableError) {
       return {
@@ -106,12 +106,10 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
   let article: Awaited<ReturnType<typeof getArticleBySlug>> = null;
-  let allArticles: Awaited<ReturnType<typeof getArticles>> = [];
   let latestArticles: Awaited<ReturnType<typeof getLatestArticles>> = [];
   try {
-    [article, allArticles, latestArticles] = await Promise.all([
+    [article, latestArticles] = await Promise.all([
       getArticleBySlug(slug),
-      getArticles(),
       getLatestArticles()
     ]);
   } catch (error) {
@@ -125,7 +123,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     notFound();
   }
 
-  const related = getRelatedArticles(article, allArticles, 3);
+  const related = getRelatedArticles(article, latestArticles, 3);
   const comments = await getArticleComments(article.id);
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
   const categoryUrl = `${SITE_URL}/category/${categoryToSlug(article.category)}`;
@@ -215,7 +213,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <BreakingNewsBar articles={latestArticles.length ? latestArticles : allArticles} />
+      <BreakingNewsBar articles={latestArticles} />
       <article>
         <header className="container-page py-8 lg:py-12">
           <div className="max-w-4xl">

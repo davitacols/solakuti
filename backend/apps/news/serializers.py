@@ -80,14 +80,11 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_views_count(self, obj):
-        real_views = getattr(obj, "real_views_count", None)
-        if real_views is not None:
-            return real_views
-        return obj.view_events.count()
+        return obj.views_count
 
 
 class ArticleDetailSerializer(ArticleListSerializer):
-    comments_count = serializers.IntegerField(read_only=True)
+    comments_count = serializers.SerializerMethodField()
 
     class Meta(ArticleListSerializer.Meta):
         fields = ArticleListSerializer.Meta.fields + [
@@ -96,6 +93,10 @@ class ArticleDetailSerializer(ArticleListSerializer):
             "created_at",
             "updated_at",
         ]
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_comments_count(self, obj):
+        return obj.comments.filter(is_approved=True).count()
 
 
 class ArticleRevisionSerializer(serializers.ModelSerializer):

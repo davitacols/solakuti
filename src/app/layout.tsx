@@ -6,7 +6,6 @@ import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import BackToTop from "@/components/BackToTop";
 import SiteNotice from "@/components/SiteNotice";
-import { getCategories, getTrendingArticles } from "@/lib/api";
 import {
   DEFAULT_OG_IMAGE,
   SITE_DESCRIPTION,
@@ -111,12 +110,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [navCategories, trendingArticles] = await Promise.all([
-    getCategories(),
-    getTrendingArticles()
-  ]);
-  const trendingTopics = [...new Set(trendingArticles.flatMap((a) => a.tags ?? []))].slice(0, 3);
-
   return (
     <html lang="en">
       <head>
@@ -166,7 +159,7 @@ export default async function RootLayout({
           />
         </noscript>
         <Analytics />
-        <Navbar navCategories={navCategories} trendingTopics={trendingTopics} />
+        <Navbar />
         <SiteNotice />
         {children}
         <Footer />

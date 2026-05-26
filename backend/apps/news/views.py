@@ -1,4 +1,5 @@
-from django.db.models import Count, F, Q
+from django.core.cache import cache
+from django.db.models import F, Q
 from django.utils import timezone
 from rest_framework import decorators, filters, generics, permissions, status, viewsets
 
@@ -18,6 +19,21 @@ from core.permissions import IsAuthorOrEditor, IsWriterOrReadOnly
 from core.responses import ApiResponseMixin, api_response
 
 
+PUBLIC_ARTICLE_CACHE_SECONDS = 60
+
+
+def cached_public_response(key, builder, timeout=PUBLIC_ARTICLE_CACHE_SECONDS):
+    cached = cache.get(key)
+    if cached is not None:
+        return api_response(cached["data"], message=cached["message"])
+    response = builder()
+    if getattr(response, "status_code", 500) == 200 and isinstance(getattr(response, "data", None), dict):
+        payload = response.data
+        if {"data", "message"}.issubset(payload.keys()):
+            cache.set(key, {"data": payload["data"], "message": payload["message"]}, timeout)
+    return response
+
+
 class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
     permission_classes = [IsWriterOrReadOnly, IsAuthorOrEditor]
     lookup_field = "slug"
@@ -31,10 +47,6 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         queryset = (
             Article.objects.select_related("category", "author")
             .prefetch_related("tags", "sports_links")
-            .annotate(
-                comments_count=Count("comments", filter=Q(comments__is_approved=True), distinct=True),
-                real_views_count=Count("view_events", distinct=True),
-            )
         )
         public_filter = public_article_q()
         if self.request.user.is_authenticated and self.request.user.role in {"admin", "editor", "journalist"}:
@@ -50,9 +62,17 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
             return ArticleDetailSerializer
         return ArticleListSerializer
 
+    def list(self, request, *args, **kwargs):
+        if request.user.is_authenticated or request.query_params:
+            return super().list(request, *args, **kwargs)
+        return cached_public_response(
+            "articles:list",
+            lambda: self._article_collection(self.filter_queryset(self.get_queryset()), "Articles fetched successfully."),
+        )
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.is_published:
+        if instance.is_published and request.query_params.get("track_view") != "0":
             Article.objects.filter(pk=instance.pk).update(views_count=F("views_count") + 1)
             ArticleView.objects.create(
                 article=instance,
@@ -66,21 +86,34 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def featured(self, request):
-        return self._article_collection(self.get_queryset().filter(is_featured=True), "Featured articles fetched successfully.")
+        page_size = request.query_params.get("page_size", "")
+        return cached_public_response(
+            f"articles:featured:{page_size}",
+            lambda: self._article_collection(self.get_queryset().filter(is_featured=True), "Featured articles fetched successfully."),
+        )
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def breaking(self, request):
-        return self._article_collection(self.get_queryset().filter(is_breaking=True), "Breaking news fetched successfully.")
+        return cached_public_response(
+            "articles:breaking",
+            lambda: self._article_collection(self.get_queryset().filter(is_breaking=True), "Breaking news fetched successfully."),
+        )
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def trending(self, request):
         since = timezone.now() - timezone.timedelta(days=7)
-        queryset = self.get_queryset().filter(Q(published_at__gte=since) | Q(published_at__isnull=True)).order_by("-real_views_count", "-published_at", "-created_at")
-        return self._article_collection(queryset, "Trending articles fetched successfully.")
+        queryset = self.get_queryset().filter(Q(published_at__gte=since) | Q(published_at__isnull=True)).order_by("-views_count", "-published_at", "-created_at")
+        return cached_public_response(
+            "articles:trending",
+            lambda: self._article_collection(queryset, "Trending articles fetched successfully."),
+        )
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def latest(self, request):
-        return self._article_collection(self.get_queryset().order_by("-published_at", "-created_at"), "Latest articles fetched successfully.")
+        return cached_public_response(
+            "articles:latest",
+            lambda: self._article_collection(self.get_queryset().order_by("-published_at", "-created_at"), "Latest articles fetched successfully."),
+        )
 
     @decorators.action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def revisions(self, request, slug=None):
@@ -116,6 +149,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         article = serializer.save()
+        cache.clear()
         action = ActivityLog.Action.PUBLISHED if article.is_published else ActivityLog.Action.CREATED
         log_activity(
             self.request,
@@ -131,6 +165,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         was_published = article.is_published
         ArticleRevision.capture(article, self.request.user, note="Before article update")
         updated = serializer.save()
+        cache.clear()
         action = ActivityLog.Action.PUBLISHED if updated.is_published and not was_published else ActivityLog.Action.UPDATED
         log_activity(
             self.request,
@@ -151,6 +186,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
             metadata={"slug": instance.slug},
         )
         instance.delete()
+        cache.clear()
 
     @decorators.action(detail=False, methods=["delete"], url_path=r"(?P<article_id>[^/.]+)/delete-by-id")
     def delete_by_id(self, request, article_id=None):
@@ -275,7 +311,6 @@ class SearchView(ApiResponseMixin, generics.ListAPIView):
             Article.objects.filter(public_article_q())
             .select_related("category", "author")
             .prefetch_related("tags", "sports_links")
-            .annotate(real_views_count=Count("view_events", distinct=True))
         )
         if not query:
             return queryset.none()

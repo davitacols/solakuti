@@ -332,8 +332,8 @@ const articleImageFallback: Record<string, string> = {
 async function fetchApi<T>(path: string): Promise<T | null> {
   try {
     const response = await fetchWithTimeout(`${API_URL}${path}`, {
-      cache: "no-store"
-    });
+      next: { revalidate: 30 }
+    } as RequestInit & { next: { revalidate: number } });
 
     if (!response.ok) {
       return null;
@@ -587,9 +587,10 @@ export async function getTrendingArticles(): Promise<Article[]> {
   return data ? data.map(mapArticle) : fallbackTrendingArticles;
 }
 
-export async function getArticleBySlug(slug: string): Promise<Article | null> {
+export async function getArticleBySlug(slug: string, options: { trackView?: boolean } = {}): Promise<Article | null> {
   const normalizedSlug = decodeURIComponent(slug).trim();
-  const { data } = await fetchApiWithStatus<BackendArticle>(`/articles/${encodeURIComponent(normalizedSlug)}/`);
+  const query = options.trackView === false ? "?track_view=0" : "";
+  const { data } = await fetchApiWithStatus<BackendArticle>(`/articles/${encodeURIComponent(normalizedSlug)}/${query}`);
   if (data) {
     return mapArticle(data);
   }

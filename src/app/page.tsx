@@ -10,7 +10,7 @@ import LiveScoresStrip from "@/components/LiveScoresStrip";
 import NewsletterSection from "@/components/NewsletterSection";
 import ReadNext from "@/components/ReadNext";
 import TrendingSidebar from "@/components/TrendingSidebar";
-import { getArticles, getCategories, getFeaturedArticle, getLatestArticles, getLiveFixtures, getResultFixtures, getTodayFixtures, getTrendingArticles, getUpcomingFixtures } from "@/lib/api";
+import { getCategories, getLatestArticles, getLiveFixtures, getResultFixtures, getTodayFixtures, getUpcomingFixtures } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +36,8 @@ function getKicker(category: string) {
 }
 
 export default async function Home() {
-  const [articles, featuredArticle, latestArticles, trendingArticles, categories, liveFixtures, todayFixtures, upcomingFixtures, resultFixtures] = await Promise.all([
-    getArticles(),
-    getFeaturedArticle(),
+  const [latestArticles, categories, liveFixtures, todayFixtures, upcomingFixtures, resultFixtures] = await Promise.all([
     getLatestArticles(),
-    getTrendingArticles(),
     getCategories(),
     getLiveFixtures(),
     getTodayFixtures(),
@@ -52,8 +49,9 @@ export default async function Home() {
     .filter((fixture, index, items) => items.findIndex((item) => item.id === fixture.id) === index)
     .slice(0, 8);
 
-  const liveArticles = latestArticles.length ? latestArticles : articles;
-  const liveFeatured = liveArticles.find((article) => article.featured) ?? featuredArticle ?? liveArticles[0];
+  const liveArticles = latestArticles;
+  const trendingArticles = [...liveArticles].sort((a, b) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0)).slice(0, 8);
+  const liveFeatured = liveArticles.find((article) => article.featured) ?? liveArticles[0];
   const latest = liveFeatured ? liveArticles.filter((article) => article.id !== liveFeatured.id).slice(0, 8) : [];
   const feed = liveFeatured ? liveArticles.filter((article) => article.id !== liveFeatured.id) : liveArticles;
 

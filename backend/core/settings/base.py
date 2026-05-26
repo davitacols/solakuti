@@ -139,6 +139,17 @@ CLOUDINARY_STORAGE = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "solakuti-api-cache",
+        "TIMEOUT": config("CACHE_DEFAULT_TIMEOUT", default=60, cast=int),
+        "OPTIONS": {
+            "MAX_ENTRIES": config("CACHE_MAX_ENTRIES", default=1000, cast=int),
+        },
+    }
+}
+
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:3000,http://127.0.0.1:3000",
