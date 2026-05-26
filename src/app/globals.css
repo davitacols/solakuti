@@ -4,6 +4,13 @@
   --background: #f7f4ef;
   --foreground: #121212;
   --accent: #d71920;
+  color-scheme: light;
+}
+
+html.dark {
+  --background: #0b0b0c;
+  --foreground: #f4f4f5;
+  color-scheme: dark;
 }
 
 * {
@@ -23,14 +30,99 @@ body {
   overflow-x: clip;
 }
 
-.dark body,
 html.dark body {
-  background: #0a0a0a;
-  color: #e5e5e5;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(215, 25, 32, 0.12), transparent 34rem),
+    #0b0b0c;
+  color: #f4f4f5;
 }
 
 html.dark .container-page {
-  color: #e5e5e5;
+  color: #f4f4f5;
+}
+
+html.dark [class*="bg-[#f7f4ef]"],
+html.dark [class*="bg-[#faf8f4]"],
+html.dark [class*="bg-white"] {
+  background-color: #151517 !important;
+}
+
+html.dark [class*="bg-white/"],
+html.dark [class*="bg-black/5"],
+html.dark [class*="bg-black/[0.03]"] {
+  background-color: rgb(255 255 255 / 0.06) !important;
+}
+
+html.dark [class*="bg-[#111]"],
+html.dark [class*="bg-black"] {
+  background-color: #050506 !important;
+}
+
+html.dark [class*="text-[#111]"],
+html.dark [class*="text-black"] {
+  color: rgb(244 244 245 / 0.92) !important;
+}
+
+html.dark [class*="text-black/76"] {
+  color: rgb(244 244 245 / 0.78) !important;
+}
+
+html.dark [class*="text-black/70"],
+html.dark [class*="text-black/62"],
+html.dark [class*="text-black/60"],
+html.dark [class*="text-black/56"],
+html.dark [class*="text-black/55"],
+html.dark [class*="text-black/50"] {
+  color: rgb(244 244 245 / 0.62) !important;
+}
+
+html.dark [class*="text-black/45"],
+html.dark [class*="text-black/42"],
+html.dark [class*="text-black/40"],
+html.dark [class*="text-black/38"],
+html.dark [class*="text-black/35"] {
+  color: rgb(244 244 245 / 0.44) !important;
+}
+
+html.dark [class*="border-black/"],
+html.dark [class*="border-black"] {
+  border-color: rgb(255 255 255 / 0.12) !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #101012;
+  color: #f4f4f5;
+  border-color: rgb(255 255 255 / 0.14);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: rgb(244 244 245 / 0.38);
+}
+
+html.dark .editorial-shadow {
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+html.dark .article-body,
+html.dark .admin-rich-editor {
+  color: rgb(244 244 245 / 0.78);
+}
+
+html.dark .admin-rich-editor h2,
+html.dark .article-body h2,
+html.dark .admin-rich-editor h3,
+html.dark .article-body h3 {
+  color: #f8fafc;
+}
+
+html.dark .admin-rich-editor blockquote,
+html.dark .article-body blockquote,
+html.dark .admin-rich-editor .story-media figcaption,
+html.dark .article-body .story-media figcaption {
+  color: rgb(244 244 245 / 0.56);
 }
 
 ::selection {

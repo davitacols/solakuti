@@ -5,7 +5,6 @@ import { Moon, Sun } from "lucide-react";
 
 export default function DarkModeToggle() {
   const [dark, setDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("solakuti-theme");
@@ -13,17 +12,16 @@ export default function DarkModeToggle() {
     const isDark = stored === "dark" || (!stored && prefersDark);
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
-    setMounted(true);
+    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
   }, []);
 
   function toggle() {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
+    document.documentElement.style.colorScheme = next ? "dark" : "light";
     localStorage.setItem("solakuti-theme", next ? "dark" : "light");
   }
-
-  if (!mounted) return null;
 
   return (
     <button

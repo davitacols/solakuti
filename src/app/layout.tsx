@@ -119,6 +119,19 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
+        <Script id="solakuti-theme" strategy="beforeInteractive">
+          {`
+            (function() {
+              try {
+                var stored = localStorage.getItem('solakuti-theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var isDark = stored === 'dark' || (!stored && prefersDark);
+                document.documentElement.classList.toggle('dark', isDark);
+                document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+              } catch (error) {}
+            })();
+          `}
+        </Script>
         <Script id="google-tag-manager" strategy="beforeInteractive">
           {`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
