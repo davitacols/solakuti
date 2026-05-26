@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, CalendarDays, CheckCircle2, Flame, ListFilter, Radio, RefreshCw, Search } from "lucide-react";
+import { Activity, CalendarDays, CheckCircle2, Flame, ListFilter, Radio, RefreshCw, Search, Star } from "lucide-react";
 import LeagueGroup from "@/components/sports/LeagueGroup";
 import { SportsFixture } from "@/types/sports";
 import { cn } from "@/lib/utils";
 import { getLiveFixtures, getResultFixtures, getTodayFixtures, getUpcomingFixtures } from "@/lib/api";
+import { useFavouriteCompetitions } from "@/lib/useFavouriteCompetitions";
 
 type LiveScoreBoardProps = {
   liveFixtures: SportsFixture[];
@@ -53,6 +54,7 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
   const [query, setQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { favourites, toggle: toggleFav, isFavourite } = useFavouriteCompetitions();
   const fixtures = feeds[activeTab];
   const availableDates = useMemo(() => Array.from(new Set(fixtures.map(fixtureDateKey))).slice(0, 8), [fixtures]);
   const competitions = useMemo(
@@ -77,7 +79,21 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
     }),
     [fixtures, query, selectedCompetition, selectedDate]
   );
-  const groupedFixtures = useMemo(() => groupFixtures(visibleFixtures), [visibleFixtures]);
+  const groupedFixtures = useMemo(() => {
+    const groups = groupFixtures(visibleFixtures);
+    // Sort favourite competitions to the top
+    const entries = Object.entries(groups);
+    entries.sort((a, b) => {
+      const aFav = visibleFixtures.find((f) => f.competition.name === a[0]);
+      const bFav = visibleFixtures.find((f) => f.competition.name === b[0]);
+      const aIsFav = aFav ? isFavourite(aFav.competition.slug) : false;
+      const bIsFav = bFav ? isFavourite(bFav.competition.slug) : false;
+      if (aIsFav && !bIsFav) return -1;
+      if (!aIsFav && bIsFav) return 1;
+      return 0;
+    });
+    return Object.fromEntries(entries);
+  }, [visibleFixtures, isFavourite]);
 
   useEffect(() => {
     setSelectedDate("all");
@@ -221,9 +237,25 @@ export default function LiveScoreBoard({ liveFixtures, todayFixtures, upcomingFi
       {/* Fixtures */}
       {visibleFixtures.length ? (
         <div className="grid gap-3 sm:gap-4">
-          {Object.entries(groupedFixtures).map(([competition, items]) => (
-            <LeagueGroup key={competition} title={competition} fixtures={items} />
-          ))}
+          {Object.entries(groupedFixtures).map(([competition, items]) => {
+            const compSlug = items[0]?.competition.slug ?? "";
+            return (
+              <div key={competition} className="relative">
+                <button
+                  type="button"
+                  onClick={() => toggleFav(compSlug)}
+                  className={cn(
+                    "absolute right-2 top-2 z-10 grid size-7 place-items-center rounded-full transition sm:right-3 sm:top-3 sm:size-8",
+                    isFavourite(compSlug) ? "bg-amber-100 text-amber-600" : "bg-black/5 text-black/20 hover:bg-amber-50 hover:text-amber-500"
+                  )}
+                  aria-label={isFavourite(compSlug) ? "Remove from favourites" : "Add to favourites"}
+                >
+                  <Star className={cn("size-3.5 sm:size-4", isFavourite(compSlug) && "fill-amber-500")} />
+                </button>
+                <LeagueGroup title={competition} fixtures={items} />
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="grid min-h-48 place-items-center rounded-lg border border-dashed border-black/15 bg-[#faf8f4] p-6 text-center sm:min-h-64 sm:rounded-xl sm:p-8">

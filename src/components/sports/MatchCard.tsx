@@ -1,5 +1,7 @@
 import { Clock, Radio } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
+import MatchCountdown from "@/components/sports/MatchCountdown";
+import ShareMatch from "@/components/sports/ShareMatch";
 import TeamBadge from "@/components/sports/TeamBadge";
 import { SportsFixture } from "@/types/sports";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,8 @@ function statusStyle(fixture: SportsFixture) {
 export default function MatchCard({ fixture }: MatchCardProps) {
   const isLive = fixture.status === "live" || fixture.status === "halftime";
   const isDone = fixture.status === "finished";
+  const isScheduled = fixture.status === "scheduled";
+  const lastGoal = fixture.events?.filter((e) => e.event_type === "goal" || e.event_type === "own_goal").slice(-1)[0] ?? null;
 
   return (
     <article className={cn(
@@ -58,9 +62,17 @@ export default function MatchCard({ fixture }: MatchCardProps) {
             )}>
               {isLive || isDone ? `${fixture.home_score}-${fixture.away_score}` : "vs"}
             </p>
+            {isScheduled && (
+              <MatchCountdown kickoff={fixture.kickoff_at} className="mt-1 block text-[9px] font-bold text-black/35 sm:text-[10px]" />
+            )}
             {(fixture.home_xg || fixture.away_xg) && (
               <p className="mt-0.5 text-[9px] font-bold text-black/30 sm:text-[10px]">
                 xG {fixture.home_xg ?? "-"} - {fixture.away_xg ?? "-"}
+              </p>
+            )}
+            {lastGoal && (
+              <p className="mt-1 truncate text-[9px] font-bold text-black/40 sm:text-[10px]">
+                ⚽ {lastGoal.player_name} {lastGoal.minute ? `${lastGoal.minute}'` : ""}
               </p>
             )}
           </div>
@@ -70,9 +82,7 @@ export default function MatchCard({ fixture }: MatchCardProps) {
         {/* Footer */}
         <div className="mt-3 flex items-center justify-between border-t border-black/6 pt-2.5 text-[10px] font-medium text-black/35 sm:mt-4 sm:pt-3 sm:text-[11px]">
           <span className="truncate">{fixture.venue || fixture.venue_detail?.name || ""}</span>
-          <span className="shrink-0 text-[9px] font-black uppercase tracking-[0.08em] text-black/25 transition group-hover:text-red-600 sm:text-[10px] sm:tracking-[0.1em]">
-            Details →
-          </span>
+          <ShareMatch fixture={fixture} />
         </div>
       </LoadingLink>
     </article>

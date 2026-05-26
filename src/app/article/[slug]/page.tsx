@@ -4,8 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Facebook, Linkedin, Mail, MessageCircle, Twitter } from "lucide-react";
 import ArticleCard from "@/components/ArticleCard";
+import AdSlot from "@/components/AdSlot";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import CommentsSection from "@/components/CommentsSection";
+import ReadingProgress from "@/components/ReadingProgress";
+import CategoryTracker from "@/components/CategoryTracker";
+import RelativeTime from "@/components/RelativeTime";
 import { getArticleBySlug, getArticleComments, getArticles, getLatestArticles } from "@/lib/api";
 import {
   LOGO_URL,
@@ -187,6 +191,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <main>
+      <ReadingProgress />
+      <CategoryTracker category={article.category} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
@@ -225,7 +231,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 <span>{article.author}</span>
               )}
               <span className="size-1 rounded-full bg-black/20" />
-              <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
+              <RelativeTime date={article.publishedAt} className="text-sm font-bold text-black/50" />
               <span className="size-1 rounded-full bg-black/20" />
               <span>{article.readTime}</span>
             </div>
@@ -285,7 +291,34 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               />
             ) : (
               <div className="prose prose-lg max-w-none">
-                {article.body.map((paragraph) => (
+                {article.body.slice(0, Math.ceil(article.body.length / 2)).map((paragraph) => (
+                  <p key={paragraph} className="mb-7 text-xl leading-9 tracking-[-0.015em] text-black/76">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {/* Mid-article ad */}
+            <AdSlot slot="article-mid" className="my-8" />
+
+            {/* Mid-article related */}
+            {related.length > 0 && (
+              <div className="my-8 rounded-xl border border-black/8 bg-[#faf8f4] p-5">
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-red-600">More from {article.category}</p>
+                <div className="mt-3 divide-y divide-black/8">
+                  {related.slice(0, 2).map((item) => (
+                    <Link key={item.id} href={`/article/${item.slug}`} className="block py-3 text-sm font-bold text-[#111] transition hover:text-red-600">
+                      {item.title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!article.contentHtml && (
+              <div className="prose prose-lg max-w-none">
+                {article.body.slice(Math.ceil(article.body.length / 2)).map((paragraph) => (
                   <p key={paragraph} className="mb-7 text-xl leading-9 tracking-[-0.015em] text-black/76">
                     {paragraph}
                   </p>

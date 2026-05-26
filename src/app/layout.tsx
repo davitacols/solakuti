@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
+import BackToTop from "@/components/BackToTop";
 import { getCategories, getTrendingArticles } from "@/lib/api";
 import {
   DEFAULT_OG_IMAGE,
@@ -154,6 +155,7 @@ export default async function RootLayout({
         <Navbar navCategories={navCategories} trendingTopics={trendingTopics} />
         {children}
         <Footer />
+        <BackToTop />
       </body>
     </html>
   );

@@ -1,5 +1,5 @@
-import PageLoader from "@/components/PageLoader";
+import ArticleSkeleton from "@/components/ArticleSkeleton";
 
 export default function Loading() {
-  return <PageLoader />;
+  return <ArticleSkeleton />;
 }

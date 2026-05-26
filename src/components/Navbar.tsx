@@ -6,6 +6,7 @@ import { ChevronDown, Menu, Radio, Search, TrendingUp, X } from "lucide-react";
 import LoadingButton from "@/components/LoadingButton";
 import LoadingLink from "@/components/LoadingLink";
 import MobileMenu from "@/components/MobileMenu";
+import DarkModeToggle from "@/components/DarkModeToggle";
 import { categories, categoryToSlug } from "@/lib/utils";
 import { Category } from "@/types/article";
 
@@ -148,6 +149,7 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
+              <DarkModeToggle />
               <LoadingLink
                 href="/livescores"
                 className="hidden h-10 items-center gap-2 rounded-full bg-red-600 px-4 text-sm font-black text-white shadow-[0_8px_24px_rgba(220,38,38,0.2)] transition hover:bg-[#111] hover:shadow-[0_8px_24px_rgba(18,18,18,0.2)] lg:inline-flex"

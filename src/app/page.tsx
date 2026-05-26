@@ -1,4 +1,5 @@
 import ArticleCard from "@/components/ArticleCard";
+import AdSlot from "@/components/AdSlot";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import CategoryPills from "@/components/CategoryPills";
 import CategorySection from "@/components/CategorySection";
@@ -7,6 +8,7 @@ import HeroSection from "@/components/HeroSection";
 import JustInTimeline from "@/components/JustInTimeline";
 import LiveScoresStrip from "@/components/LiveScoresStrip";
 import NewsletterSection from "@/components/NewsletterSection";
+import ReadNext from "@/components/ReadNext";
 import TrendingSidebar from "@/components/TrendingSidebar";
 import { getArticles, getCategories, getFeaturedArticle, getLatestArticles, getLiveFixtures, getResultFixtures, getTodayFixtures, getTrendingArticles, getUpcomingFixtures } from "@/lib/api";
 
@@ -91,6 +93,8 @@ export default async function Home() {
 
       <CategoryPills categories={categories} />
 
+      <ReadNext articles={feed} />
+
       {editorsPick && <EditorsPick article={editorsPick} />}
 
       <section className="container-page grid gap-8 py-8 xl:grid-cols-[1fr_380px]">
@@ -123,7 +127,19 @@ export default async function Home() {
       </section>
 
       <section className="container-page">
-        {activeCategories.map((category) => (
+        {activeCategories.slice(0, 2).map((category) => (
+          <CategorySection
+            key={category.slug}
+            title={category.name}
+            slug={category.slug}
+            kicker={getKicker(category.name)}
+            articles={category.articles}
+          />
+        ))}
+
+        {activeCategories.length > 2 && <AdSlot slot="home-mid" className="my-6" />}
+
+        {activeCategories.slice(2).map((category) => (
           <CategorySection
             key={category.slug}
             title={category.name}

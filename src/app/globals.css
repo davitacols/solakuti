@@ -23,6 +23,16 @@ body {
   overflow-x: clip;
 }
 
+.dark body,
+html.dark body {
+  background: #0a0a0a;
+  color: #e5e5e5;
+}
+
+html.dark .container-page {
+  color: #e5e5e5;
+}
+
 ::selection {
   background: #d71920;
   color: white;

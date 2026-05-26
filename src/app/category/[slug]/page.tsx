@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ArticleCard from "@/components/ArticleCard";
+import AdSlot from "@/components/AdSlot";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
-import LoadingButton from "@/components/LoadingButton";
 import TrendingSidebar from "@/components/TrendingSidebar";
 import { getArticles, getCategories, getCategoryArticles, getLatestArticles, getTrendingArticles } from "@/lib/api";
 import { SITE_URL, buildPageMetadata, breadcrumbJsonLd } from "@/lib/seo";
@@ -20,9 +21,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const category = categories.find((item) => item.slug === slug);
 
   if (!category) {
-    return {
-      title: "Category not found"
-    };
+    return { title: "Category not found" };
   }
 
   return buildPageMetadata({
@@ -44,12 +43,15 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     getTrendingArticles(),
     getCategories()
   ]);
+
   const category = categories.find((item) => item.slug === slug);
 
   if (!category && categoryArticles.length === 0) {
     notFound();
   }
+
   const categoryName = category?.name ?? categoryArticles[0]?.category ?? "News";
+  const heroImage = category?.featuredImage ?? categoryArticles[0]?.image ?? null;
   const breadcrumbSchema = breadcrumbJsonLd([
     { name: "Home", url: SITE_URL },
     { name: categoryName, url: `${SITE_URL}/category/${slug}` }
@@ -60,80 +62,103 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     name: `${categoryName} News`,
     description: category?.description || `Latest ${categoryName.toLowerCase()} coverage from Solakuti.`,
     url: `${SITE_URL}/category/${slug}`,
-    isPartOf: {
-      "@type": "WebSite",
-      name: "Solakuti",
-      url: SITE_URL
-    }
+    isPartOf: { "@type": "WebSite", name: "Solakuti", url: SITE_URL }
   };
 
   return (
     <main>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }} />
       <BreakingNewsBar articles={latestArticles.length ? latestArticles : allArticles} />
-      <section className="bg-[#111] text-white">
-        <div className="container-page py-12 lg:py-16">
-          <nav aria-label="Breadcrumb" className="mb-6 text-xs font-black uppercase tracking-[0.16em] text-white/38">
+
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-[#111] text-white">
+        {heroImage && (
+          <Image
+            src={heroImage}
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-20"
+            priority
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-[#111]/80 to-transparent" />
+        <div className="container-page relative py-10 sm:py-14 lg:py-16">
+          <nav aria-label="Breadcrumb" className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
             <Link href="/" className="transition hover:text-white">Home</Link>
             <span className="mx-2">/</span>
-            <span>{categoryName}</span>
+            <span className="text-white/70">{categoryName}</span>
           </nav>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-red-400">Solakuti desk</p>
-          <h1 className="mt-3 text-5xl font-black leading-none tracking-[-0.07em] sm:text-7xl">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-red-400">Solakuti desk</p>
+          <h1 className="mt-3 text-4xl font-black leading-none tracking-[-0.06em] sm:text-6xl lg:text-7xl">
             {categoryName}
           </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-white/64">
+          <p className="mt-4 max-w-xl text-sm leading-6 text-white/55 sm:text-base sm:leading-7">
             {category?.description || `The latest reporting, analysis and context from Solakuti's ${categoryName.toLowerCase()} coverage.`}
           </p>
-          <div className="mt-8 flex flex-wrap gap-2">
+          <div className="mt-6 flex items-center gap-3 text-sm font-bold text-white/40">
+            <span>{categoryArticles.length} stories</span>
+          </div>
+
+          {/* Category pills */}
+          <div className="mt-7 flex flex-wrap gap-2">
             {categories.map((item) => (
-              <a
+              <Link
                 key={item.slug}
                 href={`/category/${item.slug}`}
-                className={`rounded-full border px-4 py-2 text-sm font-black transition ${
+                className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${
                   item.slug === slug
                     ? "border-red-500 bg-red-600 text-white"
-                    : "border-white/12 text-white/62 hover:border-white hover:text-white"
+                    : "border-white/12 text-white/55 hover:border-white hover:text-white"
                 }`}
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="container-page grid gap-8 py-10 lg:grid-cols-[1fr_340px]">
+      {/* Content */}
+      <section className="container-page grid gap-8 py-8 sm:py-10 lg:grid-cols-[1fr_340px]">
         <div>
-          <div className="grid gap-5 md:grid-cols-2">
-            {categoryArticles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
-          <nav className="mt-9 flex items-center justify-center gap-2" aria-label="Pagination">
-            {[1, 2, 3].map((page) => (
-              <LoadingButton
-                key={page}
-                type="button"
-                className={`grid size-11 place-items-center rounded-full border text-sm font-black transition ${
-                  page === 1
-                    ? "border-black bg-black text-white"
-                    : "border-black/10 bg-white text-black/60 hover:border-black hover:text-black"
-                }`}
-              >
-                {page}
-              </LoadingButton>
-            ))}
-          </nav>
+          {categoryArticles.length > 0 ? (
+            <div className="grid gap-5 sm:grid-cols-2">
+              {categoryArticles.slice(0, 4).map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-black/12 bg-[#faf8f4] p-8 text-center">
+              <p className="text-base font-bold text-black/50">No articles in this category yet.</p>
+            </div>
+          )}
+
+          {categoryArticles.length > 4 && (
+            <>
+              <AdSlot slot="category-mid" className="my-6" />
+              <div className="grid gap-5 sm:grid-cols-2">
+                {categoryArticles.slice(4, 12).map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {categoryArticles.length > 12 && (
+            <div className="grid gap-5 pt-5 sm:grid-cols-2">
+              {categoryArticles.slice(12).map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+          )}
         </div>
-        <TrendingSidebar articles={trendingArticles.concat(allArticles)} />
+
+        <aside className="space-y-6">
+          <TrendingSidebar articles={trendingArticles.concat(allArticles)} />
+          <AdSlot slot="category-sidebar" format="rectangle" />
+        </aside>
       </section>
     </main>
   );
