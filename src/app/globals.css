@@ -282,8 +282,11 @@ html.dark .article-body .story-media figcaption {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+
+@supports selector(::-webkit-scrollbar) {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

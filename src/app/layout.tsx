@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Solakuti Editorial Team", url: SITE_URL }],
   creator: "Solakuti",
-  referrer: "origin-when-cross-origin",
+  referrer: "strict-origin-when-cross-origin",
   formatDetection: {
     email: false,
     address: false,

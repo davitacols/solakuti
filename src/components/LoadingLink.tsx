@@ -16,6 +16,7 @@ export default function LoadingLink({
   loadingClassName,
   href,
   onClick,
+  prefetch = false,
   ...props
 }: LoadingLinkProps) {
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export default function LoadingLink({
   return (
     <Link
       href={href}
+      prefetch={prefetch}
       className={cn("relative", className, loading && loadingClassName)}
       aria-busy={loading}
       onClick={(event) => {

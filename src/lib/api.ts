@@ -219,7 +219,6 @@ export type AdminArticleRevision = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
-const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === "phase-production-build";
 const configuredTimeoutMs = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 10000);
 const API_TIMEOUT_MS = Number.isFinite(configuredTimeoutMs) ? Math.max(configuredTimeoutMs, 20000) : 20000;
 const API_MUTATION_TIMEOUT_MS = Math.max(API_TIMEOUT_MS, 35000);
@@ -331,10 +330,6 @@ const articleImageFallback: Record<string, string> = {
 };
 
 async function fetchApi<T>(path: string): Promise<T | null> {
-  if (IS_PRODUCTION_BUILD) {
-    return null;
-  }
-
   try {
     const response = await fetchWithTimeout(`${API_URL}${path}`, {
       cache: "no-store"
@@ -352,10 +347,6 @@ async function fetchApi<T>(path: string): Promise<T | null> {
 }
 
 async function fetchApiWithStatus<T>(path: string, attempts = 3): Promise<{ data: T | null; status: number | null }> {
-  if (IS_PRODUCTION_BUILD) {
-    return { data: null, status: null };
-  }
-
   let lastStatus: number | null = null;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {

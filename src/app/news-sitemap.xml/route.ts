@@ -2,6 +2,9 @@ import { getLatestArticles } from "@/lib/api";
 import { escapeXml, SITE_URL, xmlResponse } from "@/lib/feed";
 import { absoluteUrl } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function GET() {
   const articles = await getLatestArticles();
   const twoDaysAgo = Date.now() - 48 * 60 * 60 * 1000;
