@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { Activity, BarChart3, CalendarDays, CheckCircle2, ChevronRight, ListOrdered, Newspaper, Shield, Trophy, Users } from "lucide-react";
 import { notFound } from "next/navigation";
+import LoadingLink from "@/components/LoadingLink";
 import LeagueGroup from "@/components/sports/LeagueGroup";
 import StandingsTable from "@/components/sports/StandingsTable";
 import { getCompetitionFixtures, getCompetitionStandings, getLatestArticles, getSportsCompetitions } from "@/lib/api";
-import { buildPageMetadata } from "@/lib/seo";
+import { SITE_URL, breadcrumbJsonLd, buildPageMetadata } from "@/lib/seo";
+import { getCompetitionArticles } from "@/lib/sports-news";
 
 type CompetitionPageProps = {
   params: Promise<{ slug: string }>;
@@ -77,18 +78,29 @@ export default async function CompetitionPage({ params, searchParams }: Competit
       ].map((team) => [team.id, team])
     ).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
-  const relatedArticles = latestArticles
-    .filter((article) => {
-      const haystack = [article.title, article.excerpt, article.category, ...(article.tags ?? [])].join(" ").toLowerCase();
-      return haystack.includes("sports") || haystack.includes(competition.name.toLowerCase());
-    })
-    .slice(0, 4);
+  const relatedArticles = getCompetitionArticles(latestArticles, competition, 6);
   const topTable = standings.slice(0, 4);
   const nextFixture = upcomingFixtures[0] ?? null;
   const activeView = tabs.some((tab) => tab.id === view) ? view : "overview";
+  const schema = [
+    breadcrumbJsonLd([
+      { name: "Home", url: SITE_URL },
+      { name: "Live Scores", url: `${SITE_URL}/livescores` },
+      { name: competition.name, url: `${SITE_URL}/livescores/competition/${competition.slug}` }
+    ]),
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsOrganization",
+      name: competition.name,
+      sport: "Football",
+      url: `${SITE_URL}/livescores/competition/${competition.slug}`,
+      logo: competition.logo_url || undefined
+    }
+  ];
 
   return (
     <main className="bg-[#f8f5ef]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="border-b border-black/10 bg-[#0d0d0d] text-white">
         <div className="container-page py-10">
           <p className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-red-400">
@@ -119,7 +131,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
         <div className="container-page overflow-x-auto py-3">
           <div className="flex min-w-max gap-2">
             {tabs.map(({ id, label, icon: Icon }) => (
-              <Link
+              <LoadingLink
                 key={id}
                 href={`/livescores/competition/${competition.slug}${id === "overview" ? "" : `?view=${id}`}`}
                 className={`inline-flex h-11 items-center gap-2 border px-4 text-sm font-black transition ${
@@ -130,7 +142,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
               >
                 <Icon className="size-4" />
                 {label}
-              </Link>
+              </LoadingLink>
             ))}
           </div>
         </div>
@@ -146,7 +158,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
                 <OverviewCard label="Table rows" value={standings.length} icon={BarChart3} />
               </div>
               {nextFixture && (
-                <Link href={`/livescores/match/${nextFixture.id}`} className="block border border-black/10 bg-white p-5 transition hover:-translate-y-1 hover:border-red-600">
+                <LoadingLink href={`/livescores/match/${nextFixture.id}`} className="block border border-black/10 bg-white p-5 transition hover:-translate-y-1 hover:border-red-600">
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Next match</p>
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -157,7 +169,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
                     </div>
                     <ChevronRight className="size-5 text-black/25" />
                   </div>
-                </Link>
+                </LoadingLink>
               )}
               <LeagueGroup title="Live and upcoming" fixtures={[...liveFixtures, ...upcomingFixtures].slice(0, 8)} />
             </>
@@ -185,7 +197,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
             <SectionBlock eyebrow="Teams" icon={Users}>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {teams.map((team) => (
-                  <Link key={team.id} href={`/livescores/team/${team.slug}`} className="flex min-w-0 items-center gap-3 border border-black/10 bg-white p-4 transition hover:-translate-y-1 hover:border-red-600">
+                  <LoadingLink key={team.id} href={`/livescores/team/${team.slug}`} className="flex min-w-0 items-center gap-3 border border-black/10 bg-white p-4 transition hover:-translate-y-1 hover:border-red-600">
                     <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f8f5ef] ring-1 ring-black/10">
                       {team.crest_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -198,7 +210,7 @@ export default async function CompetitionPage({ params, searchParams }: Competit
                       <span className="block truncate text-sm font-black text-[#111]">{team.name}</span>
                       <span className="mt-1 block truncate text-xs font-bold text-black/40">{team.country || competition.country || "Football"}</span>
                     </span>
-                  </Link>
+                  </LoadingLink>
                 ))}
                 {!teams.length && <p className="text-sm font-bold text-black/45">Teams will appear after the next sports sync.</p>}
               </div>
@@ -210,13 +222,23 @@ export default async function CompetitionPage({ params, searchParams }: Competit
           )}
         </div>
         <aside className="space-y-6">
-          <div>
-            <p className="mb-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
-              <ListOrdered className="size-4" />
-              Table watch
-            </p>
-            <StandingsTable standings={activeView === "standings" ? standings : topTable} compact={activeView !== "standings"} />
-          </div>
+          {activeView !== "standings" && (
+            <div>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
+                  <ListOrdered className="size-4" />
+                  Table preview
+                </p>
+                <LoadingLink
+                  href={`/livescores/competition/${competition.slug}?view=standings`}
+                  className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-black/45 transition hover:border-black hover:bg-black hover:text-white"
+                >
+                  Full table
+                </LoadingLink>
+              </div>
+              <StandingsTable standings={topTable} compact />
+            </div>
+          )}
           <CompetitionNews articles={relatedArticles.slice(0, 3)} compact />
         </aside>
       </section>
@@ -254,10 +276,10 @@ function CompetitionNews({ articles, compact = false }: { articles: Awaited<Retu
       <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Competition news</p>
       <div className={`mt-4 grid gap-3 ${compact ? "" : "sm:grid-cols-2"}`}>
         {articles.map((article) => (
-          <Link key={article.id} href={`/article/${article.slug}`} className="border border-black/10 p-4 transition hover:-translate-y-1 hover:border-red-600">
+          <LoadingLink key={article.id} href={`/article/${article.slug}`} className="border border-black/10 p-4 transition hover:-translate-y-1 hover:border-red-600">
             <p className="text-[11px] font-black uppercase tracking-[0.16em] text-black/35">{article.category}</p>
             <p className="mt-2 text-sm font-black leading-5 tracking-[-0.02em]">{article.title}</p>
-          </Link>
+          </LoadingLink>
         ))}
         {!articles.length && <p className="text-sm font-bold text-black/45">Related articles will appear here.</p>}
       </div>

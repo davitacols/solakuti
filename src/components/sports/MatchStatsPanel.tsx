@@ -21,7 +21,7 @@ export default function MatchStatsPanel({ fixture, compact = false }: MatchStats
   const xgStats = fixture.home_xg || fixture.away_xg
     ? [{ id: -1, name: "Expected goals", home_value: fixture.home_xg ?? "-", away_value: fixture.away_xg ?? "-", group: "Attack", fixture: fixture.id, home_numeric: fixture.home_xg, away_numeric: fixture.away_xg, updated_at: fixture.updated_at }]
     : [];
-  const rows = [...xgStats, ...statistics].slice(0, compact ? 6 : 12);
+  const rows = compact ? [...xgStats, ...statistics].slice(0, 6) : [...xgStats, ...statistics];
 
   if (!rows.length) {
     return (
@@ -33,7 +33,12 @@ export default function MatchStatsPanel({ fixture, compact = false }: MatchStats
 
   return (
     <div className="border border-black/10 bg-white p-5">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Match stats</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Match stats</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-black/35">
+          {rows.length} metric{rows.length === 1 ? "" : "s"}
+        </p>
+      </div>
       <div className="mt-4 space-y-4">
         {rows.map((stat) => {
           const home = numericValue(stat, "home");

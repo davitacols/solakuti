@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { CalendarClock, Gauge, Info, MapPin, Radio, RefreshCw, Shirt, Trophy } from "lucide-react";
+import LoadingLink from "@/components/LoadingLink";
 import LeagueGroup from "@/components/sports/LeagueGroup";
 import LineupPanel from "@/components/sports/LineupPanel";
 import MatchStatsPanel from "@/components/sports/MatchStatsPanel";
@@ -11,11 +11,13 @@ import MomentumPanel from "@/components/sports/MomentumPanel";
 import TeamBadge from "@/components/sports/TeamBadge";
 import { getSportsFixture } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { Article } from "@/types/article";
 import { SportsFixture } from "@/types/sports";
 
 type LiveMatchCentreProps = {
   initialFixture: SportsFixture;
   nearbyFixtures: SportsFixture[];
+  relatedArticles?: Article[];
 };
 
 const tabs = [
@@ -39,13 +41,32 @@ function showScore(fixture: SportsFixture) {
   return fixture.status === "live" || fixture.status === "halftime" || fixture.status === "finished";
 }
 
-export default function LiveMatchCentre({ initialFixture, nearbyFixtures }: LiveMatchCentreProps) {
+function minutesSince(value?: string | null) {
+  if (!value) return null;
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+}
+
+function freshnessLabel(minutes: number | null) {
+  if (minutes === null) return "Provider sync pending";
+  if (minutes < 1) return "Synced just now";
+  if (minutes === 1) return "Synced 1 min ago";
+  return `Synced ${minutes} mins ago`;
+}
+
+export default function LiveMatchCentre({ initialFixture, nearbyFixtures, relatedArticles = [] }: LiveMatchCentreProps) {
   const [fixture, setFixture] = useState(initialFixture);
   const [activeTab, setActiveTab] = useState<MatchTab>("overview");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const kickoff = useMemo(() => new Date(fixture.kickoff_at), [fixture.kickoff_at]);
   const isLive = fixture.status === "live" || fixture.status === "halftime";
+  const syncedMinutesAgo = minutesSince(fixture.last_synced_at);
+  const isStale = syncedMinutesAgo !== null && syncedMinutesAgo > (isLive ? 8 : 35);
+  const eventCount = fixture.events?.length ?? 0;
+  const statCount = fixture.statistics?.length ?? 0;
+  const lineupCount = fixture.lineups?.length ?? 0;
 
   async function refreshFixture(silent = false) {
     if (!silent) {
@@ -73,14 +94,14 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures }: Live
     <>
       <section className="border-b border-black/10 bg-[#0d0d0d] text-white">
         <div className="container-page py-8">
-          <Link href="/livescores" className="text-xs font-black uppercase tracking-[0.18em] text-white/55 transition hover:text-white">
+          <LoadingLink href="/livescores" className="text-xs font-black uppercase tracking-[0.18em] text-white/55 transition hover:text-white">
             Live scores
-          </Link>
+          </LoadingLink>
           <div className="mt-8 overflow-hidden border border-white/12 bg-white text-[#111] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-[#f5f1ea] px-5 py-4">
-              <Link href={`/livescores/competition/${fixture.competition.slug}`} className="text-xs font-black uppercase tracking-[0.18em] text-red-600">
+              <LoadingLink href={`/livescores/competition/${fixture.competition.slug}`} className="text-xs font-black uppercase tracking-[0.18em] text-red-600">
                 {fixture.competition.name}
-              </Link>
+              </LoadingLink>
               <div className="flex flex-wrap items-center gap-2">
                 {lastUpdated && (
                   <span className="text-[10px] font-black uppercase tracking-[0.14em] text-black/35">
@@ -99,7 +120,7 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures }: Live
                   "inline-flex items-center gap-2 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white",
                   isLive ? "bg-red-600" : "bg-black"
                 )}>
-                  <Radio className="size-3 text-white" />
+                  <Radio className={cn("size-3 text-white", isLive && "animate-pulse")} />
                   {statusLabel(fixture.status)} {fixture.minute !== null ? `${fixture.minute}'` : ""}
                 </span>
               </div>
@@ -117,6 +138,24 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures }: Live
                 {(fixture.venue_detail?.name || fixture.venue) && <span className="inline-flex items-center gap-2"><MapPin className="size-4" />{fixture.venue_detail?.name || fixture.venue}</span>}
                 <span className="inline-flex items-center gap-2"><Trophy className="size-4" />{fixture.round_name || "Fixture"}</span>
               </div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-4">
+                {[
+                  ["Provider", freshnessLabel(syncedMinutesAgo)],
+                  ["Events", `${eventCount}`],
+                  ["Stats", `${statCount}`],
+                  ["Lineups", `${lineupCount}`]
+                ].map(([label, value]) => (
+                  <div key={label} className="border border-black/8 bg-[#f7f4ef] px-3 py-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-black/35">{label}</p>
+                    <p className="mt-1 truncate text-sm font-black text-[#111]">{value}</p>
+                  </div>
+                ))}
+              </div>
+              {isStale && (
+                <div className="mt-4 border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                  The provider sync is older than expected. Scores may catch up on the next cron run.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -172,7 +211,33 @@ export default function LiveMatchCentre({ initialFixture, nearbyFixtures }: Live
           )}
         </div>
         <aside className="space-y-5 self-start">
+          <div className="border border-black/10 bg-white p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Match facts</p>
+            <div className="mt-4 space-y-3 text-sm font-bold text-black/55">
+              <p>Competition: <span className="text-[#111]">{fixture.competition.name}</span></p>
+              {fixture.round_name && <p>Round: <span className="text-[#111]">{fixture.round_name}</span></p>}
+              {fixture.referee && <p>Referee: <span className="text-[#111]">{fixture.referee}</span></p>}
+              {(fixture.venue_detail?.name || fixture.venue) && <p>Venue: <span className="text-[#111]">{fixture.venue_detail?.name || fixture.venue}</span></p>}
+            </div>
+          </div>
           <LineupPanel fixture={fixture} />
+          <LeagueGroup title="Related fixtures" fixtures={nearbyFixtures.slice(0, 3)} />
+          <div className="border border-black/10 bg-white p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-red-600">Related news</p>
+            <div className="mt-4 divide-y divide-black/10">
+              {relatedArticles.slice(0, 4).map((article) => (
+                <LoadingLink key={article.id} href={`/article/${article.slug}`} className="block py-4 transition hover:text-red-600">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-black/35">{article.category}</p>
+                  <p className="mt-1 text-sm font-black leading-5 tracking-[-0.02em]">{article.title}</p>
+                </LoadingLink>
+              ))}
+              {!relatedArticles.length && (
+                <p className="py-4 text-sm font-bold text-black/45">
+                  Match stories will appear here when articles mention either team or this competition.
+                </p>
+              )}
+            </div>
+          </div>
         </aside>
       </section>
     </>

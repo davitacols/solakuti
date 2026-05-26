@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Activity, CalendarClock, ChevronRight, Radio, ShieldCheck, Trophy } from "lucide-react";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
+import LoadingLink from "@/components/LoadingLink";
 import LiveScoreBoard from "@/components/sports/LiveScoreBoard";
 import StandingsTable from "@/components/sports/StandingsTable";
 import TeamBadge from "@/components/sports/TeamBadge";
 import { getCompetitionStandings, getLatestArticles, getLiveFixtures, getResultFixtures, getSportsCompetitions, getTodayFixtures, getUpcomingFixtures } from "@/lib/api";
 import { buildPageMetadata } from "@/lib/seo";
+import { getSportsArticles } from "@/lib/sports-news";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export default async function LiveScoresPage() {
   const headlineFixture = liveFixtures[0] ?? todayFixtures[0] ?? upcomingFixtures[0] ?? resultFixtures[0] ?? null;
   const tableCompetition = headlineFixture?.competition ?? featuredCompetitions[0] ?? competitions[0] ?? null;
   const tablePreview = tableCompetition ? await getCompetitionStandings(tableCompetition.slug) : [];
+  const sportsArticles = getSportsArticles(latestArticles, 6);
   const totalMatches = liveFixtures.length + todayFixtures.length + upcomingFixtures.length + resultFixtures.length;
   const statusCards = [
     { label: "Live", value: liveFixtures.length, icon: Radio, tone: "text-red-600" },
@@ -75,7 +77,7 @@ export default async function LiveScoresPage() {
                 </div>
               </div>
               {headlineFixture ? (
-                <Link href={`/livescores/match/${headlineFixture.id}`} className="block min-w-0 p-4 transition hover:bg-black/[0.03] sm:p-5">
+                <LoadingLink href={`/livescores/match/${headlineFixture.id}`} className="block min-w-0 p-4 transition hover:bg-black/[0.03] sm:p-5">
                   <div className="flex items-center justify-between gap-4">
                     <p className="truncate text-xs font-black uppercase tracking-[0.16em] text-black/42">
                       {headlineFixture.competition.name}
@@ -97,7 +99,7 @@ export default async function LiveScoresPage() {
                     <span className="min-w-0 truncate">{headlineFixture.round_name || "Fixture"}</span>
                     <ChevronRight className="size-4" />
                   </div>
-                </Link>
+                </LoadingLink>
               ) : (
                 <div className="p-5">
                   <p className="text-lg font-black tracking-[-0.04em]">No matches synced yet.</p>
@@ -116,14 +118,14 @@ export default async function LiveScoresPage() {
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-red-600">Choose competition</p>
               <h2 className="mt-1 text-xl font-black tracking-[-0.04em] text-[#111]">League centres</h2>
             </div>
-            <Link href="/livescores" className="hidden shrink-0 rounded-full bg-black px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-600 sm:inline-flex">
+            <LoadingLink href="/livescores" className="hidden shrink-0 rounded-full bg-black px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-600 sm:inline-flex">
               All matches
-            </Link>
+            </LoadingLink>
           </div>
           <div className="mt-4 overflow-x-auto pb-1">
             <div className="flex min-w-max gap-2">
               {competitions.slice(0, 14).map((competition) => (
-                <Link
+                <LoadingLink
                   key={competition.id}
                   href={`/livescores/competition/${competition.slug}`}
                   className="group inline-flex h-12 items-center gap-3 border border-black/10 bg-[#f8f5ef] px-3 text-sm font-black text-[#111] transition hover:-translate-y-0.5 hover:border-red-600 hover:bg-white hover:text-red-600"
@@ -138,7 +140,7 @@ export default async function LiveScoresPage() {
                   </span>
                   <span className="max-w-36 truncate">{competition.name}</span>
                   <ChevronRight className="size-3.5 text-black/25 transition group-hover:text-red-600" />
-                </Link>
+                </LoadingLink>
               ))}
             </div>
           </div>
@@ -159,7 +161,7 @@ export default async function LiveScoresPage() {
             </div>
             <div className="divide-y divide-black/8">
               {featuredCompetitions.map((competition) => (
-                <Link
+                <LoadingLink
                   key={competition.id}
                   href={`/livescores/competition/${competition.slug}`}
                   className="group flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-[#f5f1ea]"
@@ -171,7 +173,7 @@ export default async function LiveScoresPage() {
                   <span className="grid size-9 shrink-0 place-items-center border border-black/10 bg-white text-black/42 transition group-hover:border-red-600 group-hover:text-red-600">
                     <Trophy className="size-4" />
                   </span>
-                </Link>
+                </LoadingLink>
               ))}
               {!featuredCompetitions.length && (
                 <div className="px-5 py-6 text-sm font-bold text-black/45">No competitions synced yet.</div>
@@ -188,9 +190,9 @@ export default async function LiveScoresPage() {
                 </h3>
               </div>
               {tableCompetition && (
-                <Link href={`/livescores/competition/${tableCompetition.slug}`} className="shrink-0 rounded-full border border-black/10 px-3 py-2 text-xs font-black transition hover:border-black hover:bg-black hover:text-white">
+                <LoadingLink href={`/livescores/competition/${tableCompetition.slug}`} className="shrink-0 rounded-full border border-black/10 px-3 py-2 text-xs font-black transition hover:border-black hover:bg-black hover:text-white">
                   Full table
-                </Link>
+                </LoadingLink>
               )}
             </div>
             <div className="p-3">
@@ -201,13 +203,13 @@ export default async function LiveScoresPage() {
           <div className="min-w-0 border border-black/10 bg-[#111] p-5 text-white">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-white/42">Sports wire</p>
             <div className="mt-4 divide-y divide-white/10">
-              {latestArticles.slice(0, 4).map((article) => (
-                <Link key={article.id} href={`/article/${article.slug}`} className="block py-4 transition hover:text-red-400">
+              {sportsArticles.slice(0, 4).map((article) => (
+                <LoadingLink key={article.id} href={`/article/${article.slug}`} className="block py-4 transition hover:text-red-400">
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/35">{article.category}</p>
                   <p className="mt-1 text-sm font-black leading-5 tracking-[-0.02em]">{article.title}</p>
-                </Link>
+                </LoadingLink>
               ))}
-              {!latestArticles.length && <p className="py-4 text-sm font-bold text-white/45">No sports headlines yet.</p>}
+              {!sportsArticles.length && <p className="py-4 text-sm font-bold text-white/45">Sports headlines will appear here when articles mention sports, football, teams or competitions.</p>}
             </div>
           </div>
         </aside>

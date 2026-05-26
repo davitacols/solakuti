@@ -17,10 +17,10 @@ export default function StandingsTable({ standings, compact = false }: Standings
   return (
     <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-white">
       <div className="overflow-x-auto">
-        <table className={`w-full text-xs sm:text-sm ${compact ? "min-w-[340px] sm:min-w-[420px]" : "min-w-[560px] sm:min-w-[640px]"}`}>
+        <table className={`w-full text-xs sm:text-sm ${compact ? "min-w-[340px] sm:min-w-[420px]" : "min-w-[760px] sm:min-w-[860px]"}`}>
           <thead className="bg-[#111] text-white">
             <tr>
-              {(compact ? ["#", "Team", "P", "GD", "Pts"] : ["#", "Team", "P", "W", "D", "L", "GD", "Pts", "Form"]).map((head) => (
+              {(compact ? ["#", "Team", "P", "GD", "Pts"] : ["#", "Team", "P", "W", "D", "L", "GF", "GA", "GD", "Pts", "Form"]).map((head) => (
                 <th key={head} className="px-2 py-3 text-left text-[10px] font-black uppercase tracking-[0.1em] sm:px-3 sm:text-xs sm:tracking-[0.14em]">
                   {head}
                 </th>
@@ -36,6 +36,8 @@ export default function StandingsTable({ standings, compact = false }: Standings
                 {!compact && <td className="px-2 py-3 font-bold text-black/58 sm:px-3">{row.won}</td>}
                 {!compact && <td className="px-2 py-3 font-bold text-black/58 sm:px-3">{row.drawn}</td>}
                 {!compact && <td className="px-2 py-3 font-bold text-black/58 sm:px-3">{row.lost}</td>}
+                {!compact && <td className="px-2 py-3 font-bold text-black/58 sm:px-3">{row.goals_for}</td>}
+                {!compact && <td className="px-2 py-3 font-bold text-black/58 sm:px-3">{row.goals_against}</td>}
                 <td className="px-2 py-3 font-bold text-black/58 sm:px-3">{row.goal_difference}</td>
                 <td className="px-2 py-3 font-black text-[#111] sm:px-3">{row.points}</td>
                 {!compact && <td className="px-2 py-3 font-bold text-black/48 sm:px-3">{row.form}</td>}

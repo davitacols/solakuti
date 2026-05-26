@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { BarChart3, Clock, Goal, Radio, Shirt, Sparkles } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import TeamBadge from "@/components/sports/TeamBadge";
@@ -51,9 +50,9 @@ export default function MatchCard({ fixture }: MatchCardProps) {
     )}>
       <div className="flex min-w-0 items-center justify-between gap-3 border-b border-black/10 px-3 py-3 sm:px-4">
         <div className="min-w-0">
-          <Link href={`/livescores/competition/${fixture.competition.slug}`} className="block truncate text-[11px] font-black uppercase tracking-[0.12em] text-black/42 transition hover:text-red-600 sm:text-xs sm:tracking-[0.16em]">
+          <LoadingLink href={`/livescores/competition/${fixture.competition.slug}`} className="block truncate text-[11px] font-black uppercase tracking-[0.12em] text-black/42 transition hover:text-red-600 sm:text-xs sm:tracking-[0.16em]">
             {fixture.competition.name}
-          </Link>
+          </LoadingLink>
           <p className="mt-1 truncate text-[11px] font-bold text-black/35">{fixture.round_name || kickoffLabel(fixture)}</p>
         </div>
         <span className={cn("inline-flex shrink-0 items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-[0.09em] sm:px-2.5 sm:text-[11px] sm:tracking-[0.12em]", statusTone(fixture))}>
