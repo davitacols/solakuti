@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import BackToTop from "@/components/BackToTop";
+import SiteNotice from "@/components/SiteNotice";
 import { getCategories, getTrendingArticles } from "@/lib/api";
 import {
   DEFAULT_OG_IMAGE,
@@ -166,6 +167,7 @@ export default async function RootLayout({
         </noscript>
         <Analytics />
         <Navbar navCategories={navCategories} trendingTopics={trendingTopics} />
+        <SiteNotice />
         {children}
         <Footer />
         <BackToTop />
