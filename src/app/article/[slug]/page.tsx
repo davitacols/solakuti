@@ -48,7 +48,11 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
   if (!article) {
     return {
-      title: "Article not found"
+      title: "Article not found",
+      robots: {
+        index: false,
+        follow: false
+      }
     };
   }
 

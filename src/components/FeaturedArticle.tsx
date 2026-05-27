@@ -1,7 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import { Article } from "@/types/article";
@@ -12,11 +13,27 @@ type FeaturedArticleProps = {
 };
 
 export default function FeaturedArticle({ article }: FeaturedArticleProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0.5);
+  const mouseY = useMotionValue(0.5);
+
+  const spotlightX = useTransform(mouseX, [0, 1], ["0%", "100%"]);
+  const spotlightY = useTransform(mouseY, [0, 1], ["0%", "100%"]);
+
+  function handleMouseMove(e: React.MouseEvent) {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    mouseX.set((e.clientX - rect.left) / rect.width);
+    mouseY.set((e.clientY - rect.top) / rect.height);
+  }
+
   return (
     <motion.article
+      ref={ref}
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55 }}
+      onMouseMove={handleMouseMove}
       className="group relative min-h-[620px] overflow-hidden rounded-lg bg-black text-white editorial-shadow"
     >
       <Image
@@ -25,9 +42,21 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
         fill
         priority
         sizes="(max-width: 1024px) 100vw, 70vw"
-        className="object-cover opacity-80 transition duration-700 group-hover:scale-105"
+        className="object-cover opacity-80 transition duration-700 group-hover:scale-[1.03]"
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.86),rgba(0,0,0,0.38),rgba(0,0,0,0.08))]" />
+
+      {/* Cursor spotlight */}
+      <motion.div
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        style={{
+          background: useTransform(
+            [spotlightX, spotlightY],
+            ([x, y]) => `radial-gradient(600px circle at ${x} ${y}, rgba(215,25,32,0.12), transparent 60%)`
+          ),
+        }}
+      />
+
       <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
         <div className="max-w-3xl">
           <span className="inline-flex rounded-full bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-[0.2em]">
@@ -36,7 +65,9 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
           <h1 className="mt-5 text-4xl font-black leading-[0.96] tracking-[-0.06em] sm:text-5xl lg:text-7xl xl:text-8xl">
             {article.title}
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-white/78 sm:text-lg">{article.excerpt}</p>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-white/78 sm:text-lg">
+            {article.excerpt}
+          </p>
           <div className="mt-7 flex flex-wrap items-center gap-4 text-sm font-bold text-white/70">
             <span>{article.author}</span>
             <span className="size-1 rounded-full bg-white/40" />

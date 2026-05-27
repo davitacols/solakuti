@@ -17,11 +17,17 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const categories = await getCategories();
+  const [categories, categoryArticles] = await Promise.all([
+    getCategories(),
+    getCategoryArticles(slug)
+  ]);
   const category = categories.find((item) => item.slug === slug);
 
   if (!category) {
-    return { title: "Category not found" };
+    return {
+      title: "Category not found",
+      robots: { index: false, follow: false }
+    };
   }
 
   return buildPageMetadata({
@@ -29,7 +35,8 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     description: category.description || `Latest ${category.name.toLowerCase()} coverage from Solakuti.`,
     path: `/category/${category.slug}`,
     image: category.featuredImage,
-    imageAlt: `${category.name} news on Solakuti`
+    imageAlt: `${category.name} news on Solakuti`,
+    noIndex: categoryArticles.length === 0
   });
 }
 

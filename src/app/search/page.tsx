@@ -14,7 +14,8 @@ type SearchPageProps = {
 export const metadata: Metadata = buildPageMetadata({
   title: "Search",
   description: "Search Solakuti reporting across politics, economy, security, entertainment, sports, technology and opinion.",
-  path: "/search"
+  path: "/search",
+  noIndex: true
 });
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {

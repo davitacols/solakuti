@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import ArticleCard from "@/components/ArticleCard";
 import { Article, ArticleCategory } from "@/types/article";
@@ -14,20 +14,30 @@ type CategorySectionProps = {
   articles: Article[];
 };
 
+const container: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const item: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+};
+
 export default function CategorySection({ title, slug, kicker, articles }: CategorySectionProps) {
-  if (!articles.length) {
-    return null;
-  }
+  if (!articles.length) return null;
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.45 }}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-60px" }}
+      variants={container}
       className="py-10"
     >
-      <div className="mb-6 flex items-end justify-between gap-5 border-t-2 border-black pt-6">
+      <motion.div variants={item} className="mb-6 flex items-end justify-between gap-5 border-t-2 border-black pt-6">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-red-600">{kicker}</p>
           <h2 className="mt-2 text-3xl font-black tracking-[-0.055em] text-[#111] sm:text-4xl">
@@ -41,10 +51,12 @@ export default function CategorySection({ title, slug, kicker, articles }: Categ
           View all
           <ArrowRight className="size-4" />
         </Link>
-      </div>
+      </motion.div>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {articles.slice(0, 4).map((article) => (
-          <ArticleCard key={article.id} article={article} compact />
+          <motion.div key={article.id} variants={item}>
+            <ArticleCard article={article} compact />
+          </motion.div>
         ))}
       </div>
     </motion.section>

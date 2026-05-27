@@ -7,6 +7,13 @@ type AdSlotProps = {
 };
 
 export default function AdSlot({ slot, format = "horizontal", className = "" }: AdSlotProps) {
+  const adsEnabled = process.env.NEXT_PUBLIC_ADSENSE_ADS_ENABLED === "true";
+  const isValidSlotId = /^\d+$/.test(slot);
+
+  if (!adsEnabled || !isValidSlotId) {
+    return null;
+  }
+
   const height = format === "rectangle" ? "min-h-[250px]" : format === "vertical" ? "min-h-[600px]" : "min-h-[90px]";
 
   return (
