@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sora } from "next/font/google";
+import { Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -7,10 +7,10 @@ import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import BackToTop from "@/components/BackToTop";
 
-const sora = Sora({
+const outfit = Outfit({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-sora",
+  variable: "--font-outfit",
 });
 
 import {
@@ -118,7 +118,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={sora.variable}>
+    <html lang="en" className={outfit.variable}>
       <head>
         <Script id="solakuti-theme" strategy="beforeInteractive">
           {`
