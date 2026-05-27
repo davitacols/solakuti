@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
         },
         {
           title: "Analytics And Advertising",
-          body: "Solakuti may use analytics and advertising services, including Google tools, to understand traffic, measure campaigns and show ads. These services may use cookies or similar technologies subject to their own privacy policies and user controls."
+          body: "Solakuti may use analytics and advertising services, including Google Analytics, Google Tag Manager and Google AdSense, to understand traffic, measure campaigns and show ads. Google and other third-party vendors may place and read cookies on readers' browsers or use web beacons, IP addresses and similar identifiers to collect information as a result of ad serving and measurement on Solakuti. Readers can learn how Google uses data from partner sites at https://policies.google.com/technologies/partner-sites."
         },
         {
           title: "Newsletter",
