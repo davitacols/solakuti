@@ -25,6 +25,7 @@ import {
 } from "@/lib/seo";
 
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
+const ADSENSE_ADS_ENABLED = process.env.NEXT_PUBLIC_ADSENSE_ADS_ENABLED === "true";
 const GTM_ID = "GTM-PLZ5DFVX";
 
 export const metadata: Metadata = {
@@ -142,11 +143,13 @@ export default async function RootLayout({
             })(window,document,'script','dataLayer','${GTM_ID}');
           `}
         </Script>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
-          crossOrigin="anonymous"
-        />
+        {ADSENSE_ADS_ENABLED && (
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
+            crossOrigin="anonymous"
+          />
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(newsOrganizationJsonLd) }}
