@@ -120,7 +120,7 @@ export default function Footer() {
         <div className="container-page flex flex-col justify-between gap-3 text-[11px] font-medium text-white/30 sm:flex-row sm:items-center">
           <span className="inline-flex items-center gap-2">
             <Copyright className="size-3.5" aria-hidden="true" />
-            2025 Solakuti Media. All rights reserved.
+            2026 Solakuti Media. All rights reserved.
           </span>
           <span>Built for the next Nigerian news cycle</span>
         </div>

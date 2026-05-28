@@ -49,8 +49,18 @@ html.dark [class*="bg-white"] {
 
 html.dark [class*="bg-white/"],
 html.dark [class*="bg-black/5"],
-html.dark [class*="bg-black/[0.03]"] {
+html.dark [class*="bg-black/[0.03]"],
+html.dark [class*="bg-black/[0.02]"] {
   background-color: rgb(255 255 255 / 0.06) !important;
+}
+
+html.dark [class*="bg-red-50"] {
+  background-color: rgb(127 29 29 / 0.18) !important;
+}
+
+html.dark [class*="shadow-sm"],
+html.dark [class*="editorial-shadow"] {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4) !important;
 }
 
 html.dark [class*="bg-[#111]"],

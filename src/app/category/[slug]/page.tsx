@@ -6,8 +6,10 @@ import ArticleCard from "@/components/ArticleCard";
 import AdSlot from "@/components/AdSlot";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import TrendingSidebar from "@/components/TrendingSidebar";
+import { Clock } from "lucide-react";
 import { getArticles, getCategories, getCategoryArticles, getLatestArticles, getTrendingArticles } from "@/lib/api";
 import { SITE_URL, buildPageMetadata, breadcrumbJsonLd } from "@/lib/seo";
+import { formatDate } from "@/lib/utils";
 
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
@@ -130,32 +132,76 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       {/* Content */}
       <section className="container-page grid gap-8 py-8 sm:py-10 lg:grid-cols-[1fr_340px]">
         <div>
-          {categoryArticles.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2">
-              {categoryArticles.slice(0, 4).map((article) => (
-                <ArticleCard key={article.id} article={article} />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-black/12 bg-[#faf8f4] p-8 text-center">
+          {categoryArticles.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-black/12 bg-[#faf8f4] p-10 text-center">
               <p className="text-base font-bold text-black/50">No articles in this category yet.</p>
             </div>
+          ) : (
+            <>
+              {/* Featured first article */}
+              <Link
+                href={`/article/${categoryArticles[0].slug}`}
+                className="group relative mb-5 block overflow-hidden rounded-xl bg-black"
+              >
+                <div className="relative aspect-[21/9] min-h-[220px] overflow-hidden">
+                  <Image
+                    src={categoryArticles[0].image}
+                    alt={categoryArticles[0].title}
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 66vw"
+                    className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7">
+                    <span className="inline-block rounded-full bg-red-600 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white">
+                      {categoryArticles[0].category}
+                    </span>
+                    <h2 className="mt-3 text-xl font-black leading-tight tracking-[-0.04em] text-white sm:text-2xl lg:text-3xl">
+                      {categoryArticles[0].title}
+                    </h2>
+                    <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-white/65">
+                      {categoryArticles[0].excerpt}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-bold text-white/45">
+                      <span>{categoryArticles[0].author}</span>
+                      <span className="size-1 rounded-full bg-white/30" />
+                      <span>{formatDate(categoryArticles[0].publishedAt)}</span>
+                      <span className="size-1 rounded-full bg-white/30" />
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {categoryArticles[0].readTime}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Card grid */}
+              {categoryArticles.length > 1 && (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {categoryArticles.slice(1, 5).map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
-          {categoryArticles.length > 4 && (
+          {categoryArticles.length > 5 && (
             <>
               <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_MID ?? ""} className="my-6" />
               <div className="grid gap-5 sm:grid-cols-2">
-                {categoryArticles.slice(4, 12).map((article) => (
+                {categoryArticles.slice(5, 13).map((article) => (
                   <ArticleCard key={article.id} article={article} />
                 ))}
               </div>
             </>
           )}
 
-          {categoryArticles.length > 12 && (
+          {categoryArticles.length > 13 && (
             <div className="grid gap-5 pt-5 sm:grid-cols-2">
-              {categoryArticles.slice(12).map((article) => (
+              {categoryArticles.slice(13).map((article) => (
                 <ArticleCard key={article.id} article={article} />
               ))}
             </div>
