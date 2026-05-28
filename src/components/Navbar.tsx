@@ -115,22 +115,22 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
 
         {/* Top utility bar — slides away on scroll */}
         <div
-          className={`overflow-hidden border-b border-white/10 bg-[#111] text-white transition-all duration-300 ease-out ${
+          className={`overflow-hidden border-b border-black/8 bg-[#f0ede8] text-[#111] transition-all duration-300 ease-out dark:border-white/8 dark:bg-[#111] dark:text-white ${
             scrolled ? "max-h-0 opacity-0" : "max-h-12 opacity-100"
           }`}
         >
           <div className="container-page flex h-9 items-center justify-between gap-4 text-[11px] font-bold tracking-[0.08em] lg:h-10 lg:text-xs">
-            <div className="flex min-w-0 items-center gap-3 text-white/70">
-              <span className="inline-flex shrink-0 items-center gap-1.5 font-black uppercase tracking-[0.14em] text-red-400">
+            <div className="flex min-w-0 items-center gap-3 text-black/55 dark:text-white/70">
+              <span className="inline-flex shrink-0 items-center gap-1.5 font-black uppercase tracking-[0.14em] text-red-600 dark:text-red-400">
                 <Radio className="size-3 animate-pulse" />
                 Live
               </span>
-              <span className="hidden h-3 w-px bg-white/16 sm:block" />
+              <span className="hidden h-3 w-px bg-black/12 dark:bg-white/16 sm:block" />
               <CurrentDate />
             </div>
-            <div className="hidden shrink-0 items-center gap-5 text-white/50 lg:flex">
+            <div className="hidden shrink-0 items-center gap-5 text-black/45 dark:text-white/50 lg:flex">
               {utilityLinks.map((item) => (
-                <LoadingLink key={item.href} href={item.href} className="transition hover:text-white">
+                <LoadingLink key={item.href} href={item.href} className="transition hover:text-black dark:hover:text-white">
                   {item.label}
                 </LoadingLink>
               ))}
