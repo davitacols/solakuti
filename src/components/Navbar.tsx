@@ -106,7 +106,7 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
   return (
     <>
       <header
-        className={`navbar-shell sticky top-0 z-40 border-b border-black/10 transition-shadow duration-300 dark:border-white/8 ${
+        className={`sticky top-0 z-40 border-b border-black/10 bg-white/95 backdrop-blur-2xl transition-shadow duration-300 ${
           scrolled ? "shadow-[0_4px_32px_rgba(0,0,0,0.1)]" : "shadow-[0_1px_0_rgba(0,0,0,0.05)]"
         }`}
       >
@@ -115,22 +115,22 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
 
         {/* Top utility bar — slides away on scroll */}
         <div
-          className={`navbar-topbar overflow-hidden border-b border-black/8 transition-all duration-300 ease-out dark:border-white/8 ${
+          className={`overflow-hidden border-b border-white/10 bg-[#111] text-white transition-all duration-300 ease-out ${
             scrolled ? "max-h-0 opacity-0" : "max-h-12 opacity-100"
           }`}
         >
           <div className="container-page flex h-9 items-center justify-between gap-4 text-[11px] font-bold tracking-[0.08em] lg:h-10 lg:text-xs">
-            <div className="flex min-w-0 items-center gap-3 text-black/55 dark:text-white/70">
-              <span className="inline-flex shrink-0 items-center gap-1.5 font-black uppercase tracking-[0.14em] text-red-600 dark:text-red-400">
+            <div className="flex min-w-0 items-center gap-3 text-white/70">
+              <span className="inline-flex shrink-0 items-center gap-1.5 font-black uppercase tracking-[0.14em] text-red-400">
                 <Radio className="size-3 animate-pulse" />
                 Live
               </span>
-              <span className="hidden h-3 w-px bg-black/12 dark:bg-white/16 sm:block" />
+              <span className="hidden h-3 w-px bg-white/16 sm:block" />
               <CurrentDate />
             </div>
-            <div className="hidden shrink-0 items-center gap-5 text-black/45 dark:text-white/50 lg:flex">
+            <div className="hidden shrink-0 items-center gap-5 text-white/50 lg:flex">
               {utilityLinks.map((item) => (
-                <LoadingLink key={item.href} href={item.href} className="transition hover:text-black dark:hover:text-white">
+                <LoadingLink key={item.href} href={item.href} className="transition hover:text-white">
                   {item.label}
                 </LoadingLink>
               ))}
@@ -304,7 +304,7 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
         </div>
 
         {/* Mobile category scroll */}
-        <div className="navbar-scroll border-t border-black/8 dark:border-white/8 xl:hidden">
+        <div className="border-t border-black/8 bg-white/70 xl:hidden">
           <div className="container-page flex h-11 items-center gap-2 overflow-x-auto scrollbar-hide">
             <LoadingLink href="/" className={mobilePillClass("/")}>
               Top stories
