@@ -112,6 +112,36 @@ html.dark textarea::placeholder {
   color: rgb(244 244 245 / 0.38);
 }
 
+/* ── Navbar backgrounds ──────────────────────────────────────────────────────
+   Named classes avoid the broad html.dark [class*="bg-white*"] overrides above.
+   Nothing here has a "bg-white" or "bg-[#" Tailwind class, so the attribute
+   selectors never fire on these elements.
+───────────────────────────────────────────────────────────────────────────── */
+.navbar-shell {
+  background-color: #ffffff;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+html.dark .navbar-shell {
+  background-color: rgba(13, 13, 15, 0.97);
+}
+
+.navbar-topbar {
+  background-color: #f0ede8;
+  color: #111111;
+}
+html.dark .navbar-topbar {
+  background-color: #111111;
+  color: #ffffff;
+}
+
+.navbar-scroll {
+  background-color: rgba(255, 255, 255, 0.75);
+}
+html.dark .navbar-scroll {
+  background-color: rgba(13, 13, 15, 0.85);
+}
+
 html.dark .editorial-shadow {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
 }

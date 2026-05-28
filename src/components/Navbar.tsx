@@ -106,7 +106,7 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
   return (
     <>
       <header
-        className={`sticky top-0 z-40 border-b border-black/10 bg-white/95 backdrop-blur-2xl transition-shadow duration-300 dark:border-white/8 dark:bg-[#0d0d0f]/97 ${
+        className={`navbar-shell sticky top-0 z-40 border-b border-black/10 transition-shadow duration-300 dark:border-white/8 ${
           scrolled ? "shadow-[0_4px_32px_rgba(0,0,0,0.1)]" : "shadow-[0_1px_0_rgba(0,0,0,0.05)]"
         }`}
       >
@@ -115,7 +115,7 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
 
         {/* Top utility bar — slides away on scroll */}
         <div
-          className={`overflow-hidden border-b border-black/8 bg-[#f0ede8] text-[#111] transition-all duration-300 ease-out dark:border-white/8 dark:bg-[#111] dark:text-white ${
+          className={`navbar-topbar overflow-hidden border-b border-black/8 transition-all duration-300 ease-out dark:border-white/8 ${
             scrolled ? "max-h-0 opacity-0" : "max-h-12 opacity-100"
           }`}
         >
@@ -304,7 +304,7 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
         </div>
 
         {/* Mobile category scroll */}
-        <div className="border-t border-black/8 bg-white/70 dark:border-white/8 dark:bg-[#0d0d0f]/80 xl:hidden">
+        <div className="navbar-scroll border-t border-black/8 dark:border-white/8 xl:hidden">
           <div className="container-page flex h-11 items-center gap-2 overflow-x-auto scrollbar-hide">
             <LoadingLink href="/" className={mobilePillClass("/")}>
               Top stories
