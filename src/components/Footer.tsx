@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Copyright, Facebook, Rss, Twitter } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import NewsletterSignupForm from "@/components/NewsletterSignupForm";
+import PwaInstallCard from "@/components/PwaInstallCard";
 import { categories, categoryToSlug } from "@/lib/utils";
 
 export default function Footer() {
@@ -110,10 +111,7 @@ export default function Footer() {
           <div className="mt-4">
             <NewsletterSignupForm source="footer-newsletter" compact />
           </div>
-          <div className="mt-5 rounded-lg border border-white/8 bg-white/[0.03] p-4">
-            <p className="text-xs font-bold text-white/40">Available on all browsers</p>
-            <p className="mt-1 text-sm font-medium text-white/60">Add Solakuti to your home screen for instant access.</p>
-          </div>
+          <PwaInstallCard />
         </div>
       </div>
 
