@@ -144,7 +144,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
           {categoryArticles.length > 4 && (
             <>
-              <AdSlot slot="category-mid" className="my-6" />
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_MID ?? ""} className="my-6" />
               <div className="grid gap-5 sm:grid-cols-2">
                 {categoryArticles.slice(4, 12).map((article) => (
                   <ArticleCard key={article.id} article={article} />
@@ -164,7 +164,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
         <aside className="space-y-6">
           <TrendingSidebar articles={trendingArticles.concat(allArticles)} />
-          <AdSlot slot="category-sidebar" format="rectangle" />
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_SIDEBAR ?? ""} format="rectangle" />
         </aside>
       </section>
     </main>

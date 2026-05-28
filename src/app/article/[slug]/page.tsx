@@ -316,7 +316,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             )}
 
             {/* Mid-article ad */}
-            <AdSlot slot="article-mid" className="my-8" />
+            <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID ?? ""} className="my-8" />
 
             {/* Mid-article related */}
             {related.length > 0 && (

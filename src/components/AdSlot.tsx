@@ -1,5 +1,13 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
+declare global {
+  interface Window {
+    adsbygoogle: unknown[];
+  }
+}
+
 type AdSlotProps = {
   slot: string;
   format?: "horizontal" | "rectangle" | "vertical";
@@ -9,15 +17,25 @@ type AdSlotProps = {
 export default function AdSlot({ slot, format = "horizontal", className = "" }: AdSlotProps) {
   const adsEnabled = process.env.NEXT_PUBLIC_ADSENSE_ADS_ENABLED === "true";
   const isValidSlotId = /^\d+$/.test(slot);
+  const pushed = useRef(false);
 
-  if (!adsEnabled || !isValidSlotId) {
-    return null;
-  }
+  useEffect(() => {
+    if (!adsEnabled || !isValidSlotId || pushed.current) return;
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      pushed.current = true;
+    } catch {
+      // adsbygoogle script not yet ready
+    }
+  }, [adsEnabled, isValidSlotId]);
 
-  const height = format === "rectangle" ? "min-h-[250px]" : format === "vertical" ? "min-h-[600px]" : "min-h-[90px]";
+  if (!adsEnabled || !isValidSlotId) return null;
+
+  const height =
+    format === "rectangle" ? "min-h-[250px]" : format === "vertical" ? "min-h-[600px]" : "min-h-[90px]";
 
   return (
-    <div className={`flex items-center justify-center overflow-hidden rounded-lg border border-dashed border-black/8 bg-black/[0.02] ${height} ${className}`} data-ad-slot={slot}>
+    <div className={`overflow-hidden ${height} ${className}`}>
       <ins
         className="adsbygoogle"
         style={{ display: "block" }}

@@ -24,8 +24,12 @@ export default function PrivacyPolicyPage() {
           body: "We use reader data to publish and improve the site, process comments, manage newsletter subscriptions, measure audience engagement, protect accounts, prevent abuse, troubleshoot technical issues and respond to contact or correction requests."
         },
         {
+          title: "Cookies",
+          body: "Solakuti uses cookies — small text files stored on your device — to operate the site, remember preferences and serve relevant ads. Functional cookies are required for the site to work. Analytics cookies (Google Analytics, Google Tag Manager) help us understand how readers use the site. Advertising cookies (Google AdSense) are used to serve personalised ads based on your interests. You can opt out of personalised advertising at https://optout.aboutads.info/ or https://www.google.com/settings/ads. You can also disable cookies in your browser settings, though this may affect site functionality."
+        },
+        {
           title: "Analytics And Advertising",
-          body: "Solakuti may use analytics and advertising services, including Google Analytics, Google Tag Manager and Google AdSense, to understand traffic, measure campaigns and show ads. Google and other third-party vendors may place and read cookies on readers' browsers or use web beacons, IP addresses and similar identifiers to collect information as a result of ad serving and measurement on Solakuti. Readers can learn how Google uses data from partner sites at https://policies.google.com/technologies/partner-sites."
+          body: "Solakuti uses Google Analytics, Google Tag Manager and Google AdSense to understand traffic, measure campaigns and show ads. Google and other third-party vendors may place and read cookies on readers' browsers or use web beacons, IP addresses and similar identifiers to collect information as a result of ad serving and measurement on Solakuti. Readers can learn how Google uses data from partner sites at https://policies.google.com/technologies/partner-sites. Our publisher ID is ca-pub-5089730714682068."
         },
         {
           title: "Newsletter",

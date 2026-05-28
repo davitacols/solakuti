@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import BackToTop from "@/components/BackToTop";
+import CookieConsent from "@/components/CookieConsent";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -143,13 +144,6 @@ export default async function RootLayout({
             })(window,document,'script','dataLayer','${GTM_ID}');
           `}
         </Script>
-        {ADSENSE_ADS_ENABLED && (
-          <script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
-            crossOrigin="anonymous"
-          />
-        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(newsOrganizationJsonLd) }}
@@ -168,12 +162,20 @@ export default async function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
+        {ADSENSE_ADS_ENABLED && (
+          <Script
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+          />
+        )}
         <Analytics />
         <Navbar />
 
         {children}
         <Footer />
         <BackToTop />
+        <CookieConsent />
       </body>
     </html>
   );

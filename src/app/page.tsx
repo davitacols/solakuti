@@ -135,7 +135,7 @@ export default async function Home() {
           />
         ))}
 
-        {activeCategories.length > 2 && <AdSlot slot="home-mid" className="my-6" />}
+        {activeCategories.length > 2 && <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_MID ?? ""} className="my-6" />}
 
         {activeCategories.slice(2).map((category) => (
           <CategorySection
