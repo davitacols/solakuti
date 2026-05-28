@@ -1,15 +1,13 @@
 import Image from "next/image";
-import { Copyright, Facebook, Instagram, Linkedin, Rss, Twitter } from "lucide-react";
+import { Copyright, Facebook, Rss, Twitter } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 import { categories, categoryToSlug } from "@/lib/utils";
 
 export default function Footer() {
   const socials = [
-    { icon: Twitter, label: "X / Twitter" },
-    { icon: Instagram, label: "Instagram" },
-    { icon: Facebook, label: "Facebook" },
-    { icon: Linkedin, label: "LinkedIn" }
+    { icon: Facebook, label: "Facebook: @solakutisblog", href: "https://www.facebook.com/solakutisblog" },
+    { icon: Twitter, label: "X: @solakutidotcom", href: "https://x.com/solakutidotcom" }
   ];
 
   const sections = categories.slice(0, 6);
@@ -57,10 +55,12 @@ export default function Footer() {
             A modern African digital newsroom covering the stories shaping Nigeria — politics, economy, security, culture and sport.
           </p>
           <div className="mt-5 flex gap-2">
-            {socials.map(({ icon: Icon, label }) => (
+            {socials.map(({ icon: Icon, label, href }) => (
               <a
                 key={label}
-                href="#"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="grid size-9 place-items-center rounded-full border border-white/10 text-white/60 transition hover:border-red-500 hover:bg-red-600 hover:text-white"
                 aria-label={label}
               >
