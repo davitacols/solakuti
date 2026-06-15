@@ -21,6 +21,8 @@ export default function AdSlot({ slot, format = "horizontal", className = "" }: 
 
   useEffect(() => {
     if (!adsEnabled || !isValidSlotId || pushed.current) return;
+    const consent = localStorage.getItem("solakuti-cookie-consent");
+    if (consent !== "accepted") return;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
       pushed.current = true;
