@@ -111,6 +111,9 @@ export const metadata: Metadata = {
       "application/rss+xml": `${SITE_URL}/rss.xml`,
       "application/xml": `${SITE_URL}/news-sitemap.xml`
     }
+  },
+  other: {
+    "google-adsense-account": "ca-pub-5089730714682068"
   }
 };
 
@@ -162,13 +165,11 @@ export default async function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
-        {ADSENSE_ADS_ENABLED && (
-          <Script
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
-            strategy="afterInteractive"
-            crossOrigin="anonymous"
-          />
-        )}
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
         <Analytics />
         <Navbar />
 
