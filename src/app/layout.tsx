@@ -26,7 +26,6 @@ import {
 } from "@/lib/seo";
 
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
-const ADSENSE_ADS_ENABLED = process.env.NEXT_PUBLIC_ADSENSE_ADS_ENABLED === "true";
 const GTM_ID = "GTM-PLZ5DFVX";
 
 export const metadata: Metadata = {
@@ -155,6 +154,12 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>
         <noscript>
@@ -165,11 +170,6 @@ export default async function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5089730714682068"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
         <Analytics />
         <Navbar />
 
