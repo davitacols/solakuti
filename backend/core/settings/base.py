@@ -49,6 +49,12 @@ INSTALLED_APPS = [
     "apps.sports",
 ]
 
+# Media provider: "cloudinary" (default) or "r2" (Cloudflare R2).
+MEDIA_PROVIDER = config("MEDIA_PROVIDER", default="cloudinary")
+
+if MEDIA_PROVIDER == "r2":
+    INSTALLED_APPS = INSTALLED_APPS + ["storages"]
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "core.middleware.SecurityHeadersMiddleware",
@@ -136,6 +142,24 @@ CLOUDINARY_STORAGE = {
     "API_KEY": config("CLOUDINARY_API_KEY", default=""),
     "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
 }
+
+# Cloudflare R2 (S3-compatible). Only used when MEDIA_PROVIDER == "r2".
+# django-storages' S3Storage reads these global AWS_* settings.
+if MEDIA_PROVIDER == "r2":
+    AWS_ACCESS_KEY_ID = config("R2_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = config("R2_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = config("R2_BUCKET_NAME")
+    AWS_S3_ENDPOINT_URL = f"https://{config('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com"
+    AWS_S3_REGION_NAME = "auto"
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
+    # R2 does not support S3 ACLs — bucket is made public via the Cloudflare dashboard.
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+    # Optional public custom domain (e.g. media.solakuti.com). Falls back to the
+    # bucket's r2.dev URL when unset.
+    AWS_S3_CUSTOM_DOMAIN = config("R2_CUSTOM_DOMAIN", default="") or None
+    AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "public, max-age=31536000, immutable"}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
