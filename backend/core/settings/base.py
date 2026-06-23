@@ -156,9 +156,12 @@ if MEDIA_PROVIDER == "r2":
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
-    # Optional public custom domain (e.g. media.solakuti.com). Falls back to the
-    # bucket's r2.dev URL when unset.
-    AWS_S3_CUSTOM_DOMAIN = config("R2_CUSTOM_DOMAIN", default="") or None
+    # REQUIRED for public delivery. The S3 API endpoint above is authenticated-only,
+    # so set this to the bucket's public hostname — either the r2.dev URL
+    # (e.g. pub-xxxx.r2.dev) or a custom domain (e.g. media.solakuti.com), WITHOUT
+    # the https:// prefix. Without it, generated image URLs point at the private
+    # API endpoint and will not load.
+    AWS_S3_CUSTOM_DOMAIN = config("R2_CUSTOM_DOMAIN")
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "public, max-age=31536000, immutable"}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
