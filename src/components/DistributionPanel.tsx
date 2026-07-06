@@ -19,13 +19,13 @@ type ChannelDraft = {
   content: string;
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.solakuti.com";
 
 function getDistributionSiteUrl() {
   if (typeof window !== "undefined" && window.location.hostname.endsWith("solakuti.com")) {
     return window.location.origin;
   }
-  return SITE_URL.replace("https://solakuti.vercel.app", "https://solakuti.com");
+  return SITE_URL.replace("https://solakuti.vercel.app", "https://www.solakuti.com");
 }
 
 function buildHashtags(article: Article) {

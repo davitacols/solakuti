@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://solakuti.com").replace(/\/$/, "");
+// www is the primary serving domain — Vercel 307s the apex to www, so canonical
+// URLs, sitemaps and OG tags must point at www to avoid a redirect mismatch.
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.solakuti.com").replace(/\/$/, "");
 export const SITE_NAME = "Solakuti";
 export const SITE_TITLE = "Solakuti | Premium Nigerian News and Media";
 export const SITE_DESCRIPTION =
