@@ -17,6 +17,7 @@ from apps.analytics.models import ActivityLog, ArticleView
 from apps.analytics.utils import get_client_ip, log_activity
 from core.permissions import IsAuthorOrEditor, IsWriterOrReadOnly
 from core.responses import ApiResponseMixin, api_response
+from core.uploads import save_with_storage_guard
 
 
 PUBLIC_ARTICLE_CACHE_SECONDS = 60
@@ -148,7 +149,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         return api_response(serializer.data, message="Article revision restored successfully.")
 
     def perform_create(self, serializer):
-        article = serializer.save()
+        article = save_with_storage_guard(serializer)
         cache.clear()
         action = ActivityLog.Action.PUBLISHED if article.is_published else ActivityLog.Action.CREATED
         log_activity(
@@ -164,7 +165,7 @@ class ArticleViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         article = self.get_object()
         was_published = article.is_published
         ArticleRevision.capture(article, self.request.user, note="Before article update")
-        updated = serializer.save()
+        updated = save_with_storage_guard(serializer)
         cache.clear()
         action = ActivityLog.Action.PUBLISHED if updated.is_published and not was_published else ActivityLog.Action.UPDATED
         log_activity(

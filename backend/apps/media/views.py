@@ -6,6 +6,7 @@ from apps.analytics.models import ActivityLog
 from apps.analytics.utils import log_activity
 from core.permissions import IsEditorialStaffOrReadOnly
 from core.responses import ApiResponseMixin
+from core.uploads import save_with_storage_guard
 
 
 class MediaAssetViewSet(ApiResponseMixin, viewsets.ModelViewSet):
@@ -23,11 +24,11 @@ class MediaAssetViewSet(ApiResponseMixin, viewsets.ModelViewSet):
         return MediaAsset.objects.select_related("uploaded_by")
 
     def perform_create(self, serializer):
-        asset = serializer.save()
+        asset = save_with_storage_guard(serializer)
         log_activity(self.request, ActivityLog.Action.CREATED, "media", f"Uploaded media: {asset.title}", object_id=asset.pk)
 
     def perform_update(self, serializer):
-        asset = serializer.save()
+        asset = save_with_storage_guard(serializer)
         log_activity(self.request, ActivityLog.Action.UPDATED, "media", f"Updated media: {asset.title}", object_id=asset.pk)
 
     def perform_destroy(self, instance):
