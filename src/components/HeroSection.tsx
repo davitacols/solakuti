@@ -32,17 +32,19 @@ export default function HeroSection({ featured, secondary }: HeroSectionProps) {
       variants={stagger}
       className="container-page py-7 lg:py-10"
     >
-      <motion.div variants={fadeUp} className="mb-6 flex flex-col justify-between gap-4 border-b-2 border-black pb-5 lg:flex-row lg:items-end">
+      {/* Masthead line for the front page. Deliberately a step below the lead
+          story headline so the news, not the slogan, is the loudest element. */}
+      <motion.div variants={fadeUp} className="mb-5 flex flex-col justify-between gap-3 border-b-2 border-black pb-4 lg:flex-row lg:items-end">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.24em] text-red-600">
             Front page
           </p>
-          <h2 className="mt-2 max-w-5xl text-4xl font-black leading-none tracking-[-0.06em] text-[#111] sm:text-5xl lg:text-6xl">
+          <h2 className="mt-1.5 max-w-4xl text-2xl font-black leading-[1.05] tracking-[-0.05em] text-[#111] sm:text-3xl lg:text-4xl">
             The stories shaping Nigeria right now.
           </h2>
         </div>
         <p className="max-w-md text-sm font-semibold leading-6 text-black/58">
-          Live coverage, sharp analysis and public-interest reporting from Solakuti's newsroom.
+          Live coverage, sharp analysis and public-interest reporting from Solakuti&apos;s newsroom.
         </p>
       </motion.div>
 

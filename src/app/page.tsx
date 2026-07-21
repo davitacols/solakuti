@@ -102,7 +102,7 @@ export default async function Home() {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-red-600">
                 Developing feed
               </p>
-              <h2 className="mt-2 text-3xl font-black tracking-[-0.055em] text-[#111] sm:text-5xl">
+              <h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-[#111] sm:text-4xl">
                 Latest from the news desk
               </h2>
             </div>

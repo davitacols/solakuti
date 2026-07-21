@@ -35,18 +35,20 @@ export default function CategorySection({ title, slug, kicker, articles }: Categ
       whileInView="show"
       viewport={{ once: true, margin: "-60px" }}
       variants={container}
-      className="py-10"
+      className="py-8"
     >
-      <motion.div variants={item} className="mb-6 flex items-end justify-between gap-5 border-t-2 border-black pt-6">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-red-600">{kicker}</p>
-          <h2 className="mt-2 text-3xl font-black tracking-[-0.055em] text-[#111] sm:text-4xl">
+      {/* Category shelves sit a level below the major sections: lighter rule,
+          smaller heading, kicker inline rather than stacked. */}
+      <motion.div variants={item} className="mb-5 flex items-center justify-between gap-5 border-t border-black/15 pt-5">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-2xl font-black tracking-[-0.045em] text-[#111] sm:text-3xl">
             {title}
           </h2>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-red-600">{kicker}</p>
         </div>
         <Link
           href={`/category/${slug ?? categoryToSlug(title)}`}
-          className="hidden items-center gap-2 rounded-full border border-black/10 px-4 py-2 text-sm font-black transition hover:border-black hover:bg-black hover:text-white sm:inline-flex"
+          className="hidden shrink-0 items-center gap-1.5 text-sm font-black text-black/50 transition hover:text-red-600 sm:inline-flex"
         >
           View all
           <ArrowRight className="size-4" />
