@@ -17,6 +17,7 @@ import {
   Tags
 } from "lucide-react";
 import DistributionPanel from "@/components/DistributionPanel";
+import JournalistAccessPanel from "@/components/JournalistAccessPanel";
 import AdminManagementPanel from "@/components/AdminManagementPanel";
 import LoadingButton from "@/components/LoadingButton";
 import {
@@ -544,6 +545,10 @@ export default function AdminDashboard() {
                 </div>
               </section>
             </aside>
+          </div>
+
+          <div className="mt-8">
+            <JournalistAccessPanel token={session.access} />
           </div>
 
           <div className="mt-8">

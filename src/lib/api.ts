@@ -817,6 +817,105 @@ export async function adminDeleteMedia(token: string, mediaId: number) {
   });
 }
 
+/* ---------------------------------------------------------------------------
+ * Journalist onboarding — invites and byline applications
+ * ------------------------------------------------------------------------- */
+
+export type JournalistRole = "editor" | "journalist" | "contributor";
+
+export type JournalistInvite = {
+  id: number;
+  email: string;
+  role: JournalistRole;
+  note: string;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  invite_url: string;
+  invited_by_name?: string | null;
+  created_at: string;
+  expires_at: string;
+  accepted_at?: string | null;
+};
+
+export type PendingApplicant = BackendUser & {
+  journalist_application_at?: string | null;
+};
+
+/** POST multipart form data without authentication (public onboarding forms). */
+async function publicFormApi<T>(path: string, body: FormData): Promise<ApiResponse<T> | null> {
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}${path}`,
+      { method: "POST", body },
+      API_MUTATION_TIMEOUT_MS
+    );
+    const payload = await parseApiResponse<T>(response);
+    if (!response.ok && !payload.message && payload.data && typeof payload.data === "object") {
+      return { ...payload, message: flattenApiErrors(payload.data) };
+    }
+    return payload;
+  } catch {
+    return networkError<T>();
+  }
+}
+
+export async function verifyJournalistInvite(token: string) {
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/auth/invite/verify/?token=${encodeURIComponent(token)}`,
+      { cache: "no-store" },
+      API_MUTATION_TIMEOUT_MS
+    );
+    return await parseApiResponse<{ email: string; role: JournalistRole }>(response);
+  } catch {
+    return networkError<{ email: string; role: JournalistRole }>();
+  }
+}
+
+export async function acceptJournalistInvite(payload: FormData) {
+  return publicFormApi<BackendUser>("/auth/invite/accept/", payload);
+}
+
+export async function applyAsJournalist(payload: FormData) {
+  return publicFormApi<BackendUser>("/auth/apply/", payload);
+}
+
+export async function getAdminInvites(token: string) {
+  return adminApi<JournalistInvite[]>("/auth/invites/", token);
+}
+
+export async function adminCreateInvite(
+  token: string,
+  payload: { email: string; role: JournalistRole; note?: string }
+) {
+  return adminApi<JournalistInvite>("/auth/invites/", token, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function adminRevokeInvite(token: string, inviteId: number) {
+  return adminApi<null>(`/auth/invites/${inviteId}/`, token, { method: "DELETE" });
+}
+
+export async function getAdminPendingApplicants(token: string) {
+  return adminApi<PendingApplicant[]>("/users/pending/", token);
+}
+
+export async function adminApproveApplicant(
+  token: string,
+  userId: number,
+  role: JournalistRole = "journalist"
+) {
+  return adminApi<BackendUser>(`/users/${userId}/approve/`, token, {
+    method: "POST",
+    body: { role }
+  });
+}
+
+export async function adminRejectApplicant(token: string, userId: number) {
+  return adminApi<null>(`/users/${userId}/reject/`, token, { method: "POST" });
+}
+
 export async function getAdminSportsOverview(token: string) {
   return adminApi<SportsAdminOverview>("/sports/sync-logs/overview/", token);
 }

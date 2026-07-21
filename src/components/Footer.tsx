@@ -16,6 +16,7 @@ export default function Footer() {
     { label: "About", href: "/about" },
     { label: "Live Scores", href: "/livescores" },
     { label: "Contact", href: "/contact" },
+    { label: "Write for Us", href: "/write-for-us" },
     { label: "Editorial Policy", href: "/editorial-policy" },
     { label: "Privacy Policy", href: "/privacy-policy" },
     { label: "Terms of Use", href: "/terms-of-use" },
