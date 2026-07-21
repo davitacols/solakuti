@@ -181,10 +181,26 @@ html.dark .article-body .story-media figcaption {
 }
 
 .article-body {
+  /* Cap the measure at a comfortable ~68 characters. Without this the text
+     column stretches to the full grid track and lines run ~95ch on desktop. */
+  max-width: 68ch;
   font-size: 1.25rem;
   letter-spacing: -0.015em;
-  line-height: 1.8;
-  color: rgb(0 0 0 / 0.76);
+  line-height: 1.75;
+  color: rgb(0 0 0 / 0.78);
+  text-wrap: pretty;
+}
+
+/* Lead paragraph carries slightly more weight, as in print. */
+.article-body > p:first-of-type {
+  font-size: 1.35rem;
+  line-height: 1.65;
+  color: rgb(0 0 0 / 0.86);
+}
+
+.article-body h2,
+.article-body h3 {
+  text-wrap: balance;
 }
 
 .admin-rich-editor ul,
@@ -212,11 +228,20 @@ html.dark .article-body .story-media figcaption {
 
 .admin-rich-editor blockquote,
 .article-body blockquote {
-  margin: 2rem 0;
-  border-left: 4px solid #dc2626;
-  padding-left: 1.25rem;
-  color: rgb(0 0 0 / 0.66);
-  font-weight: 800;
+  margin: 2.25rem 0;
+  border-left: 3px solid #dc2626;
+  padding: 0.25rem 0 0.25rem 1.5rem;
+  color: rgb(0 0 0 / 0.72);
+  font-size: 1.3rem;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.5;
+}
+
+.admin-rich-editor blockquote p:last-child,
+.article-body blockquote p:last-child {
+  margin-bottom: 0;
 }
 
 .admin-rich-editor a,

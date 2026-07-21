@@ -305,7 +305,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               {article.contentHtml ? (
                 <div className="article-body" dangerouslySetInnerHTML={{ __html: article.contentHtml }} />
               ) : (
-                <div>
+                <div className="max-w-[68ch]">
                   {article.body.slice(0, Math.ceil(article.body.length / 2)).map((paragraph) => (
                     <p key={paragraph} className="mb-7 text-xl leading-9 tracking-[-0.015em] text-black/76">
                       {paragraph}
@@ -341,7 +341,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               )}
 
               {!article.contentHtml && (
-                <div>
+                <div className="max-w-[68ch]">
                   {article.body.slice(Math.ceil(article.body.length / 2)).map((paragraph) => (
                     <p key={paragraph} className="mb-7 text-xl leading-9 tracking-[-0.015em] text-black/76">
                       {paragraph}
