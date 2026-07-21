@@ -22,6 +22,7 @@ import AdminManagementPanel from "@/components/AdminManagementPanel";
 import LoadingButton from "@/components/LoadingButton";
 import {
   NewsletterSubscriber,
+  asArray,
   deactivateNewsletterSubscriber,
   exportNewsletterSubscribers,
   getAdminArticles,
@@ -136,8 +137,8 @@ export default function AdminDashboard() {
     }
 
     setOverview(overviewResponse.data);
-    setArticles(articlesResponse?.data ?? []);
-    setSubscribers(subscribersResponse?.data ?? []);
+    setArticles(asArray(articlesResponse?.data));
+    setSubscribers(asArray(subscribersResponse?.data));
   }
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -548,7 +549,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="mt-8">
-            <JournalistAccessPanel token={session.access} />
+            <JournalistAccessPanel token={session.access} role={session.role} />
           </div>
 
           <div className="mt-8">

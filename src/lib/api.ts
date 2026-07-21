@@ -462,6 +462,17 @@ async function adminApi<T>(
   }
 }
 
+/**
+ * Safely coerce an API payload to a list.
+ *
+ * On failure the API puts an object in `data` (e.g. {detail: "Forbidden"}), so
+ * `response?.data ?? []` is not enough — it passes the object straight through
+ * and the next `.map()` throws, taking the whole dashboard down.
+ */
+export function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
 function flattenApiErrors(value: unknown): string {
   if (typeof value === "string") {
     return value;

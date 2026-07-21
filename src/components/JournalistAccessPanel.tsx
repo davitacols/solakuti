@@ -29,7 +29,14 @@ const STATUS_STYLES: Record<JournalistInvite["status"], string> = {
   expired: "bg-black/8 text-black/50"
 };
 
-export default function JournalistAccessPanel({ token }: { token: string }) {
+type JournalistAccessPanelProps = {
+  token: string;
+  /** Approving applicants is admin-only; editors can still manage invites. */
+  role: string;
+};
+
+export default function JournalistAccessPanel({ token, role: viewerRole }: JournalistAccessPanelProps) {
+  const canReviewApplications = viewerRole === "admin";
   const [invites, setInvites] = useState<JournalistInvite[]>([]);
   const [applicants, setApplicants] = useState<PendingApplicant[]>([]);
   const [email, setEmail] = useState("");
@@ -42,11 +49,13 @@ export default function JournalistAccessPanel({ token }: { token: string }) {
   const load = useCallback(async () => {
     const [inviteResponse, applicantResponse] = await Promise.all([
       getAdminInvites(token),
-      getAdminPendingApplicants(token)
+      canReviewApplications ? getAdminPendingApplicants(token) : Promise.resolve(null)
     ]);
-    setInvites(inviteResponse?.data ?? []);
-    setApplicants(applicantResponse?.data ?? []);
-  }, [token]);
+    // On error the API puts an object in `data` (e.g. {detail: "..."}), so a
+    // null-coalesce is not enough — the shape has to be checked.
+    setInvites(Array.isArray(inviteResponse?.data) ? inviteResponse.data : []);
+    setApplicants(Array.isArray(applicantResponse?.data) ? applicantResponse.data : []);
+  }, [token, canReviewApplications]);
 
   useEffect(() => {
     load();
@@ -161,7 +170,8 @@ export default function JournalistAccessPanel({ token }: { token: string }) {
         </LoadingButton>
       </form>
 
-      {/* Pending applications */}
+      {/* Pending applications — admin only */}
+      {canReviewApplications && (
       <div className="mb-6">
         <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-black/45">
           Byline applications ({applicants.length})
@@ -216,6 +226,7 @@ export default function JournalistAccessPanel({ token }: { token: string }) {
           )}
         </div>
       </div>
+      )}
 
       {/* Pending invites */}
       <div>

@@ -24,6 +24,7 @@ import {
   AdminCategory,
   AdminComment,
   AdminArticleRevision,
+  asArray,
   AdminMediaAsset,
   SportsAdminOverview,
   SportsSyncLog,
@@ -479,12 +480,12 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       canManageStructure ? getSportsTeams() : Promise.resolve([]),
       canManageStructure ? getSportsFixtures() : Promise.resolve([])
     ]);
-    setCategories(categoryResponse?.data ?? []);
-    setComments(commentResponse?.data ?? []);
-    setMedia(mediaResponse?.data ?? []);
-    setUsers(userResponse?.data ?? []);
+    setCategories(asArray(categoryResponse?.data));
+    setComments(asArray(commentResponse?.data));
+    setMedia(asArray(mediaResponse?.data));
+    setUsers(asArray(userResponse?.data));
     setSportsOverview(sportsOverviewResponse?.data ?? null);
-    setSportsLogs(sportsLogsResponse?.data ?? []);
+    setSportsLogs(asArray(sportsLogsResponse?.data));
     setSportsCompetitions(sportsCompetitionsResponse ?? []);
     setSportsTeams(sportsTeamsResponse ?? []);
     setSportsFixtures(sportsFixturesResponse ?? []);
@@ -714,7 +715,7 @@ export default function AdminManagementPanel({ token, role, articles, onRefresh 
       editFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
     const revisionsResponse = await getArticleRevisions(token, slug);
-    setArticleRevisions(revisionsResponse?.data ?? []);
+    setArticleRevisions(asArray(revisionsResponse?.data));
   }
 
   async function handleUpdateArticle(event: FormEvent<HTMLFormElement>) {
