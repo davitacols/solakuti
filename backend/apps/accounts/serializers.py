@@ -234,7 +234,14 @@ class JournalistInviteSerializer(serializers.ModelSerializer):
         value = value.lower().strip()
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("An account already exists for this email.")
-        if JournalistInvite.objects.filter(email__iexact=value, accepted_at__isnull=True, revoked_at__isnull=True).exists():
+        # Must mirror JournalistInvite.is_pending. Without the expiry check an
+        # expired invite would block re-inviting while being unusable itself.
+        if JournalistInvite.objects.filter(
+            email__iexact=value,
+            accepted_at__isnull=True,
+            revoked_at__isnull=True,
+            expires_at__gt=timezone.now(),
+        ).exists():
             raise serializers.ValidationError("A pending invite already exists for this email.")
         return value
 
