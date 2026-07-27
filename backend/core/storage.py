@@ -12,7 +12,17 @@ from django.conf import settings
 MEDIA_PROVIDER = getattr(settings, "MEDIA_PROVIDER", "cloudinary")
 
 
-if MEDIA_PROVIDER == "r2":
+if MEDIA_PROVIDER == "local":
+    # Self-hosted on the VPS disk (MEDIA_ROOT), served by Nginx at MEDIA_URL.
+    from django.core.files.storage import FileSystemStorage
+
+    class MixedMediaCloudinaryStorage(FileSystemStorage):
+        pass
+
+    class SolakutiVideoCloudinaryStorage(FileSystemStorage):
+        pass
+
+elif MEDIA_PROVIDER == "r2":
     # Cloudflare R2 is S3-compatible; django-storages talks to it via the global
     # AWS_* settings defined in core.settings.base.
     from storages.backends.s3 import S3Storage

@@ -31,7 +31,7 @@ class MediaAsset(models.Model):
     def optimized_url(self):
         if not self.file:
             return None
-        if settings.MEDIA_PROVIDER == "r2":
+        if settings.MEDIA_PROVIDER in {"r2", "local"}:
             return self._storage_url()
         url = self._cloudinary_url()
         if "res.cloudinary.com" in url and "/upload/" in url:
@@ -42,7 +42,7 @@ class MediaAsset(models.Model):
     def thumbnail_url(self):
         if not self.file:
             return None
-        if settings.MEDIA_PROVIDER == "r2":
+        if settings.MEDIA_PROVIDER in {"r2", "local"}:
             # R2 has no on-the-fly transforms; serve the original file.
             return self._storage_url()
         url = self._cloudinary_url()

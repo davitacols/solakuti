@@ -125,8 +125,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "mediafiles"
+# Absolute in production (e.g. https://www.solakuti.com/media/) so OG/image URLs
+# resolve for crawlers and social; relative default keeps local dev simple.
+MEDIA_URL = config("MEDIA_URL", default="/media/")
+MEDIA_ROOT = config("MEDIA_ROOT", default=str(BASE_DIR / "mediafiles"))
 
 STORAGES = {
     "default": {

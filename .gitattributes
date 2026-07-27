@@ -1,0 +1,6 @@
+# Shell scripts and Docker entrypoints must keep LF endings or they fail in
+# Linux containers ("bad interpreter: /bin/sh^M").
+*.sh            text eol=lf
+entrypoint.sh   text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf

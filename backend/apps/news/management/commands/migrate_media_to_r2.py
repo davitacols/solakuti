@@ -48,10 +48,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        if settings.MEDIA_PROVIDER != "r2":
+        if settings.MEDIA_PROVIDER not in {"r2", "local"}:
             raise CommandError(
-                "MEDIA_PROVIDER is not 'r2'. Set MEDIA_PROVIDER=r2 and the R2_* env "
-                "vars before running this command."
+                "MEDIA_PROVIDER must be 'r2' or 'local' to migrate off Cloudinary. "
+                "Set it (and any R2_* vars) before running this command."
             )
 
         self.dry_run = options["dry_run"]

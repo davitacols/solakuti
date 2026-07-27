@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Emit a self-contained server bundle for a lean production Docker image.
+  output: "standalone",
   async redirects() {
     return [
       {
@@ -58,6 +60,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.r2.dev"
+      },
+      {
+        protocol: "https",
+        hostname: "www.solakuti.com"
       },
       {
         protocol: "https",
