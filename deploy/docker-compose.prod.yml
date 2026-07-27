@@ -57,6 +57,12 @@ services:
       # the Next.js middleware, so they can live here (no rebuild to toggle).
       MAINTENANCE_MODE: ${MAINTENANCE_MODE:-off}
       MAINTENANCE_BYPASS_TOKEN: ${MAINTENANCE_BYPASS_TOKEN:-}
+    # Server-side rendering fetches the API at https://www.solakuti.com/api.
+    # Route that hostname to the local Nginx (via the host gateway) so SSR always
+    # hits this stack, not whatever public DNS points at — before and after cutover.
+    extra_hosts:
+      - "www.solakuti.com:host-gateway"
+      - "solakuti.com:host-gateway"
     depends_on:
       - backend
     expose:
