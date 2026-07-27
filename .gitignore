@@ -18,6 +18,7 @@ pnpm-debug.log*
 .env.*
 !.env.example
 !.env.local.example
+!deploy/.env.prod.example
 backend/.env
 backend/.env.*
 !backend/.env.example
