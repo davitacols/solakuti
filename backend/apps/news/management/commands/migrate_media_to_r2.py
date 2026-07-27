@@ -22,6 +22,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.accounts.models import User
 from apps.media.models import MediaAsset
 from apps.news.models import Article
 
@@ -88,6 +89,18 @@ class Command(BaseCommand):
                 migrated += result == "migrated"
                 skipped += result == "skipped"
                 failed += result == "failed"
+
+        # Author profile photos — shown on every byline and author page.
+        for user in User.objects.exclude(profile_image="").iterator():
+            result = self._migrate_field(
+                obj=user,
+                field_name="profile_image",
+                resource_type="image",
+                label=f"User#{user.pk} {user.full_name}",
+            )
+            migrated += result == "migrated"
+            skipped += result == "skipped"
+            failed += result == "failed"
 
         self.stdout.write("")
         self.stdout.write(
