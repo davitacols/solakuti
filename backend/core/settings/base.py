@@ -218,20 +218,23 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Global anon/user throttling is removed on purpose: behind the Next.js SSR
+    # frontend every server-rendered request shares one source IP, so an IP-based
+    # limit throttles the entire site at once (120/hour was tripping all reads).
+    # Sensitive write endpoints keep their per-scope throttles below.
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
         "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "120/hour",
-        "user": "1000/hour",
         "auth": "10/min",
         "comments": "20/hour",
         "newsletter": "10/hour",
         "password_reset": "5/hour",
         "uploads": "30/hour",
     },
+    # One proxy hop (nginx) — lets the scoped throttles key on the real client IP
+    # from X-Forwarded-For instead of nginx's address.
+    "NUM_PROXIES": 1,
     "EXCEPTION_HANDLER": "core.responses.custom_exception_handler",
 }
 
