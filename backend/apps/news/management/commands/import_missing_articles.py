@@ -10,7 +10,10 @@ so IDs can't be preserved), assigns fresh local IDs, and re-links tags by name.
 Run migrate_media_to_r2 afterwards to pull the imported articles' images local.
 """
 
+import copy
+
 import dj_database_url
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connections, transaction
 
@@ -27,7 +30,12 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true", help="List what would be imported, write nothing.")
 
     def handle(self, *args, **options):
-        connections.databases[SRC_ALIAS] = dj_database_url.parse(options["source_url"])
+        # Base the source connection on the default config so Django's expected
+        # keys (TIME_ZONE, AUTOCOMMIT, CONN_HEALTH_CHECKS, …) are present, then
+        # override just the connection params from the source URL.
+        source_config = copy.deepcopy(settings.DATABASES["default"])
+        source_config.update(dj_database_url.parse(options["source_url"]))
+        connections.databases[SRC_ALIAS] = source_config
 
         local_slugs = set(Article.objects.values_list("slug", flat=True))
         missing = list(
