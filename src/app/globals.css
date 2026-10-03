@@ -140,6 +140,11 @@ html.dark .article-body .story-media figcaption {
   color: white;
 }
 
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(215, 25, 32, 0.72);
+  outline-offset: 3px;
+}
+
 .container-page {
   width: min(1400px, calc(100% - 32px));
   margin-inline: auto;

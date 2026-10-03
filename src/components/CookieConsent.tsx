@@ -28,33 +28,44 @@ export default function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/10 bg-white px-4 py-4 shadow-xl md:flex md:items-center md:justify-between md:gap-8 md:px-6">
-      <p className="text-sm leading-6 text-black/68">
-        Solakuti uses cookies — including those placed by Google AdSense — to serve ads and analyse traffic.{" "}
-        <Link href="/privacy-policy" className="font-bold underline underline-offset-2 hover:text-black">
-          Privacy policy
-        </Link>
-        .{" "}
-        <a
-          href="https://optout.aboutads.info/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-bold underline underline-offset-2 hover:text-black"
-        >
-          Opt out of personalised ads
-        </a>
-        .
-      </p>
-      <div className="mt-4 flex shrink-0 gap-3 md:mt-0">
+    <div
+      role="dialog"
+      aria-label="Cookie preferences"
+      className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-5xl rounded-2xl border border-black/10 bg-white/95 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-5 lg:flex lg:items-center lg:gap-8"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-black tracking-[-0.01em] text-[#111]">Your privacy, your choice</p>
+        <p className="mt-1 text-xs leading-5 text-black/60 sm:text-sm sm:leading-6">
+          We use cookies for audience analytics and to support advertising. You can accept them or continue without optional cookies.{" "}
+          <Link
+            href="/privacy-policy"
+            className="font-bold text-[#111] underline decoration-black/25 underline-offset-2 hover:text-red-600"
+          >
+            Privacy policy
+          </Link>
+          {" · "}
+          <a
+            href="https://optout.aboutads.info/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[#111] underline decoration-black/25 underline-offset-2 hover:text-red-600"
+          >
+            Ad choices
+          </a>
+        </p>
+      </div>
+      <div className="mt-4 grid shrink-0 grid-cols-2 gap-2 lg:mt-0 lg:flex">
         <button
+          type="button"
           onClick={decline}
-          className="rounded-full border border-black/15 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-black/55 transition hover:border-black/35 hover:text-black"
+          className="min-h-11 rounded-full border border-black/15 px-5 py-2 text-xs font-black uppercase tracking-[0.12em] text-black/55 transition hover:border-black/35 hover:text-black"
         >
           Decline
         </button>
         <button
+          type="button"
           onClick={accept}
-          className="rounded-full bg-[#111] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-600"
+          className="min-h-11 rounded-full bg-[#111] px-6 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-600"
         >
           Accept
         </button>

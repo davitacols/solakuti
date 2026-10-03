@@ -18,13 +18,13 @@ export default function ArticleCard({ article, compact = false }: ArticleCardPro
     <motion.article
       whileHover={{ y: -3 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="group flex h-full flex-col overflow-hidden rounded-lg border border-black/10 bg-white shadow-[0_2px_10px_rgba(18,18,18,0.05)] transition-shadow duration-300 hover:shadow-[0_14px_40px_rgba(18,18,18,0.12)]"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_2px_10px_rgba(18,18,18,0.05)] transition duration-300 hover:-translate-y-0.5 hover:border-red-600/25 hover:shadow-[0_16px_44px_rgba(18,18,18,0.12)]"
     >
       <LoadingLink href={`/article/${article.slug}`} className="block overflow-hidden">
         <div className="relative aspect-[16/9] overflow-hidden bg-black/5">
           <Image
             src={article.image}
-            alt=""
+            alt={article.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1536px) 50vw, 33vw"
             className="object-cover transition duration-500 group-hover:scale-[1.04]"
@@ -32,7 +32,7 @@ export default function ArticleCard({ article, compact = false }: ArticleCardPro
         </div>
       </LoadingLink>
 
-      <div className={`flex flex-1 flex-col ${compact ? "p-4" : "p-5"}`}>
+      <div className={`flex flex-1 flex-col ${compact ? "p-4 sm:p-5" : "p-5"}`}>
         <Link
           href={`/category/${categoryToSlug(article.category)}`}
           className="self-start text-[11px] font-black uppercase tracking-[0.18em] text-red-600 transition hover:text-[#111]"
