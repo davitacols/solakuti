@@ -2,6 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
+const CONSENT_KEY = "solakuti-cookie-consent";
+const CONSENT_EVENT = "solakuti-cookie-consent-change";
+
 declare global {
   interface Window {
     adsbygoogle: unknown[];
@@ -20,15 +23,23 @@ export default function AdSlot({ slot, format = "horizontal", className = "" }: 
   const pushed = useRef(false);
 
   useEffect(() => {
-    if (!adsEnabled || !isValidSlotId || pushed.current) return;
-    const consent = localStorage.getItem("solakuti-cookie-consent");
-    if (consent !== "accepted") return;
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-      pushed.current = true;
-    } catch {
-      // adsbygoogle script not yet ready
-    }
+    if (!adsEnabled || !isValidSlotId) return;
+
+    const initializeAd = () => {
+      if (pushed.current || localStorage.getItem(CONSENT_KEY) !== "accepted") return;
+
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        pushed.current = true;
+      } catch {
+        // The next consent event or mount will retry if the script is unavailable.
+      }
+    };
+
+    initializeAd();
+    window.addEventListener(CONSENT_EVENT, initializeAd);
+
+    return () => window.removeEventListener(CONSENT_EVENT, initializeAd);
   }, [adsEnabled, isValidSlotId]);
 
   if (!adsEnabled || !isValidSlotId) return null;

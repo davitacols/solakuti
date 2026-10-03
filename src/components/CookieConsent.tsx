@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const CONSENT_KEY = "solakuti-cookie-consent";
+const CONSENT_EVENT = "solakuti-cookie-consent-change";
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -14,11 +15,13 @@ export default function CookieConsent() {
 
   function accept() {
     localStorage.setItem(CONSENT_KEY, "accepted");
+    window.dispatchEvent(new Event(CONSENT_EVENT));
     setVisible(false);
   }
 
   function decline() {
     localStorage.setItem(CONSENT_KEY, "declined");
+    window.dispatchEvent(new Event(CONSENT_EVENT));
     setVisible(false);
   }
 
