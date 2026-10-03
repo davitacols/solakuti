@@ -11,6 +11,7 @@ import ReadingProgress from "@/components/ReadingProgress";
 import CategoryTracker from "@/components/CategoryTracker";
 import RelativeTime from "@/components/RelativeTime";
 import NewsletterSignupForm from "@/components/NewsletterSignupForm";
+import TwynPromo from "@/components/TwynPromo";
 import { ApiUnavailableError, getArticleBySlug, getArticleComments, getLatestArticles } from "@/lib/api";
 import {
   LOGO_URL,
@@ -474,6 +475,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                     <NewsletterSignupForm source="article-sidebar" compact dark />
                   </div>
                 </div>
+
+                <TwynPromo compact />
 
                 {/* Published info */}
                 <div className="rounded-xl border border-black/10 bg-white p-5 text-sm">

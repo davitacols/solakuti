@@ -10,6 +10,7 @@ import LiveScoresStrip from "@/components/LiveScoresStrip";
 import NewsletterSection from "@/components/NewsletterSection";
 import ReadNext from "@/components/ReadNext";
 import TrendingSidebar from "@/components/TrendingSidebar";
+import TwynPromo from "@/components/TwynPromo";
 import { getCategories, getLatestArticles, getLiveFixtures, getResultFixtures, getTodayFixtures, getUpcomingFixtures } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +95,8 @@ export default async function Home() {
       <ReadNext articles={feed} />
 
       {editorsPick && <EditorsPick article={editorsPick} />}
+
+      <TwynPromo />
 
       <section className="container-page grid gap-8 py-8 xl:grid-cols-[1fr_380px]">
         <div>
