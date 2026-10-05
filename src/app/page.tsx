@@ -6,7 +6,6 @@ import CategorySection from "@/components/CategorySection";
 import EditorsPick from "@/components/EditorsPick";
 import HeroSection from "@/components/HeroSection";
 import JustInTimeline from "@/components/JustInTimeline";
-import LiveScoresStrip from "@/components/LiveScoresStrip";
 import NewsletterSection from "@/components/NewsletterSection";
 import ReadNext from "@/components/ReadNext";
 import TrendingSidebar from "@/components/TrendingSidebar";
@@ -72,7 +71,6 @@ export default async function Home() {
   return (
     <main>
       <BreakingNewsBar articles={liveArticles} fixtures={breakingFixtures} />
-      <LiveScoresStrip fixtures={breakingFixtures} />
 
       {liveFeatured ? (
         <HeroSection featured={liveFeatured} secondary={latest} />
