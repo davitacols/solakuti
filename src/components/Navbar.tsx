@@ -37,7 +37,7 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
-  const lastScrollY = useRef(0);
+  const scrolledRef = useRef(false);
   const pathname = usePathname();
 
   const categoryItems = navCategories?.length
@@ -54,9 +54,15 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
   useEffect(() => {
     function onScroll() {
       const y = window.scrollY;
-      setScrolled(y > 48);
-      lastScrollY.current = y;
+      // Separate the enter/exit thresholds so resizing the sticky header cannot
+      // repeatedly flip the compact state near one scroll position.
+      const nextScrolled = scrolledRef.current ? y > 24 : y > 96;
+      if (nextScrolled !== scrolledRef.current) {
+        scrolledRef.current = nextScrolled;
+        setScrolled(nextScrolled);
+      }
     }
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -252,25 +258,29 @@ export default function Navbar({ navCategories, trendingTopics = [] }: NavbarPro
                 <div className="group relative">
                   <button
                     type="button"
+                    aria-haspopup="menu"
                     className="inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-sm font-black text-black/55 transition hover:bg-[#111] hover:text-white"
                   >
                     More
-                    <ChevronDown className="size-3.5 transition-transform duration-200 group-hover:rotate-180" />
+                    <ChevronDown className="size-3.5 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180" />
                   </button>
-                  <div className="invisible absolute left-0 top-full z-50 mt-1.5 w-52 translate-y-2 rounded-xl border border-black/10 bg-white p-1.5 opacity-0 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                    {overflowCategories.map((cat) => (
-                      <LoadingLink
-                        key={cat.slug}
-                        href={`/category/${cat.slug}`}
-                        className={`block rounded-lg px-3 py-2.5 text-sm font-bold transition ${
-                          pathname === `/category/${cat.slug}`
-                            ? "bg-[#111] text-white"
-                            : "text-black/62 hover:bg-[#111] hover:text-white"
-                        }`}
-                      >
-                        {cat.name}
-                      </LoadingLink>
-                    ))}
+                  <div className="pointer-events-none invisible absolute left-0 top-full z-50 w-52 pt-1.5 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                    <div role="menu" className="rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+                      {overflowCategories.map((cat) => (
+                        <LoadingLink
+                          key={cat.slug}
+                          href={`/category/${cat.slug}`}
+                          role="menuitem"
+                          className={`block rounded-lg px-3 py-2.5 text-sm font-bold transition ${
+                            pathname === `/category/${cat.slug}`
+                              ? "bg-[#111] text-white"
+                              : "text-black/62 hover:bg-[#111] hover:text-white"
+                          }`}
+                        >
+                          {cat.name}
+                        </LoadingLink>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
