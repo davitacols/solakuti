@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ArticleCard from "@/components/ArticleCard";
-import AdSlot from "@/components/AdSlot";
+import AdsterraAd from "@/components/AdsterraAd";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import TrendingSidebar from "@/components/TrendingSidebar";
 import { Clock } from "lucide-react";
@@ -190,7 +190,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
           {categoryArticles.length > 5 && (
             <>
-              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_MID ?? ""} className="my-6" />
               <div className="grid gap-5 sm:grid-cols-2">
                 {categoryArticles.slice(5, 13).map((article) => (
                   <ArticleCard key={article.id} article={article} />
@@ -210,7 +209,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
         <aside className="space-y-6">
           <TrendingSidebar articles={trendingArticles.concat(allArticles)} />
-          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_SIDEBAR ?? ""} format="rectangle" />
+          <AdsterraAd format="rectangle" />
         </aside>
       </section>
     </main>

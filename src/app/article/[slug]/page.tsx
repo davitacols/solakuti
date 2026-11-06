@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Clock, Eye, Facebook, Linkedin, Mail, MessageCircle, Twitter, User } from "lucide-react";
 import ArticleCard from "@/components/ArticleCard";
-import AdSlot from "@/components/AdSlot";
+import AdsterraAd from "@/components/AdsterraAd";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import CommentsSection from "@/components/CommentsSection";
 import ReadingProgress from "@/components/ReadingProgress";
@@ -316,7 +316,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               )}
 
               {/* Mid-article ad */}
-              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID ?? ""} className="my-8" />
+              <AdsterraAd format="rectangle" className="my-10" />
 
               {/* In-article related */}
               {related.length > 0 && (

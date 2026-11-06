@@ -1,5 +1,5 @@
 import ArticleCard from "@/components/ArticleCard";
-import AdSlot from "@/components/AdSlot";
+import AdsterraAd from "@/components/AdsterraAd";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import CategoryPills from "@/components/CategoryPills";
 import CategorySection from "@/components/CategorySection";
@@ -136,7 +136,7 @@ export default async function Home() {
           />
         ))}
 
-        {activeCategories.length > 2 && <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_MID ?? ""} className="my-6" />}
+        {activeCategories.length > 2 && <AdsterraAd format="native" className="my-8" desktopOnly />}
 
         {activeCategories.slice(2).map((category) => (
           <CategorySection
