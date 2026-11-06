@@ -148,7 +148,7 @@ export default function AdsterraAd({ format, className = "", desktopOnly = false
           width={isNative ? "100%" : 300}
           height={isNative ? 320 : 250}
           scrolling="no"
-          loading="lazy"
+          loading="eager"
           referrerPolicy="strict-origin-when-cross-origin"
           sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
           tabIndex={hasRenderedCreative ? 0 : -1}
