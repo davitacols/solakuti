@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const CONSENT_KEY = "solakuti-cookie-consent";
 const CONSENT_EVENT = "solakuti-cookie-consent-change";
@@ -13,21 +13,8 @@ const nativeBannerDocument = `<!doctype html>
     <style>html,body{margin:0;padding:0;overflow:hidden;background:transparent;color-scheme:light}</style>
   </head>
   <body>
-    <script async="async" data-cfasync="false" src="https://pl29362420.profitableratecpmnetwork.com/35b333388d00dc3b39b1cd002d5efe2f/invoke.js"><\/script>
     <div id="container-35b333388d00dc3b39b1cd002d5efe2f"></div>
-    <script>
-      (function () {
-        var container = document.getElementById("container-35b333388d00dc3b39b1cd002d5efe2f");
-        var notifyWhenRendered = function () {
-          if (container && container.children.length > 0 && container.getBoundingClientRect().height > 20) {
-            parent.postMessage({ source: "solakuti-adsterra", format: "native", rendered: true }, "*");
-          }
-        };
-        new MutationObserver(notifyWhenRendered).observe(container, { childList: true, subtree: true, attributes: true });
-        window.addEventListener("load", notifyWhenRendered);
-        setTimeout(notifyWhenRendered, 1500);
-      })();
-    <\/script>
+    <script async="async" data-cfasync="false" src="https://pl29362420.profitableratecpmnetwork.com/35b333388d00dc3b39b1cd002d5efe2f/invoke.js"><\/script>
   </body>
 </html>`;
 
@@ -49,22 +36,6 @@ const rectangleBannerDocument = `<!doctype html>
       };
     <\/script>
     <script src="https://www.highrevenueformat.com/6a08842c375b43ff940904e9cbcf4f55/invoke.js"><\/script>
-    <script>
-      (function () {
-        var notifyWhenRendered = function () {
-          var hasCreative = Array.prototype.some.call(document.body.children, function (element) {
-            var rect = element.getBoundingClientRect();
-            return element.tagName !== "SCRIPT" && rect.width > 20 && rect.height > 20;
-          });
-          if (hasCreative) {
-            parent.postMessage({ source: "solakuti-adsterra", format: "rectangle", rendered: true }, "*");
-          }
-        };
-        new MutationObserver(notifyWhenRendered).observe(document.body, { childList: true, subtree: true, attributes: true });
-        window.addEventListener("load", notifyWhenRendered);
-        setTimeout(notifyWhenRendered, 1500);
-      })();
-    <\/script>
   </body>
 </html>`;
 
@@ -77,8 +48,6 @@ type AdsterraAdProps = {
 export default function AdsterraAd({ format, className = "", desktopOnly = false }: AdsterraAdProps) {
   const [hasConsent, setHasConsent] = useState(false);
   const [viewportEligible, setViewportEligible] = useState(!desktopOnly);
-  const [hasRenderedCreative, setHasRenderedCreative] = useState(false);
-  const frameRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const syncConsent = () => setHasConsent(localStorage.getItem(CONSENT_KEY) === "accepted");
@@ -102,34 +71,16 @@ export default function AdsterraAd({ format, className = "", desktopOnly = false
     return () => mediaQuery.removeEventListener("change", syncViewport);
   }, [desktopOnly]);
 
-  useEffect(() => {
-    setHasRenderedCreative(false);
-    if (!hasConsent || !viewportEligible) return;
-
-    const onMessage = (event: MessageEvent) => {
-      if (
-        event.source === frameRef.current?.contentWindow &&
-        event.data?.source === "solakuti-adsterra" &&
-        event.data?.format === format &&
-        event.data?.rendered === true
-      ) {
-        setHasRenderedCreative(true);
-      }
-    };
-
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [format, hasConsent, viewportEligible]);
-
   if (!hasConsent || !viewportEligible) return null;
 
   const isNative = format === "native";
 
+  // Reserve visible space before loading: ad scripts may check slot visibility.
+
   return (
     <aside
       aria-label="Advertisement"
-      aria-hidden={!hasRenderedCreative}
-      className={hasRenderedCreative ? className : "pointer-events-none h-0 overflow-hidden"}
+      className={className}
     >
       <p className="mb-2 text-center text-[9px] font-black uppercase tracking-[0.2em] text-black/30">
         Advertisement
@@ -142,7 +93,7 @@ export default function AdsterraAd({ format, className = "", desktopOnly = false
         }
       >
         <iframe
-          ref={frameRef}
+          key={format}
           title={isNative ? "Sponsored stories" : "Advertisement"}
           srcDoc={isNative ? nativeBannerDocument : rectangleBannerDocument}
           width={isNative ? "100%" : 300}
@@ -150,8 +101,8 @@ export default function AdsterraAd({ format, className = "", desktopOnly = false
           scrolling="no"
           loading="eager"
           referrerPolicy="strict-origin-when-cross-origin"
-          sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-          tabIndex={hasRenderedCreative ? 0 : -1}
+          // Preserve the publisher origin for ad storage and domain checks.
+          sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
           className="block size-full border-0"
         />
       </div>
